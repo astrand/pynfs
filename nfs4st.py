@@ -19,7 +19,11 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 # TODO:
-# Extend unittest with warnings. 
+# Extend unittest with warnings.
+
+# Note on docstrings: Each class inheriting NFSTestCase is referred to as a
+# "test case". Each test* method is a "invocable component", sometimes called
+# "component". 
 
 
 import unittest
