@@ -707,14 +707,16 @@ class CreateSuite(NFSSuite):
 
         self.lookup_dir_ops = self.ncl.lookup_path(self.tmp_dir)
 
-    def _remove_object(self):
+    def _remove_object(self, name=None):
         # Make sure the object to create does not exist.
         # This cannot be done in setUp(), since assertion errors
         # are treated like errors (not failures). 
         # This tests at the same time the REMOVE operation. Not much
         # we can do about it.
+        if not name:
+            name = self.obj_name
         operations = [self.ncl.putrootfh_op()] + self.lookup_dir_ops
-        operations.append(self.ncl.remove_op(self.obj_name))
+        operations.append(self.ncl.remove_op(name))
 
         res = self.do_compound(operations)
         self.assert_status(res, [NFS4_OK, NFS4ERR_NOENT])
@@ -953,10 +955,13 @@ class CreateSuite(NFSSuite):
         Servers supporting . and .. in file names should return NFS4_OK. Others
         should return NFS4ERR_INVAL. NFS4ERR_EXIST should not be returned.
         """
+        # Note: if _remove_object fails, execution will stop. 
         # name = .
+        self._remove_object(".")
         self._do_create(".")
 
         # name = ..
+        self._remove_object("..")
         self._do_create("..")
         
         
@@ -2563,12 +2568,14 @@ class RemoveSuite(NFSSuite):
         self.obj_name = "object1"
         self.lookup_dir_ops = self.ncl.lookup_path(self.tmp_dir)
 
-    def _create_object(self):
+    def _create_object(self, name=None):
         # Make sure we have something to remove. We create a directory, because
         # it's simple.
+        if not name:
+            name = self.obj_name
         operations = [self.putrootfhop] + self.lookup_dir_ops
         objtype = createtype4(self.ncl, type=NF4DIR)
-        operations.append(self.ncl.create(objtype, self.obj_name))
+        operations.append(self.ncl.create(objtype, name))
         res = self.do_compound(operations)
         self.assert_status(res, [NFS4_OK, NFS4ERR_EXIST])
 
@@ -2639,6 +2646,29 @@ class RemoveSuite(NFSSuite):
         operations.append(self.ncl.remove_op(self.vaporfilename))
         res = self.do_compound(operations)
         self.assert_status(res, [NFS4ERR_NOENT])
+
+    #
+    # Extra tests. 
+    #
+    def _do_remove(self, name):
+        self._create_object(name) 
+        operations = [self.putrootfhop] + self.lookup_dir_ops
+        operations.append(self.ncl.remove_op(name))
+        res = self.do_compound(operations)
+        self.assert_status(res, [NFS4ERR_NOENT])
+    
+    def testDots(self):
+        """REMOVE on . or .. should return NFS4ERR_NOENT
+        
+        Extra test
+
+        No files named . or .. should exist in the test tree
+        """
+        # name = .
+        self._do_remove(".")
+
+        # name = ..
+        self._do_remove("..")
         
 
 class RenameSuite(NFSSuite):
