@@ -108,7 +108,7 @@ class CompoundTestCase(NFSTestCase):
         """Test COMPOUND without operations
         """
 
-        res = self.ncl.compound([])
+        res = self.do_compound([])
         self.assert_OK(res)
 
     def testOperation1(self):
@@ -168,7 +168,7 @@ class AccessTestCase(NFSTestCase):
         but not in "supported". 
         """
         for accessop in self.valid_access_ops():
-            res = self.ncl.compound([self.putrootfhop, accessop])
+            res = self.do_compound([self.putrootfhop, accessop])
             self.assert_OK(res)
             
             supported = res.resarray[1].arm.arm.supported
@@ -186,7 +186,7 @@ class AccessTestCase(NFSTestCase):
         path = nfs4lib.str2pathname("/README")
         lookupop = self.ncl.lookup_op(path)
         for accessop in self.valid_access_ops():
-            res = self.ncl.compound([self.putrootfhop, lookupop, accessop])
+            res = self.do_compound([self.putrootfhop, lookupop, accessop])
             self.assert_OK(res)
 
             supported = res.resarray[2].arm.arm.supported
@@ -202,7 +202,7 @@ class AccessTestCase(NFSTestCase):
         returned in "access" or "supported". 
         """
         for accessop in self.valid_access_ops():
-            res = self.ncl.compound([self.putrootfhop, accessop])
+            res = self.do_compound([self.putrootfhop, accessop])
             self.assert_OK(res)
             
             supported = res.resarray[1].arm.arm.supported
@@ -233,7 +233,7 @@ class AccessTestCase(NFSTestCase):
         ACCESS should return NFS4ERR_NOFILEHANDLE if called without filehandle.
         """
         accessop = self.ncl.access_op(ACCESS4_READ)
-        res = self.ncl.compound([accessop])
+        res = self.do_compound([accessop])
         self.failUnlessEqual(res.status, NFS4ERR_NOFILEHANDLE)
 
 
@@ -263,7 +263,7 @@ class CommitTestCase(NFSTestCase):
         path = nfs4lib.str2pathname(self.linkfile)
         lookupop = self.ncl.lookup_op(path)
         commitop = self.ncl.commit_op(0, 0)
-        res = self.ncl.compound([self.putrootfhop, lookupop, commitop])
+        res = self.do_compound([self.putrootfhop, lookupop, commitop])
         self.failUnlessEqual(res.status, NFS4ERR_INVAL)
 
     def testOnBlock(self):
@@ -272,7 +272,7 @@ class CommitTestCase(NFSTestCase):
         path = nfs4lib.str2pathname(self.blockfile)
         lookupop = self.ncl.lookup_op(path)
         commitop = self.ncl.commit_op(0, 0)
-        res = self.ncl.compound([self.putrootfhop, lookupop, commitop])
+        res = self.do_compound([self.putrootfhop, lookupop, commitop])
         self.failUnlessEqual(res.status, NFS4ERR_INVAL)
 
     def testOnChar(self):
@@ -281,7 +281,7 @@ class CommitTestCase(NFSTestCase):
         path = nfs4lib.str2pathname(self.charfile)
         lookupop = self.ncl.lookup_op(path)
         commitop = self.ncl.commit_op(0, 0)
-        res = self.ncl.compound([self.putrootfhop, lookupop, commitop])
+        res = self.do_compound([self.putrootfhop, lookupop, commitop])
         self.failUnlessEqual(res.status, NFS4ERR_INVAL)
 
     def testOnSocket(self):
@@ -290,7 +290,7 @@ class CommitTestCase(NFSTestCase):
         path = nfs4lib.str2pathname(self.socketfile)
         lookupop = self.ncl.lookup_op(path)
         commitop = self.ncl.commit_op(0, 0)
-        res = self.ncl.compound([self.putrootfhop, lookupop, commitop])
+        res = self.do_compound([self.putrootfhop, lookupop, commitop])
         self.failUnlessEqual(res.status, NFS4ERR_INVAL)
 
     def testOnFifo(self):
@@ -299,7 +299,7 @@ class CommitTestCase(NFSTestCase):
         path = nfs4lib.str2pathname(self.fifofile)
         lookupop = self.ncl.lookup_op(path)
         commitop = self.ncl.commit_op(0, 0)
-        res = self.ncl.compound([self.putrootfhop, lookupop, commitop])
+        res = self.do_compound([self.putrootfhop, lookupop, commitop])
         self.failUnlessEqual(res.status, NFS4ERR_INVAL)
         
     def testOnDir(self):
@@ -312,7 +312,7 @@ class CommitTestCase(NFSTestCase):
         path = nfs4lib.str2pathname(self.dirfile)
         lookupop = self.ncl.lookup_op(path)
         commitop = self.ncl.commit_op(0, 0)
-        res = self.ncl.compound([self.putrootfhop, lookupop, commitop])
+        res = self.do_compound([self.putrootfhop, lookupop, commitop])
         self.failUnlessEqual(res.status, NFS4ERR_ISDIR)
 
     def testOffsets(self):
@@ -326,17 +326,17 @@ class CommitTestCase(NFSTestCase):
 
         # offset = 0
         commitop = self.ncl.commit_op(0, 0)
-        res = self.ncl.compound([self.putrootfhop, lookupop, commitop])
+        res = self.do_compound([self.putrootfhop, lookupop, commitop])
         self.assert_OK(res)
 
         # offset = 1
         commitop = self.ncl.commit_op(1, 0)
-        res = self.ncl.compound([self.putrootfhop, lookupop, commitop])
+        res = self.do_compound([self.putrootfhop, lookupop, commitop])
         self.assert_OK(res)
 
         # offset = 2**64 - 1
         commitop = self.ncl.commit_op(-1, 0)
-        res = self.ncl.compound([self.putrootfhop, lookupop, commitop])
+        res = self.do_compound([self.putrootfhop, lookupop, commitop])
         self.assert_OK(res)
 
 
@@ -351,17 +351,17 @@ class CommitTestCase(NFSTestCase):
         
         # count = 0
         commitop = self.ncl.commit_op(0, 0)
-        res = self.ncl.compound([self.putrootfhop, lookupop, commitop])
+        res = self.do_compound([self.putrootfhop, lookupop, commitop])
         self.assert_OK(res)
 
         # count = 1
         commitop = self.ncl.commit_op(0, 1)
-        res = self.ncl.compound([self.putrootfhop, lookupop, commitop])
+        res = self.do_compound([self.putrootfhop, lookupop, commitop])
         self.assert_OK(res)
 
         # count = 2**64 - 1
         commitop = self.ncl.commit_op(0, -1)
-        res = self.ncl.compound([self.putrootfhop, lookupop, commitop])
+        res = self.do_compound([self.putrootfhop, lookupop, commitop])
         self.assert_OK(res)
 
     def testOverflow(self):
@@ -375,7 +375,7 @@ class CommitTestCase(NFSTestCase):
         lookupop = self.ncl.lookup_op(path)
         
         commitop = self.ncl.commit_op(-1, -1)
-        res = self.ncl.compound([self.putrootfhop, lookupop, commitop])
+        res = self.do_compound([self.putrootfhop, lookupop, commitop])
         self.failUnlessEqual(res.status, NFS4ERR_INVAL)
 
 
@@ -400,7 +400,7 @@ class CreateTestCase(NFSTestCase):
 
         operations.append(self.ncl.remove_op(self.obj_name))
 
-        res = self.ncl.compound(operations)
+        res = self.do_compound(operations)
         self.assert_status(res, [NFS4_OK, NFS4ERR_NOENT])
 
     def testLink(self):
@@ -414,7 +414,7 @@ class CreateTestCase(NFSTestCase):
         createop = self.ncl.create_op(self.obj_name, objtype)
         operations.append(createop)
 
-        res = self.ncl.compound(operations)
+        res = self.do_compound(operations)
         if res.status == NFS4ERR_BADTYPE:
             self.info_message("links not supported")
         self.assert_status(res, [NFS4_OK, NFS4ERR_BADTYPE])
@@ -429,7 +429,7 @@ class CreateTestCase(NFSTestCase):
         createop = self.ncl.create_op(self.obj_name, objtype)
         operations.append(createop)
 
-        res = self.ncl.compound(operations)
+        res = self.do_compound(operations)
         if res.status == NFS4ERR_BADTYPE:
             self.info_message("blocks devices not supported")
         self.assert_status(res, [NFS4_OK, NFS4ERR_BADTYPE])
@@ -444,7 +444,7 @@ class CreateTestCase(NFSTestCase):
         createop = self.ncl.create_op(self.obj_name, objtype)
         operations.append(createop)
 
-        res = self.ncl.compound(operations)
+        res = self.do_compound(operations)
         if res.status == NFS4ERR_BADTYPE:
             self.info_message("character devices not supported")
         self.assert_status(res, [NFS4_OK, NFS4ERR_BADTYPE])
@@ -458,7 +458,7 @@ class CreateTestCase(NFSTestCase):
         createop = self.ncl.create_op(self.obj_name, objtype)
         operations.append(createop)
 
-        res = self.ncl.compound(operations)
+        res = self.do_compound(operations)
         if res.status == NFS4ERR_BADTYPE:
             self.info_message("sockets not supported")
         self.assert_status(res, [NFS4_OK, NFS4ERR_BADTYPE])
@@ -472,7 +472,7 @@ class CreateTestCase(NFSTestCase):
         createop = self.ncl.create_op(self.obj_name, objtype)
         operations.append(createop)
 
-        res = self.ncl.compound(operations)
+        res = self.do_compound(operations)
         if res.status == NFS4ERR_BADTYPE:
             self.info_message("FIFOs not supported")
         self.assert_status(res, [NFS4_OK, NFS4ERR_BADTYPE])
@@ -487,7 +487,7 @@ class CreateTestCase(NFSTestCase):
         createop = self.ncl.create_op(self.obj_name, objtype)
         operations.append(createop)
 
-        res = self.ncl.compound(operations)
+        res = self.do_compound(operations)
         if res.status == NFS4ERR_BADTYPE:
             self.info_message("directories not supported!")
         self.assert_status(res, [NFS4_OK, NFS4ERR_BADTYPE])
