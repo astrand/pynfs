@@ -348,7 +348,6 @@ def gen_unpack_code(ip, id, rpctype):
             ip.pr("self.%s = unpack_objarray(self.ncl, %s)" % (id, rpctype.base_type))
 
 
-
 def gen_switch_code(ip, union_body, packer, assertions=0):
     # Shortcuts
     switch_var_declaration = union_body.declaration
@@ -397,6 +396,7 @@ def gen_switch_code(ip, union_body, packer, assertions=0):
                 # check_not_reserved(declaration[0]) is done in packer()
                 if assertions: ip.pr("assert_not_none(self, self.%s)" % declaration[0])
                 packer(ip, declaration[0], declaration[1])
+                ip.pr("self.arm = self.%s" % declaration[0])
             else:
                 ip.pr("pass")
             last_empty = 0
@@ -411,6 +411,7 @@ def gen_switch_code(ip, union_body, packer, assertions=0):
         declaration = default_declaration.declaration
         if declaration[0] != "void":
             packer(ip, declaration[0], declaration[1])
+            ip.pr("self.arm = self.%s" % declaration[0])
         else:
             ip.pr("pass")
     else:
@@ -605,6 +606,8 @@ def p_type_def_4(t):
     for (id, typedecl) in all_decl:
         # check_not_reserved(id) already done. 
         ip.pr("self.%s = %s" % (id, id))
+    ip.pr("# Shortcut to current arm")
+    ip.pr("self.arm = None")
     ip.cont("\n")
 
     # __repr__ method
