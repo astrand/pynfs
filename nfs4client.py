@@ -71,7 +71,7 @@ else:
             "help", "cd", "rm", "dir", "ls", "exit", "quit", "get",
             "put", "mkdir", "md", "rmdir", "rd", "cat", "page",
             "debug", "ping", "version", "pythonmode", "shell", "access",
-            "create", "remove"]
+            "create", ]
 
         def complete(self, text, state):
             """Return the next possible completion for 'text'.
@@ -167,8 +167,29 @@ class ClientApp(cmd.Cmd):
         self._set_prompt()
 
     def do_rm(self, line):
-        # FIXME
-        print "not implemented"
+        """Remove non-dir object"""
+
+        # Make sure the object to remove is not a directory
+        pathcomps = self.ncl.get_pathcomps_rel(line)
+        ftype = self.ncl.get_ftype(pathcomps)
+        if ftype == NF4DIR:
+            print "%s is a directory (try rmdir instead)" % line
+            return
+
+        dircomps = pathcomps[:-1]
+        lookupops = self.ncl.lookup_path(dircomps)
+        operations = [self.ncl.putrootfh_op()] + lookupops
+
+        objname = pathcomps[-1]
+        operations.append(self.ncl.remove_op(objname))
+
+        try:
+            res = self.ncl.compound(operations)
+            nfs4lib.check_result(res)
+        except nfs4lib.BadCompoundRes, r:
+            print "remove failed:", r
+            return
+            
 
     def do_dir(self, line):
         putrootfhop = self.ncl.putrootfh_op()
@@ -358,8 +379,28 @@ class ClientApp(cmd.Cmd):
     do_md = do_mkdir
 
     def do_rmdir(self, line):
-        # FIXME
-        print "not implemented"
+        """Remove directory"""
+
+        # Make sure the object to remove is a directory
+        pathcomps = self.ncl.get_pathcomps_rel(line)
+        ftype = self.ncl.get_ftype(pathcomps)
+        if ftype != NF4DIR:
+            print "%s is not a directory (try rm instead)" % line
+            return
+
+        dircomps = pathcomps[:-1]
+        lookupops = self.ncl.lookup_path(dircomps)
+        operations = [self.ncl.putrootfh_op()] + lookupops
+
+        objname = pathcomps[-1]
+        operations.append(self.ncl.remove_op(objname))
+
+        try:
+            res = self.ncl.compound(operations)
+            nfs4lib.check_result(res)
+        except nfs4lib.BadCompoundRes, r:
+            print "remove failed:", r
+            return
 
     do_rd = do_rmdir
 
@@ -382,35 +423,6 @@ class ClientApp(cmd.Cmd):
         
     do_page = do_cat
     
-    def do_remove(self, line):
-        # FIXME: Should be able to remove objects in other dirs than cwd.
-        args = line.split()
-        if len(args) != 1:
-            print "remove <name>"
-            return
-
-        objname = args[0]
-
-        # PUTROOT
-        operations = [self.ncl.putrootfh_op()]
-
-        # LOOKUP
-        pathcomps = nfs4lib.unixpath2comps(self.ncl.cwd)
-        if pathcomps:
-            operations.extend(self.ncl.lookup_path(pathcomps))
-
-        # REMOVE
-        removeop = self.ncl.remove_op(objname)
-        operations.append(removeop)
-
-        try:
-            res = self.ncl.compound(operations)
-            nfs4lib.check_result(res)
-        except nfs4lib.BadCompoundRes, r:
-            print "remove failed:", r
-            return
-
-
     def do_debug(self, line):
         # FIXME
         print "not implemented"
@@ -586,9 +598,18 @@ if __name__ == "__main__":
         commands = commandstring.split(";")
 
     for command in commands:
-        c.onecmd(command)
-    
-    c.cmdloop()
+        try:
+            c.onecmd(command)
+        except nfs4lib.BadCompoundRes, e:
+            print e
+            
+    while 1:
+        # do_* methods should preferrable handle errors themself. They can provide
+        # much better error messages. This try-clause is a last resort. 
+        try:
+            c.cmdloop()
+        except nfs4lib.BadCompoundRes, e:
+            print e
 
     
 # Local variables:
