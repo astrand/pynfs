@@ -301,7 +301,15 @@ def gen_pack_code(ip, id, typedecl):
         else:
             ip.pr("self.%s.pack()" % id)
     else:
-        ip.pr("self.packer.pack_%s(self.%s)" % (typedecl.base_type, id))
+        if typedecl.base_type == "opaque":
+            if typedecl.fixarray:
+                # Fixed length opaque data
+                ip.pr("self.packer.pack_fopaque(%s, self.%s)" % (typedecl.arraylen, id))
+            else:
+                # Variable length opaque data
+                ip.pr("self.packer.pack_opaque(self.%s)" % id)
+        else:
+            ip.pr("self.packer.pack_%s(self.%s)" % (typedecl.base_type, id))
 
 # Code generation for <prefix>types.py
 def gen_unpack_code(ip, id, typedecl):
@@ -313,7 +321,15 @@ def gen_unpack_code(ip, id, typedecl):
             ip.pr("self.%s = %s(self)" % (id, typedecl.base_type))
             ip.pr("self.%s.unpack()" % id)
     else:
-        ip.pr("self.%s = self.unpacker.unpack_%s()" % (id, typedecl.base_type))
+        if typedecl.base_type == "opaque":
+            if typedecl.fixarray:
+                # Fixed length opaque data
+                ip.pr("self.%s = self.unpacker.unpack_fopaque(%s)" % (id, typedecl.arraylen))
+            else:
+                # Variable length opaque data
+                ip.pr("self.%s = self.unpacker.unpack_opaque()" % id)
+        else:
+            ip.pr("self.%s = self.unpacker.unpack_%s()" % (id, typedecl.base_type))
 
 # Code generation for <prefix>packer.py
 def gen_packers(id, typeobj):
