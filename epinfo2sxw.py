@@ -36,6 +36,9 @@ def parse_method(meth):
     else:
         lines = []
 
+    pos_test = 0
+    neg_test = 0
+    extra_test = 0
     valid_classes = ""
     invalid_classes = ""
     comments = ""
@@ -46,16 +49,19 @@ def parse_method(meth):
         del lines[0]
         
         if line.find("Covered valid equivalence classes:") != -1:
+            pos_test = 1
             data = line[line.find(":") + 1:]
             data = data.strip()
             valid_classes = data
             
         if line.find("Covered invalid equivalence classes:") != -1:
+            neg_test = 1
             data = line[line.find(":") + 1:]
             data = data.strip()
             invalid_classes = data
             
         if line.find("Extra test") != -1:
+            extra_test = 1
             valid_classes = "-"
             invalid_classes = "-"
 
@@ -69,16 +75,32 @@ def parse_method(meth):
                 del lines[0]
             comments += data
 
-    if not valid_classes and not invalid_classes:
-        print "ERROR: Method %s does not have any coverage information" % meth.__name__
+    if not (pos_test or neg_test or extra_test):
+        print "ERROR: Unknown test type for method %s, skipping" % meth.__name__
+        return
 
-    # Cells without contents look ugly. 
-    if not valid_classes:
-        valid_classes = "-"
+    if pos_test + neg_test + extra_test > 1:
+        print "ERROR: Ambigious test type for method %s, skipping" % meth.__name__
+        return
 
-    if not invalid_classes:
+    # If we are still around, we know the test type for sure. 
+    if pos_test:
+        if not valid_classes:
+            print "ERROR: Class coverage not specified for positive test %s" % meth.__name__
+            return
         invalid_classes = "-"
-
+    elif neg_test:
+        if not invalid_classes:
+            print "ERROR: Class coverage not specified for negative test %s" % meth.__name__
+            return
+        valid_classes = "-"
+    elif extra_test:
+        valid_classes = "-"
+        invalid_classes = "-"
+    else:
+        # Should not happen
+        raise("Internal error")
+    
     if not comments:
         comments = "-"
 
