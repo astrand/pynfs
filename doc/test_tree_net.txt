@@ -13,3 +13,8 @@ Example:
 
 ./test_tree_net.py myserver/testing
 ./nfs4st.py myserver/testing AccessSuite
+
+
+If your server does not work correctly, or if you stumble into bugs in
+test_tree_net.py, you will have to fix these problems before trying
+the actual test suite. As always, Ethereal is a good friend.
