@@ -3837,10 +3837,19 @@ class SetattrSuite(NFSSuite):
         """SETATTR(FATTR4_MODE) on symbolic link
 
         Covered valid equivalence classes: 14, 20, 30, 40
-        """
-        # FIXME: Maybe NFS4ERR_PERM should be accepted. 
-        self._invalid_setattr(self.linkfile, "")
 
+        Comments: The response to mode setting on a symbolic link is
+        server dependent; about any response is valid. We just test
+        and print the result. 
+        """
+        lookupops = self.ncl.lookup_path(self.linkfile)
+        operations = [self.putrootfhop] + lookupops
+        stateid = stateid4(self.ncl, 0, "")
+        operations.append(self._setattr_op(stateid))
+        res = self.do_compound(operations)
+        self.info_message("SETATTR(FATTR4_MODE) on symlink returned %s" \
+                          % nfsstat4_id[res.status])
+        
     def testSocket(self):
         """SETATTR(FATTR4_MODE) on socket
 
