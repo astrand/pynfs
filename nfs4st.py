@@ -208,8 +208,7 @@ class AccessTestCase(NFSTestCase):
     #
 
     def testLink(self):
-        """
-        ACCESS on link
+        """ACCESS on link
         
         Covered valid equivalence classes: 1, 8
         """
@@ -221,8 +220,7 @@ class AccessTestCase(NFSTestCase):
         self.assert_OK(res)
 
     def testBlock(self):
-        """
-        ACCESS on block device
+        """ACCESS on block device
 
         Covered valid equivalence classes: 2, 8
         """
@@ -233,8 +231,7 @@ class AccessTestCase(NFSTestCase):
         self.assert_OK(res)
 
     def testChar(self):
-        """
-        ACCESS on char device
+        """ACCESS on char device
 
         Covered valid equivalence classes: 3, 8
         """
@@ -245,8 +242,7 @@ class AccessTestCase(NFSTestCase):
         self.assert_OK(res)
 
     def testSocket(self):
-        """
-        ACCESS on socket device
+        """ACCESS on socket device
 
         Covered valid equivalence classes: 4, 8
         """
@@ -257,8 +253,7 @@ class AccessTestCase(NFSTestCase):
         self.assert_OK(res)
 
     def testFIFO(self):
-        """
-        ACCESS on FIFO device
+        """ACCESS on FIFO device
 
         Covered valid equivalence classes: 5, 8
         """
