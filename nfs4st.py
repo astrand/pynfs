@@ -2688,7 +2688,8 @@ class ReadlinkSuite(NFSSuite):
             res = self.do_compound(operations)
 
             if res.status != NFS4ERR_INVAL:
-                self.info_message("READLINK on %s dit not return NFS4ERR_INVAL" % name)
+                self.info_message("READLINK on %s did not return NFS4ERR_INVAL" \
+                                  % pathcomps)
             
             self.assert_status(res, [NFS4ERR_INVAL])
             
