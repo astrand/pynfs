@@ -127,9 +127,23 @@ class PartialNFS4Client:
         # FIXME
         raise NotImplementedError()
 
-    def getattr(self):
-        # FIXME
-        raise NotImplementedError()
+    def getattr(self, attrlist=[]):
+	# The argument to GETATTR4args is a list of integers. 
+	attr_request = []
+	for attr in attrlist:
+	    # Lost? Se section 2.2 in RFC3010. 
+	    arrintpos = attr / 32
+	    bitpos = attr % 32
+	    
+	    while (arrintpos+1) > len(attr_request):
+		attr_request.append(0)
+
+	    arrint = attr_request[arrintpos]
+	    arrint = arrint | (1L << bitpos)
+	    attr_request[arrintpos] = arrint
+	
+	args = GETATTR4args(self, attr_request)
+        return nfs_argop4(self, argop=OP_GETATTR, opgetattr=args)
 
     def getfh(self):
         return nfs_argop4(self, argop=OP_GETFH)
@@ -370,7 +384,18 @@ def str2pathname(str, pathname=[]):
         else:
             pathname.append(component)
     return pathname
-    
+
+def opaque2long(data):
+    import struct
+    result = 0L
+    # Decode 4 bytes at a time. 
+    for intpos in range(len(data)/4):
+	integer = data[intpos*4:intpos*4+4]
+	val = struct.unpack(">L", integer)[0]
+	shiftbits = (len(data)/4 - intpos - 1)*64
+	result = result | (val << shiftbits)
+
+    return result
 
 class UDPNFS4Client(PartialNFS4Client, rpc.RawUDPClient):
     def __init__(self, host):
