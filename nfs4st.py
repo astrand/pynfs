@@ -49,6 +49,12 @@ host = None
 port = None
 transport = "udp"
 
+class SkipException(Exception):
+    def __init__(self, msg):
+	self.msg = msg
+
+    def __str__(self):
+	return "Skipping test: %s" % self.msg
 
 class PartialTestClient:
     __pychecker__ = 'no-classattr'      # this class is a mix-in
@@ -245,6 +251,27 @@ class NFSSuite(unittest.TestCase):
             self.info_message("Cannot prepare by removing object, skipping test")
         return status
 
+    def clean_dir(self, directory):
+        """Clean directory. Raises SkipException on failure"""
+        fh = self.ncl.do_getfh(directory)
+        entries = self.ncl.do_readdir(fh)
+        names = [entry.name for entry in entries]
+        
+        # Remove all files at the same time
+        lookup_dir_ops = self.ncl.lookup_path(directory)
+        operations = [self.ncl.putrootfh_op()] + lookup_dir_ops
+        for name in names:
+            operations.append(self.ncl.remove_op(name))
+
+        res = self.do_compound(operations)
+        if not res.status == NFS4_OK:
+            raise SkipException("Cannot clean directory %s" % directory)
+
+        # Verify that all files were removed
+        entries = self.ncl.do_readdir(fh)
+        if entries:
+            raise SkipException("Cannot clean directory %s" % directory)
+
     def create_object(self, name=None, directory=None):
         """Create (dir) object in /tmp, if it does not exist. Return false on failure.
         object defaults to self.obj_name
@@ -288,29 +315,116 @@ class NFSSuite(unittest.TestCase):
         else:
             return 1
 
-    def creatable_filename(self, filename):
-        """Returns true if file name could be created via OPEN
-        (in /tmp directory)
+    def create_via_create(self, dstdir, filename):
+        operations = [self.putrootfhop] + self.ncl.lookup_path(self.tmp_dir)
+        objtype = createtype4(self.ncl, type=NF4DIR)
+        operations.append(self.ncl.create(objtype, filename))
+        return operations
+
+    def create_via_link(self, dstdir, filename):
+        operations = [self.putrootfhop]
+
+        # Lookup source and save FH
+        operations.extend(self.ncl.lookup_path(self.regfile))
+        operations.append(self.ncl.savefh_op())
+
+        # Lookup target directory
+        operations.append(self.putrootfhop)
+        operations.extend(self.ncl.lookup_path(self.tmp_dir))
+
+        operations.append(self.ncl.link_op(filename))
+        return operations
+
+    def create_via_open(self, dstdir, filename):
+        operations = [self.putrootfhop] + self.ncl.lookup_path(self.tmp_dir)
+        operations.append(self.ncl.open(file=filename,
+                                        share_access=OPEN4_SHARE_ACCESS_WRITE,
+                                        opentype=OPEN4_CREATE))
+        
+        return operations
+
+    def create_via_rename(self, dstdir, filename):
+        # Create a directory, so we have something to rename
+        oldname = "object1"
+        self.create_object(name=oldname)
+        operations = [self.putrootfhop]
+
+        # Lookup source and save FH
+        operations.extend(self.ncl.lookup_path(self.tmp_dir))
+        operations.append(self.ncl.savefh_op())
+
+        # Lookup target directory
+        operations.append(self.putrootfhop)
+        operations.extend(self.ncl.lookup_path(self.tmp_dir))
+
+        operations.append(self.ncl.rename_op(oldname, filename))
+
+        return operations
+
+    def accepted_filename(self, filename, remove_file=1, creator=None):
+        """Returns true if file name could be created via creator.
+        creator defaults to create_via_open. Files are created in /tmp
         """
-        lookup_dir_ops = self.ncl.lookup_path(self.tmp_dir)
-        operations = [self.putrootfhop] + lookup_dir_ops
-        openop = self.ncl.open(file=filename, share_access=OPEN4_SHARE_ACCESS_WRITE,
-                               opentype=OPEN4_CREATE)
-        operations.append(openop)
+        if not creator:
+            creator = self.create_via_open
+        
+        operations = creator(self.tmp_dir, filename)
         
         res = self.do_compound(operations)
-        creatable = not res.status
-        if creatable:
+        # FIXME: Change to NFS4ERR_INVALIDNAME or what the error code will be called. 
+        self.assert_status(res, [NFS4_OK, NFS4ERR_INVAL])
+        creatable = (res.status == NFS4_OK)
+
+        if creatable and remove_file:
             # Ok, the file could be created. 
             # Be nice and remove created object
-            operations = [self.putrootfhop] + lookup_dir_ops
+            operations = [self.putrootfhop] + self.ncl.lookup_path(self.tmp_dir)
             operations.append(self.ncl.remove_op(filename))
             res = self.do_compound(operations)
             # Don't care about return status
 
         return creatable
 
-    
+    def try_file_names(self, remove_files=1, creator=None):
+        """ Try all kinds of interesting file names and check if they are accepted
+        (via accepted_filename). Creates files in self.tmp_dir. The optional argument
+        remove_files can be unset to save created files. 
+
+        Returns a tuple of (accepted_names, rejected_names)
+        Raises SkipException if temporary directory cannot be cleared. You
+        should catch it. 
+        """
+        if not creator:
+            creator = self.create_via_open
+            
+        try_names = []
+        rejected_names = []
+
+        # aa<char>bb, with char 0-255
+        for i in range(0, 256):
+            ustr = "aa" + unichr(i) + "bb"
+            try_names.append(ustr.encode("utf8"))
+
+        # . and ..
+        try_names.append(".".encode("utf8"))
+        try_names.append("..".encode("utf8"))
+
+        # C:
+        try_names.append("C:".encode("utf8"))
+        
+        # Ok, lets try all these names.
+        # Begin with cleaning /tmp
+        self.clean_dir(self.tmp_dir)
+
+        for filename in try_names[:]:
+            # Do not remove the file after creation
+            if not self.accepted_filename(filename, remove_file=remove_files,
+                                           creator=creator):
+                try_names.remove(filename)
+                rejected_names.append(filename)
+
+        return (try_names, rejected_names)
+
 
 class CompoundSuite(NFSSuite):
     """Test COMPOUND procedure
@@ -751,7 +865,6 @@ class CommitSuite(NFSSuite):
 
 
 class CreateSuite(NFSSuite):
-    __pychecker__ = 'no-classattr'
     """Test operation 6: CREATE
 
     FIXME: Add attribute directory and named attribute testing.
@@ -791,6 +904,7 @@ class CreateSuite(NFSSuite):
             valid attribute value(51)
 
     """
+    __pychecker__ = 'no-classattr'
     
     def setUp(self):
         NFSSuite.setUp(self)
@@ -1063,20 +1177,27 @@ class CreateSuite(NFSSuite):
         # Try to create "gazonk/foo.c"
         self._do_create(testname)
 
-        # FIXME
-##     def testValidNames(self):
-##         """VALID NAMES
-##         """
-##         self.init_connection()
+    def testNamingPolicy(self):
+        """CREATE should obey OPEN file name creation policy
 
-##         rejected_chars = []
-##         for i in range(0, 256):
-##             ustr = "aa" + unichr(i) + "bb"
-##             filename = ustr.encode("utf8")
-##             if not self.creatable_filename(filename):
-##                 rejected_chars.append(i)
+        Extra test
+        """
+        self.init_connection()
 
-##         print "rejected characters:", repr(rejected_chars)
+        try:
+            (x, rejected_names_open) = self.try_file_names(creator=self.create_via_open)
+            self.info_message("Rejected file names by OPEN: %s" \
+                              % repr(rejected_names_open))
+            
+            (x, rejected_names_create) = self.try_file_names(creator=self.create_via_create)
+            self.info_message("Rejected file names by CREATE: %s" \
+                              % repr(rejected_names_create))
+            
+            
+            self.failIf(rejected_names_open != rejected_names_create,
+                        "CREATE does not obey OPEN naming policy")
+        except SkipException, e:
+            print e
 
 
 ## class DelegpurgeSuite(NFSSuite):
@@ -1567,8 +1688,9 @@ class LinkSuite(NFSSuite):
 
         Extra test
 
-        Servers supporting . and .. in file names should return NFS4_OK. Others
-        should return NFS4ERR_INVAL. NFS4ERR_EXIST should not be returned.
+        Comments: Servers supporting . and .. in file names should
+        return NFS4_OK. Others should return
+        NFS4ERR_INVAL. NFS4ERR_EXIST should not be returned.
         """
         testname = "."
         if not self.make_sure_nonexistent(testname): return
@@ -1577,6 +1699,29 @@ class LinkSuite(NFSSuite):
         testname = ".."
         if not self.make_sure_nonexistent(testname): return
         self._do_link(testname)
+
+    def testNamingPolicy(self):
+        """LINK should obey OPEN file name creation policy
+
+        Extra test
+        """
+        self.init_connection()
+
+        try:
+            (x, rejected_names_open) = self.try_file_names(creator=self.create_via_open)
+            self.info_message("Rejected file names by OPEN: %s" \
+                              % repr(rejected_names_open))
+            
+            (x, rejected_names_link) = self.try_file_names(creator=self.create_via_link)
+            self.info_message("Rejected file names by LINK: %s" \
+                              % repr(rejected_names_link))
+            
+            
+            self.failIf(rejected_names_open != rejected_names_link,
+                        "LINK does not obey OPEN naming policy")
+        except SkipException, e:
+            print e
+
 
 
 ## class LockSuite(NFSSuite):
@@ -1742,6 +1887,49 @@ class LookupSuite(NFSSuite):
         # UNIX server.
         if not self.make_sure_nonexistent("..", ["doc", "porting"]): return
         self._assert_noent(["doc", "porting", "..", "README"])
+
+    def testValidNames(self):
+        """LOOKUP should succeed on all legal names
+
+        Extra test
+
+        Comments: This test tries LOOKUP on all names returned from try_file_names()
+        """
+        self.init_connection()
+
+        # Saved files for LOOKUP
+        (accepted_names, rejected_names) = self.try_file_names(remove_files=0)
+        self.info_message("Rejected file names by OPEN: %s" % repr(rejected_names))
+
+        # Ok, lets try LOOKUP on all accepted names
+        lookup_dir_ops = self.ncl.lookup_path(self.tmp_dir)
+        for filename in accepted_names:
+            operations = [self.putrootfhop] + lookup_dir_ops
+            operations.append(self.ncl.lookup_op(filename))
+            res = self.do_compound(operations)
+            self.assert_OK(res)
+
+    def testInvalidNames(self):
+        """LOOKUP should fail with NFS4ERR_NOENT on all unexisting, invalid file names
+
+        Extra test
+
+        Comments: Tries LOOKUP on rejected file names from
+        try_file_names().  NFS4ERR_INVAL should NOT be returned in this case, although
+        the server rejects creation of objects with these names
+        """
+        self.init_connection()
+
+        (accepted_names, rejected_names) = self.try_file_names()
+        self.info_message("Rejected file names by OPEN: %s" % repr(rejected_names))
+
+        # Ok, lets try LOOKUP on all rejected names
+        lookup_dir_ops = self.ncl.lookup_path(self.tmp_dir)
+        for filename in rejected_names:
+            operations = [self.putrootfhop] + lookup_dir_ops
+            operations.append(self.ncl.lookup_op(filename))
+            res = self.do_compound(operations)
+            self.assert_status(res, [NFS4ERR_NOENT])
 
 
 class LookuppSuite(NFSSuite):
@@ -2628,7 +2816,8 @@ class ReaddirSuite(NFSSuite):
 
         Extra test
 
-        No files named "." or ".." should exist in /doc. 
+        Although some servers may actually support files named "." and
+        "..", no files named "." or ".." should exist in /doc.
         """
         # Lookup fh for /doc
         fh = self.ncl.do_getfh(self.dirfile)
@@ -2642,7 +2831,43 @@ class ReaddirSuite(NFSSuite):
 
         self.failIf(".." in names,
                     "READDIR in /doc returned ..-entry")
-            
+
+    def testStrangeNames(self):
+        """READDIR should obey OPEN naming policy
+
+        Extra test
+
+        Comments: Verifying that readdir obeys the same naming policy
+        as OPEN.
+        """
+        self.init_connection()
+        
+        (accepted_names, rejected_names) = self.try_file_names(remove_files=0)
+        self.info_message("Rejected file names by OPEN: %s" % repr(rejected_names))
+
+        fh = self.ncl.do_getfh(self.tmp_dir)
+        entries = self.ncl.do_readdir(fh)
+        readdir_names = [entry.name for entry in entries]
+
+        # Verify that READDIR returned all accepted_names
+        missing_names = []
+        for name in accepted_names:
+            if name not in readdir_names:
+                missing_names.append(name)
+
+        self.failIf(missing_names, "Missing names in READDIR results: %s" \
+                    % missing_names)
+
+        # ... and nothing more
+        extra_names = []
+        for name in readdir_names:
+            if not name in accepted_names:
+                extra_names.append(name)
+
+        self.failIf(extra_names, "Extra names in READDIR results: %s" \
+                    % extra_names)
+
+
 
 class ReadlinkSuite(NFSSuite):
     """Test operation 27: READLINK
@@ -2843,6 +3068,50 @@ class RemoveSuite(NFSSuite):
 
         # name = ..
         self._do_remove("..")
+
+    def testValidNames(self):
+        """REMOVE should succeed on all legal names
+
+        Extra test
+
+        Comments: This test tries REMOVE on all names returned from try_file_names()
+        """
+        # This test testes the lookup part of REMOVE
+        self.init_connection()
+
+        # Save files for REMOVE
+        (accepted_names, rejected_names) = self.try_file_names(remove_files=0)
+        self.info_message("Rejected file names by OPEN: %s" % repr(rejected_names))
+
+        # Ok, lets try REMOVE on all accepted names
+        lookup_dir_ops = self.ncl.lookup_path(self.tmp_dir)
+        for filename in accepted_names:
+            operations = [self.putrootfhop] + lookup_dir_ops
+            operations.append(self.ncl.remove_op(filename))
+            res = self.do_compound(operations)
+            self.assert_OK(res)
+
+    def testInvalidNames(self):
+        """REMOVE should fail with NFS4ERR_NOENT on all unexisting, invalid file names
+
+        Extra test
+
+        Comments: Tries REMOVE on rejected file names from
+        try_file_names().  NFS4ERR_INVAL should NOT be returned in this case, although
+        the server rejects creation of objects with these names
+        """
+        self.init_connection()
+
+        (accepted_names, rejected_names) = self.try_file_names()
+        self.info_message("Rejected file names by OPEN: %s" % repr(rejected_names))
+
+        # Ok, lets try REMOVE on all rejected names
+        lookup_dir_ops = self.ncl.lookup_path(self.tmp_dir)
+        for filename in rejected_names:
+            operations = [self.putrootfhop] + lookup_dir_ops
+            operations.append(self.ncl.remove_op(filename))
+            res = self.do_compound(operations)
+            self.assert_status(res, [NFS4ERR_NOENT])
         
 
 class RenameSuite(NFSSuite):
@@ -3106,6 +3375,76 @@ class RenameSuite(NFSSuite):
         # Try to rename it to ".."
         self._do_test_newname("..")
 
+    def testNamingPolicy(self):
+        """RENAME should obey OPEN file name creation policy
+
+        Extra test
+        """
+        # This test testes the create part of RENAME. 
+        self.init_connection()
+
+        try:
+            (x, rejected_names_open) = self.try_file_names(creator=self.create_via_open)
+            self.info_message("Rejected file names by OPEN: %s" \
+                              % repr(rejected_names_open))
+            
+            (x, rejected_names_rename) = self.try_file_names(creator=self.create_via_rename)
+            self.info_message("Rejected file names by RENAME: %s" \
+                              % repr(rejected_names_rename))
+            
+            
+            self.failIf(rejected_names_open != rejected_names_rename,
+                        "RENAME does not obey OPEN naming policy")
+        except SkipException, e:
+            print e
+
+    def testValidNames(self):
+        """RENAME should succeed on all legal names
+
+        Extra test
+
+        Comments: This test tries RENAME on all names returned from try_file_names()
+        """
+        # This test testes the lookup part of RENAME. 
+        self.init_connection()
+
+        # Saved files for 
+        (accepted_names, rejected_names) = self.try_file_names(remove_files=0)
+        self.info_message("Rejected file names by OPEN: %s" % repr(rejected_names))
+
+        # Ok, lets try RENAME on all accepted names
+        lookup_dir_ops = self.ncl.lookup_path(self.tmp_dir)
+        for filename in accepted_names:
+            operations = self._prepare_operation()
+            renameop = self.ncl.rename_op(filename, self.newname)
+            operations.append(renameop)
+            res = self.do_compound(operations)
+            self.assert_OK(res)
+            # Remove file. 
+            self.ncl.do_remove(self.tmp_dir + [self.newname])
+
+    def testInvalidNames(self):
+        """RENAME should fail with NFS4ERR_NOENT on all unexisting, invalid file names
+
+        Extra test
+
+        Comments: Tries RENAME on rejected file names from
+        try_file_names().  NFS4ERR_INVAL should NOT be returned in this case, although
+        the server rejects creation of objects with these names
+        """
+        self.init_connection()
+
+        (accepted_names, rejected_names) = self.try_file_names()
+        self.info_message("Rejected file names by OPEN: %s" % repr(rejected_names))
+
+        # Ok, lets try RENAME on all rejected names
+        lookup_dir_ops = self.ncl.lookup_path(self.tmp_dir)
+        for filename in rejected_names:
+            operations = self._prepare_operation()
+            renameop = self.ncl.rename_op(filename, self.newname)
+            operations.append(renameop)
+            res = self.do_compound(operations)
+            self.assert_status(res, [NFS4ERR_NOENT])
 
 ## class RenewSuite(NFSSuite):
 ##     """Test operation 30: RENEW
@@ -3352,6 +3691,9 @@ class SecinfoSuite(NFSSuite):
         # .. should not exist in doc dir
         if not self.make_sure_nonexistent("..", ["doc"]): return
         self._assert_secinfo_response("..")
+
+    # FIXME: Add file name policy tests: testValidNames/testInvalidNames
+    # (like with LOOKUP, REMOVE and RENAME)
 
         
 class SetattrSuite(NFSSuite):
