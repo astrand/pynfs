@@ -25,6 +25,7 @@
 #
 
 import sys
+import keyword
 
 #
 # Section: Lexical analysis
@@ -144,13 +145,8 @@ class BadDiscriminant(NFSException):
 
 def check_not_reserved(*args):
     for arg in args:
-        if arg in python_reserved:
+        if keyword.iskeyword(arg):
             raise "Invalid identifier %s is a reserved word" % str(arg)
-
-python_reserved = ["and", "del", "for", "is", "raise", "assert", "elif", "from",
-                   "lambda", "return", "break", "else", "global not", "try",
-                   "class", "except", "if", "or", "while", "continue", "exec",
-                   "import", "pass", "def", "finally in", "print"]
 
 known_basics = {"int" : "pack_int",
                 "enum" : "pack_enum", 
