@@ -38,8 +38,6 @@ class AccessTestCase(NFSTestCase):
     maxval = ACCESS4_DELETE + ACCESS4_EXECUTE + ACCESS4_EXTEND + ACCESS4_LOOKUP \
              + ACCESS4_MODIFY + ACCESS4_READ
 
-    # FIXME: Check that ACCESS4_EXECUTE is not returned for directory objects. 
-    
     def valid_access_ops(self):
         result = []
         for i in range(AccessTestCase.maxval + 1):
