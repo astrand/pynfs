@@ -65,10 +65,9 @@ class NFSSuite(unittest.TestCase):
         self.socketfile = nfs4lib.unixpath2comps("/dev/log") # NF4SOCK
         self.fifofile = nfs4lib.unixpath2comps("/dev/initctl") # NF4FIFO
 
-        # FIXME: Add NF4ATTRDIR and NF4NAMEDATTR types. 
-        self.all_objects = [self.regfile, self.dirfile, self.blockfile,
-                            self.charfile, self.linkfile, self.socketfile,
-                            self.fifofile]
+        # FIXME: Add NF4ATTRDIR and NF4NAMEDATTR types.
+        self.special_objects = [self.blockfile, self.charfile, self.socketfile, self.fifofile]
+        self.all_objects = self.special_objects + [self.regfile, self.dirfile, self.linkfile]
 
         # FIXME: Add sample named attribute.
         self.tmp_dir = nfs4lib.unixpath2comps("/tmp")
@@ -434,10 +433,7 @@ class CommitSuite(NFSSuite):
             file(1)
         Invalid equivalence classes:
             link(2)
-            block(3)
-            char(4)
-            socket(5)
-            FIFO(6)
+            special object(3)
             dir(7)
             invalid filehandle(8)
     Input Condition: offset
@@ -531,34 +527,14 @@ class CommitSuite(NFSSuite):
         """
         self._testOnObj(self.linkfile, NFS4ERR_SYMLINK)
 
-    def testOnBlock(self):
-        """COMMIT should fail with NFS4ERR_INVAL on block device
-        
+    def testOnSpecials(self):
+        """COMMIT on special objects should fail with NFS4ERR_INVAL
+
         Covered invalid equivalence classes: 3
         """
-        self._testOnObj(self.blockfile, NFS4ERR_INVAL)
+        for obj in self.special_objects:
+            self._testOnObj(obj, NFS4ERR_INVAL)
 
-    def testOnChar(self):
-        """COMMIT should fail with NFS4ERR_INVAL on character device
-
-        Covered invalid equivalence classes: 4
-        """
-        self._testOnObj(self.charfile, NFS4ERR_INVAL)
-
-    def testOnSocket(self):
-        """COMMIT should fail with NFS4ERR_INVAL on socket
-
-        Covered invalid equivalence classes: 5
-        """
-        self._testOnObj(self.socketfile, NFS4ERR_INVAL)
-
-    def testOnFifo(self):
-        """COMMIT should fail with NFS4ERR_INVAL on FIFOs
-
-        Covered invalid equivalence classes: 6
-        """
-        self._testOnObj(self.fifofile, NFS4ERR_INVAL)
-        
     def testOnDir(self):
         """COMMIT should fail with NFS4ERR_ISDIR on directories
 
