@@ -88,6 +88,11 @@ int main()
     os.mkdir("tmp")
     os.chmod("tmp", 0777)
 
+    print "Creating private directory"
+    os.mkdir("private")
+    os.chmod("private", 0700)
+    
+
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print "Usage: %s <treeroot>" % sys.argv[0]
