@@ -216,7 +216,24 @@ class Unpacker(xdrlib.Unpacker):
     def unpack_auth(self):
 	flavor = self.unpack_enum()
 	stuff = self.unpack_opaque()
+	if flavor == AUTH_UNIX:
+		p = Unpacker(stuff)
+		stuff = p.unpack_auth_unix()
 	return (flavor, stuff)
+
+    def unpack_auth_unix(self):
+        stamp=self.unpack_uint()
+        machinename=self.unpack_string()
+        print "machinename: %s" % machinename
+        uid=self.unpack_uint()
+        gid=self.unpack_uint()
+        n_gids=self.unpack_uint()
+        gids = []
+        print "n_gids: %d" % n_gids
+        for i in range(n_gids):
+            gids.append(self.unpack_uint())
+        return stamp, machinename, uid, gid, gids
+
 
     def unpack_callheader(self):
 	xid = self.unpack_uint()
@@ -839,8 +856,8 @@ class Server:
 	except AttributeError:
 	    self.packer.pack_uint(PROC_UNAVAIL)
 	    return self.packer.get_buffer()
-	unused_cred = self.unpacker.unpack_auth()
-	unused_verf = self.unpacker.unpack_auth()
+	self.recv_cred = self.unpacker.unpack_auth()
+	self.recv_verf = self.unpacker.unpack_auth()
 	try:
 	    meth() # Unpack args, call turn_around(), pack reply
 	except (EOFError, RPCGarbageArgs):
@@ -943,6 +960,7 @@ class UDPServer(Server):
 
     def session(self):
 	call, host_port = self.sock.recvfrom(8192)
+	self.sender_port = host_port
 	reply = self.handle(call)
 	if reply <> None:
 	    self.sock.sendto(reply, host_port)
