@@ -182,14 +182,14 @@ class ClientApp(cmd.Cmd):
     def do_dir(self, line):
         pathname = nfs4lib.str2pathname(self.ncl.cwd)
 
-        putrootfhop = self.ncl.putrootfh()
+        putrootfhop = self.ncl.putrootfh_op()
         operations = [putrootfhop]
         
         if pathname:
-            lookupop = self.ncl.lookup(pathname)
+            lookupop = self.ncl.lookup_op(pathname)
             operations.append(lookupop)
 
-        getfhop = self.ncl.getfh()
+        getfhop = self.ncl.getfh_op()
         operations.append(getfhop)
 
         res = self.ncl.compound(operations)
