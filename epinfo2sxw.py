@@ -25,7 +25,6 @@
 
 import nfs4st
 import StringIO
-import os
 import time
 
 def parse_method(meth):
