@@ -2162,7 +2162,10 @@ class PutpubfhSuite(NFSSuite):
     Equivalence partitioning:
 
     Input Condition: -
-    
+        Valid equivalence classes:
+            -
+        Invalid equivalence classes:
+            -
     """
     def testOp(self):
         """Testing PUTPUBFH
@@ -2180,6 +2183,10 @@ class PutrootfhSuite(NFSSuite):
     Equivalence partitioning:
 
     Input Condition: -
+        Valid equivalence classes:
+            -
+        Invalid equivalence classes:
+            -
     """
     def testOp(self):
         """Testing PUTROOTFH
