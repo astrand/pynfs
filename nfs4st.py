@@ -248,7 +248,7 @@ class CompoundTestSuite(NFSTestSuite):
 
 
 class AccessTestSuite(NFSTestSuite):
-    """Test ACCESS operation.
+    """Test operation 3: ACCESS
 
     Note: We do not examine if the "access" result actually corresponds to
     the correct rights. This is hard since the rights for a object can
@@ -401,12 +401,14 @@ class AccessTestSuite(NFSTestSuite):
 
 
 class CloseTestSuite(NFSTestSuite):
+    """Test operation 4: CLOSE
+    """
     # FIXME
     pass
     
 
 class CommitTestSuite(NFSTestSuite):
-    """Test COMMIT operation.
+    """Test operation 5: COMMIT
 
     FIXME: Add attribute directory and named attribute testing. 
 
@@ -590,7 +592,7 @@ class CommitTestSuite(NFSTestSuite):
 
 
 class CreateTestSuite(NFSTestSuite):
-    """Test CREATE operation.
+    """Test operation 6: CREATE
 
     FIXME: Add attribute directory and named attribute testing. 
 
@@ -807,17 +809,21 @@ class CreateTestSuite(NFSTestSuite):
 
 
 class DelegpurgeTestSuite(NFSTestSuite):
+    """Test operation 7: DELEGPURGE
+    """
     # FIXME
     pass
 
 
 class DelegreturnTestSuite(NFSTestSuite):
+    """Test operation 8: DELEGRETURN
+    """
     # FIXME
     pass
 
 
 class GetattrTestSuite(NFSTestSuite):
-    """Test GETATTR operation.
+    """Test operation 9: GETATTR
 
     FIXME: Add attribute directory and named attribute testing. 
 
@@ -989,7 +995,7 @@ class GetattrTestSuite(NFSTestSuite):
 
 
 class GetFhTestSuite(NFSTestSuite):
-    """Test GETH operation
+    """Test operation 10: GETFH
 
     FIXME: Add attribute directory and named attribute testing. 
 
@@ -1034,8 +1040,9 @@ class GetFhTestSuite(NFSTestSuite):
         res = self.do_compound([getfhop])
         self.assert_status(res, [NFS4ERR_NOFILEHANDLE])
 
+
 class LinkTestSuite(NFSTestSuite):
-    """Test LINK operation
+    """Test operation 11: LINK
 
     FIXME: Add attribute directory and named attribute testing.
     FIXME: More combintations of invalid filehandle types. 
@@ -1267,21 +1274,27 @@ class LinkTestSuite(NFSTestSuite):
 
 
 class LockTestSuite(NFSTestSuite):
+    """Test operation 12: LOCK
+    """
     # FIXME
     pass
 
 
 class LocktTestSuite(NFSTestSuite):
+    """Test operation 13: LOCKT
+    """
     # FIXME
     pass
 
 
 class LockuTestSuite(NFSTestSuite):
+    """Test operation 14: LOCKU
+    """
     # FIXME
     pass
 
 class LookupTestSuite(NFSTestSuite):
-    """Test LOOKUP operation
+    """Test operation 15: LOOKUP
 
     Equivalence partitioning:
 
@@ -1431,7 +1444,7 @@ class LookupTestSuite(NFSTestSuite):
 
 
 class LookuppTestSuite(NFSTestSuite):
-    """Test LOOKUPP operation
+    """Test operation 16: LOOKUPP
 
     Equivalence partitioning:
         
@@ -1501,7 +1514,7 @@ class LookuppTestSuite(NFSTestSuite):
 
 
 class NverifyTestSuite(NFSTestSuite):
-    """Test NVERIFY operation
+    """Test operation 17: NVERIFY
 
     FIXME: Add attribute directory and named attribute testing. 
 
@@ -1629,11 +1642,13 @@ class NverifyTestSuite(NFSTestSuite):
 
 
 class OpenTestSuite(NFSTestSuite):
+    """Test operation 18: OPEN
+    """
     # FIXME
     pass
 
 class OpenattrTestSuite(NFSTestSuite):
-    """Test OPENATTR operation
+    """Test operation 19: OPENATTR
 
     FIXME: Verify that these tests works, as soon as I have access to a server
     that supports named attributes. 
@@ -1714,15 +1729,19 @@ class OpenattrTestSuite(NFSTestSuite):
 
 
 class OpenconfirmTestSuite(NFSTestSuite):
+    """Test operation 20: OPEN_CONFIRM
+    """
     # FIXME
     pass
 
 class OpendowngradeTestSuite(NFSTestSuite):
+    """Test operation 21: OPEN_DOWNGRADE
+    """
     # FIXME
     pass
 
 class PutfhTestSuite(NFSTestSuite):
-    """Test PUTFH operation
+    """Test operation 22: PUTFH
 
     FIXME: Add attribute directory and named attribute testing. 
 
@@ -1786,7 +1805,7 @@ class PutfhTestSuite(NFSTestSuite):
 
 
 class PutpubfhTestSuite(NFSTestSuite):
-    """Test PUTPUBFH operation
+    """Test operation 23: PUTPUBFH
 
     Equivalence partitioning:
 
@@ -1804,7 +1823,7 @@ class PutpubfhTestSuite(NFSTestSuite):
 
 
 class PutrootfhTestSuite(NFSTestSuite):
-    """Test PUTROOTFH operation
+    """Test operation 24: PUTROOTFH
 
     Equivalence partitioning:
 
@@ -1821,7 +1840,7 @@ class PutrootfhTestSuite(NFSTestSuite):
 
 
 class ReadTestSuite(NFSTestSuite):
-    """Test READ operation
+    """Test operation 25: READ
 
     FIXME: Add attribute directory and named attribute testing.
     FIXME: Try reading a locked file. 
@@ -1967,7 +1986,7 @@ class ReadTestSuite(NFSTestSuite):
         
 
 class ReaddirTestSuite(NFSTestSuite):
-    """Test READDIR operation
+    """Test operation 26: READDIR
 
     FIXME: More testing of dircount/maxcount combinations.
     Note: maxcount represents READDIR4resok. Test this. 
@@ -2115,7 +2134,7 @@ class ReaddirTestSuite(NFSTestSuite):
     # FIXME: Misc. test: testa fattr4_rdattr_error kontra globalt fel. 
 
 class ReadlinkTestSuite(NFSTestSuite):
-    """Test READLINK operation
+    """Test operation 27: READLINK
 
     Equivalence partitioning:
 
@@ -2189,7 +2208,7 @@ class ReadlinkTestSuite(NFSTestSuite):
     
 
 class RemoveTestSuite(NFSTestSuite):
-    """Test REMOVE operation
+    """Test operation 28: REMOVE
 
     # FIXME: Test (OPEN, REMOVE, WRITE) etc. Wait for final decision. 
 
@@ -2295,7 +2314,7 @@ class RemoveTestSuite(NFSTestSuite):
         
 
 class RenameTestSuite(NFSTestSuite):
-    """Test RENAME operation
+    """Test operation 29: RENAME
 
     FIXME: Test renaming of a named attribute
     to be a regular file and vice versa.
@@ -2491,11 +2510,13 @@ class RenameTestSuite(NFSTestSuite):
     # FIXME: Cover eq. class 42.     
 
 class RenewTestSuite(NFSTestSuite):
+    """Test operation 30: RENEW
+    """
     # FIXME
     pass
 
 class RestorefhTestSuite(NFSTestSuite):
-    """Test RESTOREFH operation
+    """Test operation 31: RESTOREFH
 
     Equivalence partitioning:
 
@@ -2558,7 +2579,7 @@ class RestorefhTestSuite(NFSTestSuite):
         
 
 class SavefhTestSuite(NFSTestSuite):
-    """Test SAVEFH operation
+    """Test operation 32: SAVEFH
 
     Equivalence partitioning:
 
@@ -2584,7 +2605,7 @@ class SavefhTestSuite(NFSTestSuite):
     
 
 class SecinfoTestSuite(NFSTestSuite):
-    """Test SECINFO operation
+    """Test operation 33: SECINFO
 
     Equivalence partitioning:
 
@@ -2672,12 +2693,14 @@ class SecinfoTestSuite(NFSTestSuite):
 
         
 class SetattrTestSuite(NFSTestSuite):
+    """Test operation 34: SETATTR
+    """
     # FIXME
     pass
 
 
 class SetclientidTestSuite(NFSTestSuite):
-    """Test SETCLIENTID operation
+    """Test operation 35: SETCLIENTID
 
     FIXME: Test cases that trigger NFS4ERR_CLID_INUSE. 
 
@@ -2738,7 +2761,7 @@ class SetclientidTestSuite(NFSTestSuite):
 
     
 class SetclientidconfirmTestSuite(NFSTestSuite):
-    """Test SETCLIENTID_CONFIRM operation
+    """Test operation 36: SETCLIENTID_CONFIRM
 
     Equivalence partitioning:
 
@@ -2788,7 +2811,7 @@ class SetclientidconfirmTestSuite(NFSTestSuite):
 
 
 class VerifyTestSuite(NFSTestSuite):
-    """Test VERIFY operation
+    """Test operation 37: VERIFY
 
     Equivalence partitioning:
 
@@ -2911,7 +2934,7 @@ class VerifyTestSuite(NFSTestSuite):
 
 
 class WriteTestSuite(NFSTestSuite):
-    """Test WRITE operation
+    """Test operation 38: WRITE
 
     FIXME: Write to named attribute. 
 
