@@ -61,7 +61,20 @@ class NFSTestCase(unittest.TestCase):
 
 
     def assert_OK(self, res):
-        self.failIfRaises(nfs4lib.NFSException, nfs4lib.check_result, res)
+        """Assert result from compound call is NFS4_OK"""
+        self.assert_status(res, [NFS4_OK])
+
+    def assert_status(self, res, errors):
+        """Assert result from compound call is any of the values in errors"""
+        if res.status in errors:
+            return
+
+        lastop = res.resarray[-1]
+        e = nfs4lib.BadCompoundRes(lastop.resop, lastop.arm.status)
+        self.fail(e)
+
+    def info_message(self, msg):
+        print >> sys.stderr, msg + ", ",
 
 
 class AccessTestCase(NFSTestCase):
@@ -334,13 +347,7 @@ class CreateTestCase(NFSTestCase):
         operations.append(self.ncl.remove_op(self.obj_name))
 
         res = self.ncl.compound(operations)
-        if res.status not in [NFS4_OK, NFS4ERR_NOENT]:
-            try:
-                nfs4lib.check_result(res)
-            except nfs4lib.NFSException, e:
-                self.fail("cannot remove test object in preparation for CREATE test:\n" +
-                          str(e))
-                    
+        self.assert_status(res, [NFS4_OK, NFS4ERR_NOENT])
 
     def testLink(self):
         """CREATE link
@@ -354,7 +361,9 @@ class CreateTestCase(NFSTestCase):
         operations.append(createop)
 
         res = self.ncl.compound(operations)
-        self.assert_OK(res)
+        if res.status == NFS4ERR_BADTYPE:
+            self.info_message("links not supported")
+        self.assert_status(res, [NFS4_OK, NFS4ERR_BADTYPE])
 
     def testBlock(self):
         """CREATE a block device
@@ -367,7 +376,9 @@ class CreateTestCase(NFSTestCase):
         operations.append(createop)
 
         res = self.ncl.compound(operations)
-        self.assert_OK(res)
+        if res.status == NFS4ERR_BADTYPE:
+            self.info_message("blocks devices not supported")
+        self.assert_status(res, [NFS4_OK, NFS4ERR_BADTYPE])
 
     def testChar(self):
         """CREATE a char device
@@ -380,7 +391,9 @@ class CreateTestCase(NFSTestCase):
         operations.append(createop)
 
         res = self.ncl.compound(operations)
-        self.assert_OK(res)
+        if res.status == NFS4ERR_BADTYPE:
+            self.info_message("character devices not supported")
+        self.assert_status(res, [NFS4_OK, NFS4ERR_BADTYPE])
 
     def testSocket(self):
         """CREATE a socket
@@ -392,7 +405,9 @@ class CreateTestCase(NFSTestCase):
         operations.append(createop)
 
         res = self.ncl.compound(operations)
-        self.assert_OK(res)
+        if res.status == NFS4ERR_BADTYPE:
+            self.info_message("sockets not supported")
+        self.assert_status(res, [NFS4_OK, NFS4ERR_BADTYPE])
 
     def testFifo(self):
         """CREATE a FIFO
@@ -404,7 +419,10 @@ class CreateTestCase(NFSTestCase):
         operations.append(createop)
 
         res = self.ncl.compound(operations)
-        self.assert_OK(res)
+        if res.status == NFS4ERR_BADTYPE:
+            self.info_message("FIFOs not supported")
+        self.assert_status(res, [NFS4_OK, NFS4ERR_BADTYPE])
+
 
     def testDir(self):
         """CREATE a directory
@@ -416,8 +434,9 @@ class CreateTestCase(NFSTestCase):
         operations.append(createop)
 
         res = self.ncl.compound(operations)
-        self.assert_OK(res)
-        
+        if res.status == NFS4ERR_BADTYPE:
+            self.info_message("directories not supported!")
+        self.assert_status(res, [NFS4_OK, NFS4ERR_BADTYPE])
 
 
 class QuietTextTestRunner(unittest.TextTestRunner):
