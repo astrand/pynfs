@@ -26,7 +26,6 @@ import sys
 import getopt
 import re
 
-
 class CLI(cmd.Cmd):
     def __init__(self):
         # FIXME: show current directory. 
@@ -36,6 +35,20 @@ class CLI(cmd.Cmd):
         #self.doc_header = ""
         #self.misc_header
         #self.undoc_header
+        self.commands = ["cd", "get", "cat"]
+        readline.parse_and_bind("tab: complete")
+        readline.set_completer(self.completer)
+
+    def completer(self, text, state):
+        if state == 0:
+            self.completions = []
+            for c in self.commands:
+                if c.find(text) != -1:
+                    self.completions.append(c)
+        try:
+            return self.completions[state]
+        except IndexError:
+            return None
 
     def do_EOF(self, line):
         print
@@ -155,3 +168,9 @@ if __name__ == "__main__":
     res = ncl.compound([putfhoperation, op])
 
     print "Fick filinnehållet:", res.resarray[1].arm.arm.data
+
+
+
+c = CLI()
+c.cmdloop()
+
