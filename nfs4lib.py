@@ -204,9 +204,9 @@ class PartialNFS4Client:
     def getfh_op(self):
         return nfs_argop4(self, argop=OP_GETFH)
 
-    def link(self):
-        # FIXME
-        raise NotImplementedError()
+    def link_op(self, newname):
+        args = LINK4args(self, newname)
+        return nfs_argop4(self, argop=OP_LINK, oplink=args)
 
     def lock(self):
         # FIXME
@@ -325,9 +325,8 @@ class PartialNFS4Client:
         # FIXME
         raise NotImplementedError()
 
-    def savefh(self):
-        # FIXME
-        raise NotImplementedError()
+    def savefh_op(self):
+        return nfs_argop4(self, argop=OP_SAVEFH)
 
     def secinfo(self):
         # FIXME
