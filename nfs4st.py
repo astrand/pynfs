@@ -2960,6 +2960,31 @@ class SecinfoSuite(NFSSuite):
         # FIXME: Implement
         self.info_message("(TEST NOT IMPLEMENTED)")
 
+    #
+    # Extra tests. 
+    #
+    def testRPCSEC_GSS(self):
+        """SECINFO must return at least RPCSEC_GSS
+
+        Extra test
+        """
+        # FIXME: Since the Linux server always returns NFS4ERR_NOTSUPP right
+        # know, this is untested code. 
+        lookupops = self.ncl.lookup_path(self.dirfile)
+        operations = [self.putrootfhop] + lookupops
+        operations.append(self.ncl.secinfo_op("README"))
+
+        res = self.do_compound(operations)
+        self.assert_OK(res)
+
+        mechanisms = res.resarray[-1].arm.arm
+        found_rpcsec_gss = 0
+        for mech in mechanisms:
+            if mech.flavor == RPCSEC_GSS:
+                found_rpcsec_gss = 1
+
+        self.failIf(not found_rpcsec_gss,
+                    "SECINFO did not return (mandatory) flavor RPCSEC_GSS")
         
 class SetattrSuite(NFSSuite):
     """Test operation 34: SETATTR
