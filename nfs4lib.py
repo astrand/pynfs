@@ -459,7 +459,11 @@ class PartialNFS4Client:
 	    res = self.compound([putfhop, readdirop])
 	    check_result(res)
 
-	    entry = res.resarray[1].arm.arm.reply.entries[0]
+            reply = res.resarray[1].arm.arm.reply
+            if not reply.entries:
+                break
+
+	    entry = reply.entries[0]
 
 	    while 1:
 		entries.append(entry)
