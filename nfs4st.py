@@ -2690,7 +2690,9 @@ class ReaddirSuite(NFSSuite):
             all requests without FATTR4_*_SET (60)
         Invalid equivalence classes:
             requests with FATTR4_*_SET (61)
-            
+
+    Comments: It's not possible to cover eq. class 22, since the cookie is
+    opaque to the client. 
     """
     #
     # Testcases covering valid equivalence classes.
@@ -2750,17 +2752,6 @@ class ReaddirSuite(NFSSuite):
         res = self.do_compound([readdirop])
         self.assert_status(res, [NFS4ERR_NOFILEHANDLE])
         
-    def testInvalidCookie(self):
-        """READDIR with invalid cookie should return NFS4ERR_BAD_COOKIE
-
-        Covered invalid equivalence classes: 22
-        """
-        readdirop = self.ncl.readdir_op(cookie=1234567890, cookieverf="\x00",
-                                        dircount=0, maxcount=4096,
-                                        attr_request=[])
-        res = self.do_compound([self.putrootfhop, readdirop])
-        self.assert_status(res, [NFS4ERR_BAD_COOKIE])
-
     def testInvalidCookieverf(self):
         """READDIR with invalid cookieverf should return NFS4ERR_BAD_COOKIE
 
