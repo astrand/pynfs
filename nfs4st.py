@@ -37,6 +37,8 @@ class NFSTestCase(unittest.TestCase):
 class AccessTestCase(NFSTestCase):
     maxval = ACCESS4_DELETE + ACCESS4_EXECUTE + ACCESS4_EXTEND + ACCESS4_LOOKUP \
              + ACCESS4_MODIFY + ACCESS4_READ
+
+    # FIXME: Check that ACCESS4_EXECUTE is not returned for directory objects. 
     
     def valid_access_ops(self):
         result = []
@@ -97,10 +99,9 @@ class AccessTestCase(NFSTestCase):
         """ACCESS should fail on invalid arguments"""
         for accessop in self.invalid_access_ops():
             res = self.ncl.compound([self.putrootfhop, accessop])
-            # The server should reply with NFS4ERR_INVAL 
-            # FIXME: Change/add NFS4_BADXDR
             self.failUnlessEqual(res.status, NFS4ERR_INVAL,
-                                 "server accepts invalid ACCESS request with NFS4_OK")
+                                 "server accepts invalid ACCESS request with NFS4_OK, "
+                                 "should be NFS4ERR_INVAL")
 
     def testWithoutFh(self):
         """ACCESS should fail without (cfh)"""
