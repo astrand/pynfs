@@ -3004,7 +3004,21 @@ class RenameSuite(NFSSuite):
         res = self.do_compound(operations)
         self.assert_status(res, [NFS4ERR_INVAL])
     
-    # FIXME: Cover eq. class 42.
+    def testNonUTF8Newname(self):
+        """RENAME with non-UTF8 newname should return NFS4ERR_INVAL
+
+        Covered invalid equivalence classes: 42
+        """
+        for name in self.get_invalid_utf8strings():
+            # Create the object to rename 
+            if not self.create_object(): return
+            operations = self._prepare_operation()
+
+            # Rename
+            renameop = self.ncl.rename_op(self.oldname, name)
+            operations.append(renameop)
+            res = self.do_compound(operations)
+            self.assert_status(res, [NFS4ERR_INVAL])
 
     #
     # Extra tests. 
