@@ -2784,7 +2784,6 @@ class ReaddirSuite(NFSSuite):
                                         dircount=0, maxcount=4096,
                                         attr_request=attrmask)
         res = self.do_compound([self.putrootfhop, readdirop])
-        self.assert_OK(res)
         self.assert_status(res, [NFS4ERR_INVAL])
         
 
