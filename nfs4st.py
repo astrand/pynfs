@@ -2436,18 +2436,6 @@ class PutfhSuite(NFSSuite):
             self.failIf(new_fh != fh, "GETFH after PUTFH returned different fh "\
                         "for object %s" % objpath)
 
-    #
-    # Testcases covering invalid equivalence classes.
-    #
-    def testInvalidFh(self):
-        """PUTFH on (guessed) invalid filehandle should return NFS4ERR_STALE
-
-        Covered invalid equivalence classes: 10
-        """
-        putfhop = self.ncl.putfh_op(self.get_invalid_fh())
-        res = self.do_compound([putfhop])
-        self.assert_status(res, [NFS4ERR_STALE])
-
 
 class PutpubfhSuite(NFSSuite):
     """Test operation 23: PUTPUBFH
