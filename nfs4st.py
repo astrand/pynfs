@@ -358,7 +358,10 @@ class NFSSuite(unittest.TestCase):
 
     def create_via_open(self, dstdir, filename):
         operations = [self.putrootfhop] + self.ncl.lookup_path(self.tmp_dir)
+        owner = self.ncl.get_open_owner(self.ncl.default_owner)
         operations.append(self.ncl.open(file=filename,
+                                        seqid=owner.get_seqid(),
+                                        owner=owner.stateowner,
                                         share_access=OPEN4_SHARE_ACCESS_WRITE,
                                         opentype=OPEN4_CREATE))
         
