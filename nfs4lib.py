@@ -156,6 +156,7 @@ class PartialNFS4Client:
         """Transform a unix-like pathname, relative to self.ncl,
         to a list of components. If filename is not, assume "."
         """
+        # FIXME: get_pathcomps_rel(../../../fff) returns ['fff']
         if not filename:
             return self.cwd
             
