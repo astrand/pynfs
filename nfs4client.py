@@ -254,13 +254,11 @@ class ClientApp(cmd.Cmd):
         allrights = ACCESS4_DELETE + ACCESS4_EXECUTE + ACCESS4_EXTEND + ACCESS4_LOOKUP \
                     + ACCESS4_MODIFY + ACCESS4_READ
         
-        pathcomps = self.ncl.get_pathname(line)
 
         # PUTROOT
         operations = [self.ncl.putrootfh_op()]
-        if pathcomps:
-            # LOOKUP
-            operations.extend(self.ncl.lookup_path(pathcomps))
+        pathcomps = nfs4lib.unixpath2comps(line)
+        operations.extend(self.ncl.lookup_path(pathcomps))
 
         # ACCESS
         operations.append(self.ncl.access_op(allrights))
