@@ -48,4 +48,7 @@ created, the sequence counter should be reset.)
 
 * Increase performance by sending & receiving multiple packets at a
 time, eg. send, send, ..., select, recv, recv, ..., send, send, ...)
-rather than select, recv, send,, recv, send, etc. 
+rather than select, recv, send,, recv, send, etc. Or, rewrite the
+Python XDR and RPC modules in C :-)
+
+
