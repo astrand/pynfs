@@ -223,12 +223,13 @@ class NFSSuite(unittest.TestCase):
         return "\xc0\xc1"
 
     def _remove_object(self, name=None):
-        """Remove object, if it exists. Return false on failure.
+        """Remove object in /tmp, if it exists. Return false on failure.
         object defaults to self.obj_name
         """
         if not name:
             name = self.obj_name
-        operations = [self.ncl.putrootfh_op()] + self.lookup_dir_ops
+        lookup_dir_ops = self.ncl.lookup_path(self.tmp_dir)
+        operations = [self.ncl.putrootfh_op()] + lookup_dir_ops
         operations.append(self.ncl.remove_op(name))
 
         res = self.do_compound(operations)
@@ -238,13 +239,14 @@ class NFSSuite(unittest.TestCase):
         return status
 
     def _create_object(self, name=None):
-        """Create (dir) object, if it does not exist. Return false on failure.
+        """Create (dir) object in /tmp, if it does not exist. Return false on failure.
         object defaults to self.obj_name
         """
         # We create a directory, because it's simple.
         if not name:
             name = self.obj_name
-        operations = [self.putrootfhop] + self.lookup_dir_ops
+        lookup_dir_ops = self.ncl.lookup_path(self.tmp_dir)
+        operations = [self.putrootfhop] + lookup_dir_ops
         objtype = createtype4(self.ncl, type=NF4DIR)
         operations.append(self.ncl.create(objtype, name))
         
@@ -981,8 +983,7 @@ class CreateSuite(NFSSuite):
         # name = ..
         if not self._remove_object(".."): return
         self._do_create("..")
-        
-        
+
 
 
 ## class DelegpurgeSuite(NFSSuite):
