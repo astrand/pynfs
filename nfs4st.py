@@ -132,6 +132,10 @@ class NFSTestCase(unittest.TestCase):
         self.connect()
         self.putrootfhop = self.ncl.putrootfh_op()
 
+    def get_invalid_fh(self):
+        """Return a (guessed) invalid filehandle"""
+        return nfs4lib.long2opaque(123456780, NFS4_FHSIZE/8)
+    
 
 class CompoundTestCase(NFSTestCase):
     """Test COMPOUND procedure
@@ -395,7 +399,7 @@ class CommitTestCase(NFSTestCase):
 
     Equivalence partitioning:
 
-    Input Condition: currrent filehandle
+    Input Condition: current filehandle
         Valid equivalence classes:
             file(1)
         Invalid equivalence classes:
@@ -579,7 +583,7 @@ class CreateTestCase(NFSTestCase):
 
     Equivalence partitioning:
 
-    Input Condition: currrent filehandle
+    Input Condition: current filehandle
         Valid equivalence classes:
             dir(1)
         Invalid equivalence classes:
@@ -806,7 +810,7 @@ class GetattrTestCase(NFSTestCase):
 
     Equivalence partitioning:
 
-    Input Condition: currrent filehandle
+    Input Condition: current filehandle
         Valid equivalence classes:
             file(1)
             link(2)
@@ -978,7 +982,7 @@ class GetFhTestCase(NFSTestCase):
 
     Equivalence partitioning:
 
-    Input Condition: currrent filehandle
+    Input Condition: current filehandle
         Valid equivalence classes:
             file(1)
             link(2)
@@ -1036,7 +1040,7 @@ class LinkTestCase(NFSTestCase):
         Invalid equivalence classes:
             dir(7)
             invalid filehandle(8)
-    Input Condition: currrent filehandle
+    Input Condition: current filehandle
         Valid equivalence classes:
             dir(9)
         Invalid equivalence classes:
@@ -1782,8 +1786,7 @@ class PutfhTestCase(NFSTestCase):
 
         Covered invalid equivalence classes: 10
         """
-        object = nfs4lib.long2opaque(123456780, NFS4_FHSIZE/8)
-        putfhop = self.ncl.putfh_op(object)
+        putfhop = self.ncl.putfh_op(self.get_invalid_fh())
         res = self.do_compound([putfhop])
         self.assert_status(res, [NFS4ERR_STALE])
 
@@ -2586,8 +2589,93 @@ class SavefhTestCase(NFSTestCase):
     
 
 class SecinfoTestCase(NFSTestCase):
-    # FIXME
-    pass
+    """Test SECINFO operation
+
+    Equivalence partitioning:
+
+    Input Condition: current filehandle
+        Valid equivalence classes:
+            dir(10)
+        Invalid equivalence classes:
+            not dir(11)
+            invalid filehandle(12)
+    Input Condition: name
+        Valid equivalence classes:
+            valid name(20)
+        Invalid equivalence classes:
+            non-existent object(21)
+            zerolength(22)
+            non-utf8(23)
+
+    Comments: It's hard to cover eq. class 12, since it's not possible
+    PUTFH an invalid filehandle. 
+    """
+    #
+    # Testcases covering valid equivalence classes.
+    #
+    def testValid(self):
+        """SECINFO on existing file
+
+        Covered equivalence classes: 10, 20
+        """
+        lookupop = self.ncl.lookup_op(["doc"])
+        secinfoop = self.ncl.secinfo_op("README")
+
+        res = self.do_compound([self.putrootfhop, lookupop, secinfoop])
+        self.assert_OK(res)
+
+        # Make sure at least one security mechanisms is returned.
+        mechanisms = res.resarray[-1].arm.arm
+        self.failIf(len(mechanisms) < 1,
+                    "SECINFO returned no security mechanisms")
+
+    #
+    # Testcases covering invalid equivalence classes.
+    #
+    def testFhNotDir(self):
+        """SECINFO with non-dir (cfh) should give NFS4ERR_NOTDIR
+
+        Covered invalid equivalence classes: 11
+        """
+        lookupop = self.ncl.lookup_op(self.normfile)
+        secinfoop = self.ncl.secinfo_op("README")
+
+        res = self.do_compound([self.putrootfhop, lookupop, secinfoop])
+        self.assert_status(res, [NFS4ERR_NOTDIR])
+
+    def testNonExistent(self):
+        """SECINFO on non-existing object should return NFS4ERR_NOENT
+
+        Covered invalid equivalence classes: 21
+        """
+        lookupop = self.ncl.lookup_op(["doc"])
+        secinfoop = self.ncl.secinfo_op("vapor_object")
+
+        res = self.do_compound([self.putrootfhop, lookupop, secinfoop])
+        self.assert_status(res, [NFS4ERR_NOENT])
+
+    def testZeroLengthName(self):
+        """SECINFO with zero length name should return NFS4ERR_INVAL
+
+        Covered invalid equivalence classes: 22
+        """
+        lookupop = self.ncl.lookup_op(["doc"])
+        secinfoop = self.ncl.secinfo_op("")
+
+        res = self.do_compound([self.putrootfhop, lookupop, secinfoop])
+        self.assert_status(res, [NFS4ERR_INVAL])
+
+    def testNonUTF8(self):
+        """SECINFO with non-UTF8 name should return NFS4ERR_INVAL
+
+        Covered invalid equivalence classes: 23
+
+        Comments: Not yet implemented. 
+        """
+        # FIXME: Implement
+        self.info_message("(TEST NOT IMPLEMENTED)")
+
+        
 
 class SetattrTestCase(NFSTestCase):
     # FIXME
