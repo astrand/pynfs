@@ -976,6 +976,10 @@ if __name__ == "__main__":
     packer_file_out.write(packerheader % (types_file, constants_file))
 
     packer_out.write("class %sPacker(rpc.Packer):\n" % name_base.upper())
+    packer_out.write("    def __init__(self, ncl):\n")
+    packer_out.write("        xdrlib.Packer.__init__(self)\n")
+    packer_out.write("        self.ncl = ncl\n\n")
+    
     ip = IndentPrinter(packer_out)
     ip.change(4)
     for t in known_basics.keys():
@@ -985,7 +989,7 @@ if __name__ == "__main__":
     unpacker_out.write("class %sUnpacker(rpc.Unpacker):\n" % name_base.upper())
     unpacker_out.write("    def __init__(self, ncl, data=''):\n")
     unpacker_out.write("        xdrlib.Unpacker.__init__(self, data)\n")
-    unpacker_out.write("        self.ncl = ncl\n")
+    unpacker_out.write("        self.ncl = ncl\n\n")
 
     
     ip = IndentPrinter(unpacker_out)
