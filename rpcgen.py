@@ -320,7 +320,7 @@ def gen_pack_code(ip, id, typedecl):
         elif typedecl.base_type == "string":
             ip.pr("self.packer.pack_string(self.%s)" % id)
         elif typedecl.isarray:
-            ip.pr("self.packer.pack_array(self.pack_%s, self.%s)" % (typedecl.base_type, id))
+            ip.pr("self.packer.pack_array(self.%s, self.pack_%s)" % (id, typedecl.base_type))
         else:
             ip.pr("self.packer.pack_%s(self.%s)" % (typedecl.base_type, id))
 
