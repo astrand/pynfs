@@ -540,7 +540,7 @@ class NFS4OpenFile:
             raise ValueError("I/O operation on closed file")
         if not size:
             size = self.pos
-        # FIXME
+        # FIXME: SETATTR can probably be used. 
         raise NotImplementedError()
         
     def write(self, str):
@@ -548,7 +548,6 @@ class NFS4OpenFile:
             raise ValueError("I/O operation on closed file")
         # FIXME
         raise NotImplementedError()
-        
 
     def writelines(self, list):
         if self.closed:
