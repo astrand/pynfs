@@ -185,6 +185,11 @@ class PartialNFS4Client:
         args = CREATE4args(self, objtype, objname, createattrs)
         return nfs_argop4(self, argop=OP_CREATE, opcreate=args)
 
+    def create(self, objtype, objname):
+        """CREATE with no attributes"""
+        createattrs = fattr4(self.ncl, [], "")
+        return self.create_op(objtype, objname, createattrs)
+
     def delegpurge(self):
         # FIXME
         raise NotImplementedError()
