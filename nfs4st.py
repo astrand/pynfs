@@ -2912,7 +2912,6 @@ class VerifyTestCase(NFSTestCase):
         self.assert_status(res, [NFS4ERR_INVAL])
 
 
-
 class WriteTestCase(NFSTestCase):
     """Test WRITE operation
 
@@ -2978,7 +2977,8 @@ class WriteTestCase(NFSTestCase):
     #
     # Testcases covering invalid equivalence classes.
     #
-    
+    def testInvalid(self):
+        pass
 
 
 class QuietTextTestRunner(unittest.TextTestRunner):
