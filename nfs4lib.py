@@ -23,6 +23,7 @@
 # Translation of error- and operation codes to enums.
 # FIXME: Error when transferring large files?
 
+
 NFS_PROGRAM = 100003
 NFS_VERSION = 4
 NFS_PORT = 2049
@@ -583,17 +584,15 @@ class NFS4OpenFile:
         if self.closed:
             raise ValueError("I/O operation on closed file")
 
-	self.ncl.do_write(self.fh, data, stateid=self.stateid)
+	self.ncl.do_write(self.fh, data, stateid=self.stateid, offset=self.pos)
 	self.pos += len(data)
 
     def writelines(self, list):
         if self.closed:
             raise ValueError("I/O operation on closed file")
-        # (writelines() does not add line separators)
-        # FIXME
-        raise NotImplementedError()
-        
-
+    
+	for line in list:
+	    self.write(line)
 
 if __name__ == "__main__":
     # Demo
@@ -619,3 +618,7 @@ if __name__ == "__main__":
     print "Root filehandles is", repr(fh)
 
 
+# Local variables:
+# py-indent-offset: 4
+# tab-width: 8
+# End:
