@@ -2370,6 +2370,8 @@ class ReaddirSuite(NFSSuite):
     def testUnaccessibleDirWithGetattr(self):
         """READDIR with (cfh) in unaccessible directory
 
+        Covered valid equivalence classes: 10, 20, 30, 41, 50, 60
+        
         Comments: This test crashes/crashed the Linux server
         """
         # FIXME: Remove me. 
