@@ -2752,6 +2752,9 @@ class PutrootfhSuite(NFSSuite):
         res = self.do_compound([putrootfhop])
         self.assert_OK(res)
 
+# ReadSuite is not working correctly; the protocol has changed since
+# the implementation of this suite. Needs to be examined and
+# corrected.
 
 ## class ReadSuite(NFSSuite):
 ##     """Test operation 25: READ
