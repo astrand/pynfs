@@ -739,33 +739,83 @@ class CreateTestCase(NFSTestCase):
 
 class GetattrTestCase(NFSTestCase):
     """Test GETATTR operation.
+
+    Equivalence partitioning:
+
+    Input Condition: currrent filehandle
+        Valid equivalence classes:
+            file(1)
+            link(2)
+            block(3)
+            char(4)
+            socket(5)
+            FIFO(6)
+            dir(7)
+        Invalid equivalence classes:
+            invalid filehandle(8)
+    Input Condition: attrbits
+        Valid equivalence classes:
+            all requests without FATTR4_*_SET (9)
+        Invalid equivalence classes:
+            requests with FATTR4_*_SET (10)
+    
     """
 
-    # FIXME: Test directories, FIFOs etc. 
-    
     def setUp(self):
         self.connect()
         self.putrootfhop = self.ncl.putrootfh_op()
 
-    def testOnFile(self):
-        """Simple GETATTR on file
+    #
+    # Testcases covering valid equivalence classes.
+    #
+    def testAllObjects(self):
+        """GETATTR(FATTR4_SIZE) on all type of objects
 
-        Test a simple GETATTR on a file and ask for the FATTR4_SIZE attribute. 
+        Covered valid equivalence classes: 1, 2, 3, 4, 5, 6, 7, 9
+        
+        """
+        for lookupop in self.lookup_all_objects():
+            getattrop = self.ncl.getattr_op([FATTR4_SIZE])
+            res = self.do_compound([self.putrootfhop, lookupop, getattrop])
+            self.assert_OK(res)
+
+    #
+    # Testcases covering invalid equivalence classes.
+    #
+    def testNoFh(self):
+        """GETATTR should fail with NFS4ERR_NOFILEHANDLE if no (cfh)
+
+        Covered invalid equivalence classes: 8
+        """
+        
+        getattrop = self.ncl.getattr_op([FATTR4_SIZE])
+        res = self.do_compound([getattrop])
+        self.assert_status(res, [NFS4ERR_NOFILEHANDLE])
+
+    def testWriteOnlyAttributes(self):
+        """GETATTR(FATTR4_*_SET) should return NFS4ERR_INVAL
+
+        Covered invalid equivalence classes: 10
+
+        Comments: Some attributes are write-only (currently
+        FATTR4_TIME_ACCESS_SET and FATTR4_TIME_MODIFY_SET). If GETATTR
+        is called with any of these, NFS4ERR_INVAL should be returned.
         """
         path = nfs4lib.str2pathname(self.normfile)
         lookupop = self.ncl.lookup_op(path)
-        getattrop = self.ncl.getattr_op([FATTR4_SIZE])
+
+        getattrop = self.ncl.getattr([FATTR4_TIME_ACCESS_SET])
         res = self.do_compound([self.putrootfhop, lookupop, getattrop])
-        self.assert_OK(res)
+        self.failUnlessEqual(res.status, NFS4ERR_INVAL)
 
-    def testOnDir(self):
-        # FIXME
-        pass
-
+    #
+    # Misc. tests.
+    #
     def testAllMandatory(self):
-        """Test GETATTR can return all mandatory attributes
+        """Assure GETATTR can return all mandatory attributes
 
-        A server should be able to return all mandatory attributes. 
+        Comments: A server should be able to return all mandatory
+        attributes.
         """
 
         attrbitnum_dict = nfs4lib.get_attrbitnum_dict()
@@ -802,16 +852,14 @@ class GetattrTestCase(NFSTestCase):
             if not attrname in keys:
                 unsupported.append(attrname)
 
-
         if unsupported:
             self.fail("mandatory attributes not supported: %s" % str(unsupported))
 
-    def testUnknown(self):
+    def testUnknownAttr(self):
         """GETATTR should not fail on unknown attributes
 
-        This test calls GETATTR with request for attribute number 1000.
-        Servers should not fail on unknown attributes. 
-        
+        Comments: This test calls GETATTR with request for attribute
+        number 1000.  Servers should not fail on unknown attributes.
         """
         path = nfs4lib.str2pathname(self.normfile)
         lookupop = self.ncl.lookup_op(path)
@@ -822,6 +870,8 @@ class GetattrTestCase(NFSTestCase):
 
     def testEmptyCall(self):
         """GETATTR should accept empty request
+
+        Comments: GETATTR should accept empty request
         """
 
         path = nfs4lib.str2pathname(self.normfile)
@@ -831,20 +881,11 @@ class GetattrTestCase(NFSTestCase):
         res = self.do_compound([self.putrootfhop, lookupop, getattrop])
         self.assert_OK(res)
 
-    def testWithoutFh(self):
-        """GETATTR should fail without (cfh)
-
-        GETATTR should return NFS4ERR_NOFILEHANDLE if called without filehandle.
-        """
-        getattrop = self.ncl.getattr([])
-        res = self.do_compound([getattrop])
-        self.failUnlessEqual(res.status, NFS4ERR_NOFILEHANDLE)
-
     def testSupported(self):
         """GETATTR(FATTR4_SUPPORTED_ATTRS) should return all mandatory
         
-        GETATTR(FATTR4_SUPPORTED_ATTRS) should return at least all
-        mandatory attributes
+        Comments: GETATTR(FATTR4_SUPPORTED_ATTRS) should return at
+        least all mandatory attributes
         """
 
         path = nfs4lib.str2pathname(self.normfile)
@@ -869,21 +910,6 @@ class GetattrTestCase(NFSTestCase):
                     nfs4lib.int2binstring(returned_mandatories)[-12:])
 
         sys.stdout.flush()
-
-    def testWriteOnlyAttributes(self):
-        """GETATTR(FATTR4_*_SET) should return NFS4ERR_INVAL
-
-        Some attributes are write-only (currently
-        FATTR4_TIME_ACCESS_SET and FATTR4_TIME_MODIFY_SET). If GETATTR
-        is called with any of these, NFS4ERR_INVAL should be returned.
-        """
-
-        path = nfs4lib.str2pathname(self.normfile)
-        lookupop = self.ncl.lookup_op(path)
-
-        getattrop = self.ncl.getattr([FATTR4_TIME_ACCESS_SET])
-        res = self.do_compound([self.putrootfhop, lookupop, getattrop])
-        self.failUnlessEqual(res.status, NFS4ERR_INVAL)
 
 
 
