@@ -65,6 +65,11 @@ class NFSSuite(unittest.TestCase):
         self.socketfile = nfs4lib.unixpath2comps("/dev/log") # NF4SOCK
         self.fifofile = nfs4lib.unixpath2comps("/dev/initctl") # NF4FIFO
 
+        # FIXME: Add NF4ATTRDIR and NF4NAMEDATTR types. 
+        self.all_objects = [self.regfile, self.dirfile, self.blockfile,
+                            self.charfile, self.linkfile, self.socketfile,
+                            self.fifofile]
+
         # FIXME: Add sample named attribute.
         self.tmp_dir = nfs4lib.unixpath2comps("/tmp")
 
@@ -110,24 +115,26 @@ class NFSSuite(unittest.TestCase):
         return self.failIfRaises(rpc.RPCException, self.ncl.compound, *args, **kwargs)
 
     def lookup_all_objects(self):
-        """Generate a list of lists with lookup operations with all types of objects"""
+        """Generate a list of lists with lookup operations for all types of objects"""
+        return self.lookup_objects(self.all_objects)
+
+    def lookup_objects(self, objects):
+        """Generate a list of lists with lookup operations for objects"""
         result = []
-        # FIXME: Add NF4ATTRDIR and NF4NAMEDATTR types. 
-        for pathcomps in [self.regfile,
-                          self.dirfile,
-                          self.blockfile,
-                          self.charfile,
-                          self.linkfile,
-                          self.socketfile,
-                          self.fifofile]:
-            result.append(self.ncl.lookup_path(pathcomps))
+
+        for object in objects:
+            result.append(self.ncl.lookup_path(object))
 
         return result
 
     def lookup_all_objects_and_sizes(self):
+        return self.lookup_objects_and_sizes(self.all_objects)
+
+    def lookup_objects_and_sizes(self, objects):
         """Generate a list of lists of lookup operations and object sizes"""
         obj_sizes = []
-        for lookupops in self.lookup_all_objects():
+        for object in objects:
+            lookupops = self.ncl.lookup_path(object)
             getattrop = self.ncl.getattr([FATTR4_SIZE])
             operations = [self.putrootfhop] + lookupops
             operations.append(getattrop)
@@ -138,6 +145,7 @@ class NFSSuite(unittest.TestCase):
             obj_sizes.append((lookupops, d["size"]))
 
         return obj_sizes
+        
 
     def setUp(self):
         # Note: no network communication should be done in this method. 
