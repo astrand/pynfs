@@ -271,7 +271,7 @@ class PartialNFS4Client:
 
         # owner
         ownerstring = pwd.getpwuid(os.getuid())[0]
-        owner = nfs_lockowner4(self, self.clientid, ownerstring)
+        owner = open_owner4(self, self.clientid, ownerstring)
 
         # seqid
         seqid = self.get_seqid()
@@ -283,9 +283,9 @@ class PartialNFS4Client:
         args = OPENATTR4args(self, createdir)
         return nfs_argop4(self, argop=OP_OPENATTR, opopenattr=args)
 
-    def open_confirm(self):
-        # FIXME
-        raise NotImplementedError()
+    def open_confirm(self, open_stateid, seqid):
+        args = OPEN_CONFIRM4args(self, open_stateid, seqid)
+        return nfs_argop4(self, argop=OP_OPEN_CONFIRM, opopen_confirm=args)
 
     def open_downgrade(self):
         # FIXME
@@ -305,7 +305,7 @@ class PartialNFS4Client:
 	args = READ4args(self, stateid, offset, count)
 	return nfs_argop4(self, argop=OP_READ, opread=args)
 
-    def read(self, stateid=0, offset=0, count=0):
+    def read(self, stateid, offset=0, count=0):
 	return self.read_op(stateid, offset, count)
 
     def readdir_op(self, cookie, cookieverf, dircount, maxcount, attr_request):
@@ -417,12 +417,13 @@ class PartialNFS4Client:
         check_result(res)
         
 
-    def do_read(self, fh, offset=0, size=None):
+    def do_read(self, stateid, fh, offset=0, size=None):
         putfhop = self.putfh_op(fh)
-        data = ""
+        stateid.seqid += 1
 
+        data = ""
         while 1:
-            readop = self.read(count=BUFSIZE, offset=offset)
+            readop = self.read(stateid, count=BUFSIZE, offset=offset)
             res = self.compound([putfhop, readop])
             check_result(res)
             data += res.resarray[1].arm.arm.data
@@ -539,7 +540,7 @@ class PartialNFS4Client:
         res = self.compound([putfhop, closeop])
         check_result(res)
 
-        return res.resarray[1].arm.stateid
+        return res.resarray[1].arm.open_stateid
 
     def do_readdir(self, fh, attr_request=[]):
 	# Since we may not get whole directory listing in one readdir request,
@@ -835,32 +836,44 @@ class NFS4OpenFile:
         self.__dict__[name] = val
 
     def open(self, filename, mode="r", bufsize=BUFSIZE):
+        operations = [self.ncl.putrootfh_op()]
 	pathcomps = self.ncl.get_pathcomps(filename)
-
-        putrootfhop = self.ncl.putrootfh_op()
+        operations.extend(self.ncl.lookup_path(pathcomps[:-1]))
+        filename = pathcomps[-1]
 
 	if mode == "r":
-            openop = self.ncl.open(file=pathcomps)
+            openop = self.ncl.open(file=filename)
+            operations.append(openop)
 	elif mode == "w":
             # Truncate upon creation. 
             attr_request = list2attrmask([FATTR4_SIZE])
             createattrs = fattr4(self.ncl, attr_request, '\x00' * 8)
-            openop = self.ncl.open(file=pathcomps, share_access=OPEN4_SHARE_ACCESS_WRITE,
+            openop = self.ncl.open(file=filename, share_access=OPEN4_SHARE_ACCESS_WRITE,
                                    opentype=OPEN4_CREATE, createattrs=createattrs)
+            operations.append(openop)
 	else:
 	    # FIXME: More modes allowed. 
 	    raise TypeError("Invalid mode")
 	
-        getfhop = self.ncl.getfh_op()
-        res =  self.ncl.compound([putrootfhop, openop, getfhop])
+        operations.append(self.ncl.getfh_op())
+        res = self.ncl.compound(operations)
 
         check_result(res)
         
         self.__set_priv("closed", 0)
         self.__set_priv("mode", mode)
         self.__set_priv("name", os.path.join(os.sep, *pathcomps))
-        self.stateid = res.resarray[1].arm.arm.stateid
-        self.fh = res.resarray[2].arm.arm.object
+        # Get stateid from OPEN
+        self.stateid = res.resarray[-2].arm.arm.stateid
+        # Get filehandle from GETFH
+        self.fh = res.resarray[-1].arm.arm.object
+
+        # Confirm open
+        putfhop = self.ncl.putfh_op(self.fh)
+        seqid = self.ncl.get_seqid()
+        opconfirm = self.ncl.open_confirm(self.stateid, seqid)
+        self.ncl.compound([putfhop, opconfirm])
+        check_result(res)
         
 
     def close(self):
@@ -880,10 +893,10 @@ class NFS4OpenFile:
     def read(self, size=None):
         if self.closed:
             raise ValueError("I/O operation on closed file")
-        #data = self.ncl.do_read(self.fh, self.pos, size)
+        data = self.ncl.do_read(self.stateid, self.fh, self.pos, size)
         # do_read_fast is about 40% faster. But:
         # FIXME: Verify that do_read_fast is robust. 
-        data = self.ncl.do_read_fast(self.fh, self.pos, size)
+        #data = self.ncl.do_read_fast(self.fh, self.pos, size)
         self.pos += len(data)
         return data
 
