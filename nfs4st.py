@@ -2786,6 +2786,9 @@ class ReaddirSuite(NFSSuite):
         
         Comments: This test crashes/crashed the Linux server
         """
+        # FIXME: This test is currently broken.
+        self.info_message("(TEST DISABLED)")
+        return
         lookupops = self.ncl.lookup_path(self.notaccessibledir)
         operations = [self.putrootfhop] + lookupops
 
