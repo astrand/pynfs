@@ -872,17 +872,17 @@ def list2attrmask(attrlist):
 
 
 class UDPNFS4Client(PartialNFS4Client, rpc.RawUDPClient):
-    def __init__(self, host, port=NFS_PORT):
+    def __init__(self, host, port=NFS_PORT, uid=os.getuid(), gid=os.getgid()):
         rpc.RawUDPClient.__init__(self, host, NFS4_PROGRAM, NFS_V4, port)
         PartialNFS4Client.__init__(self)
-
+        self.uid = uid
+        self.gid = gid
+        
     def mkcred(self):
 	if self.cred == None:
             hostname = socket.gethostname()
-            uid = os.getuid()
-            gid = os.getgid()
             groups = os.getgroups()
-	    self.cred = (rpc.AUTH_UNIX, rpc.make_auth_unix(1, hostname, uid, gid, groups))
+	    self.cred = (rpc.AUTH_UNIX, rpc.make_auth_unix(1, hostname, self.uid, self.gid, groups))
 	return self.cred
 
     def mkverf(self):
@@ -896,7 +896,7 @@ class TCPNFS4Client(PartialNFS4Client, rpc.RawTCPClient):
         rpc.RawTCPClient.__init__(self, host, NFS_PROGRAM, NFS_VERSION, port)
         PartialNFS4Client.__init__(self)
 
-        
+    # FIXME: As UDPNFS4Client. 
 
 class NFS4OpenFile:
     """Emulates a Python file object.
