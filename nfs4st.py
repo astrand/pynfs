@@ -974,13 +974,12 @@ class CreateSuite(NFSSuite):
         Servers supporting . and .. in file names should return NFS4_OK. Others
         should return NFS4ERR_INVAL. NFS4ERR_EXIST should not be returned.
         """
-        # Note: if _remove_object fails, execution will stop. 
         # name = .
         if not self._remove_object("."): return
         self._do_create(".")
 
         # name = ..
-        if not self._remove_object("."): return
+        if not self._remove_object(".."): return
         self._do_create("..")
         
         
@@ -1606,8 +1605,6 @@ class LookupSuite(NFSSuite):
         """LOOKUP on . and .. should return NFS4ERR_ENOENT
 
         Extra test
-
-        No file named . or .. should exist in the test tree.
         """
         # . in root dir should not exist
         self._assert_noent(["."])
@@ -2649,7 +2646,8 @@ class RemoveSuite(NFSSuite):
     # Extra tests. 
     #
     def _do_remove(self, name):
-        operations = [self.putrootfhop] + self.lookup_dir_ops
+        # Lookup /doc
+        operations = [self.putrootfhop] + self.ncl.lookup_path(self.dirfile)
         operations.append(self.ncl.remove_op(name))
         res = self.do_compound(operations)
         self.assert_status(res, [NFS4ERR_NOENT])
@@ -2659,7 +2657,7 @@ class RemoveSuite(NFSSuite):
         
         Extra test
 
-        No files named . or .. should exist in the test tree
+        No files named . or .. should exist in doc directory
         """
         # name = .
         self._do_remove(".")
@@ -2859,25 +2857,47 @@ class RenameSuite(NFSSuite):
     #
     # Extra tests. 
     #
+    def _do_test_oldname(self, oldname):
+        operations = self._prepare_operation()
+        renameop = self.ncl.rename_op(oldname, self.newname)
+        operations.append(renameop)
+        res = self.do_compound(operations)
+        self.assert_status(res, [NFS4ERR_NOENT])
+
+    def _do_test_newname(self, newname):
+        operations = self._prepare_operation()
+        renameop = self.ncl.rename_op(self.oldname, newname)
+        operations.append(renameop)
+        res = self.do_compound(operations)
+        self.assert_status(res, [NFS4_OK, NFS4ERR_INVAL])
+    
     def testDotsOldname(self):
         """RENAME with oldname containing . or .. should return NFS4ERR_NOENT
 
         Extra test
         
-        No files named . or .. should exist in the test tree
+        No files named . or .. should exist in doc directory
         """
-        #_remove...
+        # Use /doc as dir in this test
+        self.lookup_dir_ops = self.ncl.lookup_path(self.dirfile)
+        # name = .
+        self._do_test_oldname(".")
+
+        # name = ..
+        self._do_test_oldname("..")
 
     def testDotsNewname(self):
         """RENAME with newname . or .. should succeed or return NFS4ERR_INVAL
 
         Extra test
-        
-        No files named . or .. should exist in the test tree
         """
-        #_remove...
-        
+        # name = .
+        if not self._remove_object("."): return
+        self._do_test_newname(".")
 
+        # name = ..
+        if not self._remove_object(".."): return
+        self._do_test_newname("..")
 
 
 ## class RenewSuite(NFSSuite):
