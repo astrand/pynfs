@@ -108,15 +108,30 @@ class PartialNFS4Client:
         self.seqid = self.seqid % 2**32L
         return self.seqid
 
+    # 
+    # Operations. These come in two flawors: <operation>_op and <operation>.
     #
-    # Operations. Creates complete operations. Does not send them to the server. 
+    # <operation>_op: This is just a wrapper which creates a
+    # nfs_argop4.  The arguments for the method <operation>_op should
+    # be the same as the arguments for <operation>4args. No default
+    # arguments or any other kind of intelligent handling should be
+    # done in the _op methods.
     #
-    def access(self):
-        # FIXME
-        raise NotImplementedError()
+    # <operation>: This is a convenience method. It can have default arguments 
+    # and operation-specific arguments. Not all operations have <operation>
+    # methods. It's pretty useless for operations without arguments, for example.
+    # Eg., if the <operation> method doesn't do anything, it should not exist. 
+    #
+    # The _op method should be defined first. Look at read_op and read for an
+    # example. Ther
+    #
+    # 
+    def access_op(self, access):
+	args = ACCESS4args(self, access)
+	return nfs_argop4(self, argop=OP_ACCESS, opaccess=args)
 
-    def close(self, seqid, stateid):
-        args = CLOSE4args(self, seqid=seqid, stateid=stateid)
+    def close_op(self, seqid, stateid):
+        args = CLOSE4args(self, seqid, stateid)
         return nfs_argop4(self, argop=OP_CLOSE, opclose=args)
 
     def commit(self):
@@ -135,6 +150,10 @@ class PartialNFS4Client:
         # FIXME
         raise NotImplementedError()
 
+    def getattr_op(self, attr_request):
+	args = GETATTR4args(self, attr_request)
+        return nfs_argop4(self, argop=OP_GETATTR, opgetattr=args)
+
     def getattr(self, attrlist=[]):
 	# The argument to GETATTR4args is a list of integers. 
 	attr_request = []
@@ -149,11 +168,10 @@ class PartialNFS4Client:
 	    arrint = attr_request[arrintpos]
 	    arrint = arrint | (1L << bitpos)
 	    attr_request[arrintpos] = arrint
-	
-	args = GETATTR4args(self, attr_request)
-        return nfs_argop4(self, argop=OP_GETATTR, opgetattr=args)
 
-    def getfh(self):
+	self.getattr_op(attr_request)
+
+    def getfh_op(self):
         return nfs_argop4(self, argop=OP_GETFH)
 
     def link(self):
@@ -172,7 +190,7 @@ class PartialNFS4Client:
         # FIXME
         raise NotImplementedError()
 
-    def lookup(self, path):
+    def lookup_op(self, path):
 	args = LOOKUP4args(self, path)
 	return nfs_argop4(self, argop=OP_LOOKUP, oplookup=args)
 
@@ -183,6 +201,10 @@ class PartialNFS4Client:
     def nverify(self):
         # FIXME
         raise NotImplementedError()
+
+    def open_op(self, claim, openhow, owner, seqid, share_access, share_deny):
+	args = OPEN4args(self, claim, openhow, owner, seqid, share_access, share_deny)
+        return nfs_argop4(self, argop=OP_OPEN, opopen=args)
 
     def open(self, claim=None, how=UNCHECKED4, owner=None, seqid=None,
              share_access=OPEN4_SHARE_ACCESS_READ, share_deny=OPEN4_SHARE_DENY_NONE,
@@ -205,8 +227,7 @@ class PartialNFS4Client:
         openhow = openflag4(self, opentype=opentype, how=how)
         owner = nfs_lockowner4(self, clientid=clientid, owner=owner)
 
-        args = OPEN4args(self, claim, openhow, owner, seqid, share_access, share_deny)
-        return nfs_argop4(self, argop=OP_OPEN, opopen=args)
+        return self.open_op(claim, openhow, owner, seqid, share_access, share_deny)
 
     def openattr(self):
         # FIXME
@@ -220,24 +241,30 @@ class PartialNFS4Client:
         # FIXME
         raise NotImplementedError()
 
-    def putfh(self, fh):
-        args = PUTFH4args(self, object=fh)
+    def putfh_op(self, object):
+        args = PUTFH4args(self, object)
         return nfs_argop4(self, argop=OP_PUTFH, opputfh=args)
 
     def putpubfh(self, fh):
         # FIXME
         raise NotImplementedError()
 
-    def putrootfh(self):
+    def putrootfh_op(self):
         return nfs_argop4(self, argop=OP_PUTROOTFH)
 
-    def read(self, stateid=0, offset=0, count=0):
-        args = READ4args(self, stateid=stateid, offset=offset, count=count)
-        return nfs_argop4(self, argop=OP_READ, opread=args)
+    def read_op(self, stateid, offset, count):
+	args = READ4args(self, stateid, offset, count)
+	return nfs_argop4(self, argop=OP_READ, opread=args)
 
-    def readdir(self, cookie=0, cookieverf="", dircount=2, maxcount=4096, attr_request=[]):
+    def read(self, stateid=0, offset=0, count=0):
+	return self.read_op(stateid, offset, count)
+
+    def readdir_op(self, cookie, cookieverf, dircount, maxcount, attr_request):
 	args = READDIR4args(self, cookie, cookieverf, dircount, maxcount, attr_request)
 	return nfs_argop4(self, argop=OP_READDIR, opreaddir=args)
+
+    def readdir(self, cookie=0, cookieverf="", dircount=2, maxcount=4096, attr_request=[]):
+	return self.readdir_op(cookie, cookieverf, dircount, maxcount, attr_request)
 
     def readlink(self):
         # FIXME
@@ -271,6 +298,10 @@ class PartialNFS4Client:
         # FIXME
         raise NotImplementedError()
 
+    def setclientid_op(self, client, callback):
+	args = SETCLIENTID4args(self, client, callback)
+        return nfs_argop4(self, argop=OP_SETCLIENTID, opsetclientid=args)
+
     def setclientid(self, verifier=None, id=None, cb_program=None, r_netid=None, r_addr=None):
         if not verifier:
             self.verifier = self.gen_random_64()
@@ -295,21 +326,23 @@ class PartialNFS4Client:
         client_id = nfs_client_id4(self, verifier=self.verifier, id=id)
         cb_location = clientaddr4(self, r_netid=r_netid, r_addr=r_addr)
         callback = cb_client4(self, cb_program=cb_program, cb_location=cb_location)
-        args = SETCLIENTID4args(self, client=client_id, callback=callback)
 
-        return nfs_argop4(self, argop=OP_SETCLIENTID, opsetclientid=args)
+	return self.setclientid_op(client_id, callback)
 
-    def setclientid_confirm(self, setclientid_confirm):
-        args = SETCLIENTID_CONFIRM4args(self, setclientid_confirm=setclientid_confirm)
+    def setclientid_confirm_op(self, setclientid_confirm):
+	args = SETCLIENTID_CONFIRM4args(self, setclientid_confirm)
         return nfs_argop4(self, argop=OP_SETCLIENTID_CONFIRM, opsetclientid_confirm=args)
 
     def verify(self):
         # FIXME
         raise NotImplementedError()
 
+    def write_op(self, stateid, offset, stable, data):
+	args = WRITE4args(self, stateid, offset, stable, data)
+	return nfs_argop4(self, argop=OP_WRITE, opwrite=args)
+
     def write(self, data, stateid, offset=0, stable=UNSTABLE4):
-        args = WRITE4args(self, stateid=stateid, offset=offset, stable=stable, data=data)
-        return nfs_argop4(self, argop=OP_WRITE, opwrite=args)
+        return self.write_op(stateid, offset, stable, data)
 
     def cb_getattr(self):
         # FIXME
@@ -333,14 +366,14 @@ class PartialNFS4Client:
         setclientid_confirm = res.resarray[0].arm.resok4.setclientid_confirm
 
         # SETCLIENTID_CONFIRM
-        setclientid_confirmop = self.setclientid_confirm(setclientid_confirm)
+        setclientid_confirmop = self.setclientid_confirm_op(setclientid_confirm)
         res =  self.compound([setclientid_confirmop])
 
         check_result(res)
         
 
     def do_read(self, fh, offset=0, size=None):
-        putfhop = self.putfh(fh)
+        putfhop = self.putfh_op(fh)
         data = ""
 
         while 1:
@@ -364,15 +397,15 @@ class PartialNFS4Client:
             return data
 
     def do_write(self, fh, data, stateid, offset=0, stable=UNSTABLE4):
-        putfhop = self.putfh(fh)
+        putfhop = self.putfh_op(fh)
 	writeop = self.write(data, stateid, offset=offset, stable=stable)
 	res = self.compound([putfhop, writeop])
 	check_result(res)
 
     def do_close(self, fh, stateid):
         seqid = self.get_seqid()
-        putfhop = self.putfh(fh)
-        closeop = self.close(seqid, stateid)
+        putfhop = self.putfh_op(fh)
+        closeop = self.close_op(seqid, stateid)
         res = self.compound([putfhop, closeop])
         check_result(res)
 
@@ -386,7 +419,7 @@ class PartialNFS4Client:
 	cookieverf = ""
 	entries = []
 	while 1:
-	    putfhop = self.putfh(fh)
+	    putfhop = self.putfh_op(fh)
 	    readdirop = self.readdir(cookie, cookieverf, attr_request=attr_request)
 	    res = self.compound([putfhop, readdirop])
 	    check_result(res)
@@ -570,7 +603,7 @@ class NFS4OpenFile:
 
         pathname = str2pathname(filename, pathname)
 
-        putrootfhop = self.ncl.putrootfh()
+        putrootfhop = self.ncl.putrootfh_op()
 
 	if mode == "r":
 	    share_access = OPEN4_SHARE_ACCESS_READ
@@ -581,7 +614,7 @@ class NFS4OpenFile:
 	    raise TypeError("Invalid mode")
 	
         openop = self.ncl.open(file=pathname, share_access=share_access)
-        getfhop = self.ncl.getfh()
+        getfhop = self.ncl.getfh_op()
         res =  self.ncl.compound([putrootfhop, openop, getfhop])
 
         check_result(res)
@@ -657,7 +690,7 @@ class NFS4OpenFile:
             newpos = self.pos + offset
         elif whence == 2:
             # seek relative to the file's end
-	    putfhop = self.ncl.putfh(self.fh)
+	    putfhop = self.ncl.putfh_op(self.fh)
 	    getattrop = self.ncl.getattr([FATTR4_SIZE])
 	    res =  self.ncl.compound([putfhop, getattrop])
 	    check_result(res)
