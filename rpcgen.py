@@ -999,7 +999,10 @@ def p_empty(t):
     'empty :'
 
 def p_error(t):
-    print "Syntax error at '%s' (lineno %d)" % (t.value, t.lineno)
+    if t:
+        print "Syntax error at '%s' (lineno %d)" % (t.value, t.lineno)
+    else:
+        print "Syntax error at unknown location (FIXME)"
 
 
 #
