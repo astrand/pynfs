@@ -1102,10 +1102,9 @@ class CreateSuite(NFSSuite):
 
         objtype = createtype4(self.ncl, type=NF4DIR)
 
-        attrmask = nfs4lib.list2attrmask([FATTR4_TIME_ACCESS_SET])
+        attrmask = nfs4lib.list2attrmask([FATTR4_LINK_SUPPORT])
         dummy_ncl = nfs4lib.DummyNcl()
-        settime = settime4(dummy_ncl, set_it=SET_TO_SERVER_TIME4)
-        settime.pack()
+        dummy_ncl.packer.pack_bool(TRUE)
         attr_vals = dummy_ncl.packer.get_buf()
         createattrs = fattr4(self.ncl, attrmask, attr_vals)
         
