@@ -381,8 +381,11 @@ class UDPNFS4Client(PartialNFS4Client, rpc.RawUDPClient):
 
     def mkcred(self):
 	if self.cred == None:
-            # FIXME. 
-	    self.cred = (rpc.AUTH_UNIX, rpc.make_auth_unix(1, "maggie.lkpg.cendio.se", 0, 0, [0, 1, 2, 3, 4, 6, 10]))
+            hostname = socket.gethostname()
+            uid = os.getuid()
+            gid = os.getgid()
+            groups = os.getgroups()
+	    self.cred = (rpc.AUTH_UNIX, rpc.make_auth_unix(1, hostname, uid, gid, groups))
 	return self.cred
 
     def mkverf(self):
