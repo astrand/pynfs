@@ -365,4 +365,9 @@ if __name__ == "__main__":
 
     c = ClientApp(transport, host, port, directory, pythonmode)
     c.cmdloop()
+
     
+# Local variables:
+# py-indent-offset: 4
+# tab-width: 8
+# End:

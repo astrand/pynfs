@@ -998,3 +998,9 @@ if __name__ == "__main__":
     const_out.close()
     types_out.close()
     packer_file_out.close()
+
+
+# Local variables:
+# py-indent-offset: 4
+# tab-width: 8
+# End:

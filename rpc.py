@@ -973,3 +973,9 @@ def testclt():
 	print 'making call...'
 	reply = c.call_1('hello, world, ')
 	print 'call returned', `reply`
+
+
+# Local variables:
+# py-indent-offset: 4
+# tab-width: 8
+# End:
