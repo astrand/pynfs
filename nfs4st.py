@@ -20,6 +20,8 @@
 
 # TODO:
 #
+# Print out testcase names?
+#
 # use assert_status instead of failIf. 
 #
 # Extend unittest with warnings.
