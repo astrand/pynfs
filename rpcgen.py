@@ -25,7 +25,26 @@
 # Replace MemFile with StringIO. 
 # Code generation for programs and procedures. 
 # __repr__ with discriminants should print symbolic values.
-# Add rpcgen info and date to output files. 
+# Add rpcgen info and date to output files.
+#
+# BUGS:
+# rpcgen.py does not handle recursive data structures. Example from RFC1832:
+# struct *stringlist {
+#     string item<>;
+#     stringlist next;
+# };
+# As far as I understand, this does not fit into the language specification.
+# It can be rewritten as:
+# union stringlist switch (bool opted) {
+# case TRUE:
+#     struct {
+#         string item<>;
+#         stringlist next;
+#     } element;
+# case FALSE:
+#     void;
+# };
+# rpcgen.py does not handle this case either, but it probably should. 
 
 import sys
 import keyword
