@@ -149,7 +149,7 @@ class NFSSuite(unittest.TestCase):
         self.vaporfilename = "vapor_object"
         self.vaporfile = nfs4lib.unixpath2comps(self.vaporfilename)
         # Not accessable
-        self.privatedir = nfs4lib.unixpath2comps("/private")
+        self.notaccessibledir = nfs4lib.unixpath2comps("/private")
         self.notaccessablefile = nfs4lib.unixpath2comps("/private/info.txt")
 
     def create_client(self, uid, gid):
@@ -2790,18 +2790,14 @@ class ReaddirSuite(NFSSuite):
     #
     # Extra tests.
     #
-    def testUnaccessibleDirWithGetattr(self):
+    def testUnaccessibleDir(self):
         """READDIR with (cfh) in unaccessible directory
 
         Extra test
         
         Comments: This test crashes/crashed the Linux server
         """
-        # FIXME: Remove me. 
-        self.info_message("(TEST DISABLED)")
-        return
-        
-        lookupops = self.ncl.lookup_path(self.privatedir)
+        lookupops = self.ncl.lookup_path(self.notaccessibledir)
         operations = [self.putrootfhop] + lookupops
 
         attrmask = nfs4lib.list2attrmask([FATTR4_TYPE, FATTR4_SIZE, FATTR4_TIME_MODIFY])
@@ -2810,7 +2806,7 @@ class ReaddirSuite(NFSSuite):
                                         attr_request=attrmask)
         operations.append(readdirop)
         res = self.do_compound(operations)
-        self.assert_OK(res)
+        self.assert_status(res, [NFS4ERR_ACCES])
 
     def testDots(self):
         """READDIR should not return . and .. in /doc
