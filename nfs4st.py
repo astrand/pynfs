@@ -1352,8 +1352,6 @@ class LinkSuite(NFSSuite):
     gives a current filehandle as well. 
     """
 
-    # FIXME: Cover class 14. 
-
     def setUp(self):
         NFSSuite.setUp(self)
         self.obj_name = "link1"
@@ -1533,6 +1531,20 @@ class LinkSuite(NFSSuite):
         operations.append(linkop)
         res = self.do_compound(operations)
         self.assert_status(res, [NFS4ERR_INVAL])
+
+    def testNonUTF8(self):
+        """LINK with non-UTF8 name should return NFS4ERR_INVAL
+
+        Covered valid equivalence classes: 14
+        """
+        for name in self.get_invalid_utf8strings():
+            operations = self._prepare_operation(self.regfile)
+
+            # Link operation
+            linkop = self.ncl.link_op(name)
+            operations.append(linkop)
+            res = self.do_compound(operations)
+            self.assert_status(res, [NFS4ERR_INVAL])
 
     #
     # Extra tests.
