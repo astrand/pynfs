@@ -42,6 +42,7 @@ __pychecker__ = 'no-shadow'
 import unittest
 import time
 import sys
+import os
 
 import rpc
 from nfs4constants import *
@@ -53,6 +54,7 @@ UID = GID = 0
 host = None
 port = None
 transport = "udp"
+prefix = None
 
 class SkipException(Exception):
     def __init__(self, msg):
@@ -128,7 +130,6 @@ class NFSSuite(unittest.TestCase):
         unittest.TestCase.__init__(self, methodName)
         self.obj_name = None
 
-        prefix = "/nfs4st"
         # Filename constants. Same order as in nfs_ftype4 enum. 
         self.regfile = nfs4lib.unixpath2comps(prefix + "/doc/README") # NF4REG
         self.dirfile = nfs4lib.unixpath2comps(prefix + "/doc") # NF4DIR
@@ -4499,7 +4500,9 @@ class MyTextTestRunner(unittest.TextTestRunner):
 
 class TestProgram(unittest.TestProgram):
     USAGE = """\
-Usage: %(progName)s [nfs://]host[:port] [options] [test] [...]
+Usage: %(progName)s [nfs://]host[:port]<prefix> [options] [test] [...]
+
+<prefix> defaults to /. Use same prefix as for test_tree_net.py 
 
 Options:
   -u, --udp        use UDP as transport (default)
@@ -4516,7 +4519,7 @@ Examples:
     def parseArgs(self, argv):
         import getopt
         import re
-        global host, port, transport
+        global host, port, transport, prefix
 
         self.verbosity = 2
         self.print_tracebacks = 0
@@ -4556,9 +4559,10 @@ Examples:
 
         (host, portstring, directory) = parse_result
 
-        if directory:
-            # Directory not allowed
-            self.usageExit()
+        if not directory:
+            directory = "/"
+            
+        prefix = os.path.join(directory, "nfs4st")
 
         if portstring:
             port = int(portstring)
