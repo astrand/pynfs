@@ -309,9 +309,9 @@ class PartialNFS4Client:
         args = REMOVE4args(self, target)
         return nfs_argop4(self, argop=OP_REMOVE, opremove=args)
 
-    def rename(self):
-        # FIXME
-        raise NotImplementedError()
+    def rename_op(self, oldname, newname):
+        args = RENAME4args(self, oldname, newname)
+        return nfs_argop4(self, argop=OP_RENAME, oprename=args)
 
     def renew(self):
         # FIXME
