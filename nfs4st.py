@@ -1422,6 +1422,33 @@ class LinkSuite(NFSSuite):
         res = self.do_compound(operations)
         self.assert_status(res, [NFS4ERR_INVAL])
 
+    #
+    # Extra tests.
+    #
+    def _do_link(self, newname):
+        self._remove_object()
+        operations = self._prepare_operation(self.regfile)
+
+        linkop = self.ncl.link_op(newname)
+        operations.append(linkop)
+        res = self.do_compound(operations)
+        self.assert_status(res, [NFS4_OK, NFS4ERR_INVAL])
+    
+    def testDots(self):
+        """LINK with newname . or .. should succeed or return NFS4ERR_INVAL
+
+        Extra test
+
+        Servers supporting . and .. in file names should return NFS4_OK. Others
+        should return NFS4ERR_INVAL. NFS4ERR_EXIST should not be returned.
+        """
+        # newname = .
+        self._do_link(".")
+        
+        # newname = ..
+        self._do_link("..")
+
+
 
 ## class LockSuite(NFSSuite):
 ##     """Test operation 12: LOCK
