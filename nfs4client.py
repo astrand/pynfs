@@ -78,7 +78,7 @@ else:
             "help", "cd", "rm", "dir", "ls", "exit", "quit", "get",
             "put", "mkdir", "md", "rmdir", "rd", "cat", "page",
             "debuglevel", "ping", "version", "pythonmode", "shell", "access",
-            "create", ]
+            "create", "getattr", "readlink", "lookupp" ]
 
         def complete(self, text, state):
             """Return the next possible completion for 'text'.
@@ -377,6 +377,57 @@ class ClientApp(cmd.Cmd):
         except nfs4lib.BadCompoundRes, r:
             print "create failed:", r
             return
+
+    def do_getattr(self, line):
+        """Get regular attributes"""
+  
+        argv = line.split()
+        object = argv[0]
+        attributes = argv[1:]
+        
+        attrlist = []
+        dict = nfs4lib.get_attrbitnum_dict()
+        for attr in attributes:
+                if attr.isdigit() == 1:
+                        attrlist.append(attr.atoi())
+                elif dict.has_key(attr):
+                        attrlist.append(dict[attr])
+        
+        pathcomps = self.ncl.get_pathcomps_rel(object)
+        lookupops = self.ncl.lookup_path(pathcomps)
+        operations = [self.ncl.putrootfh_op()] + lookupops
+        operations.append( self.ncl.getattr_op(nfs4lib.list2attrmask(attrlist)))
+        try:
+                res = self.ncl.compound(operations)
+        except nfs4lib.BadCompoundRes, result:
+                print "getattr failed: ", result
+                return
+        if res.status <> NFS4_OK:
+                print "getattr failed, returned error: %s" % (nfsstat4_id[res.status])
+                return
+        getattrres = res.resarray[-1].opgetattr.resok4.obj_attributes
+        dict = nfs4lib.fattr2dict(getattrres)
+        for attr in dict.keys():
+                print "%s: %s" % (attr, dict[attr])
+        return
+
+    def do_readlink(self, line):
+        pathcomps = self.ncl.get_pathcomps_rel(line)
+        putrootfhop = self.ncl.putrootfh_op()
+        lookupops = self.ncl.lookup_path(pathcomps)
+        operations = [putrootfhop] + lookupops
+        
+        readlinkop = self.ncl.readlink_op()
+        operations.append(readlinkop)
+
+        res = self.ncl.compound(operations)
+        try:
+              nfs4lib.check_result(res)
+        except nfs4lib.BadCompoundRes, r:
+              print "Error reading link data:", r
+              return
+
+        print "Link points to:", res.resarray[-1].arm.arm.link
 
     def do_put(self, line):
         fields = line.split()
