@@ -2973,7 +2973,6 @@ class SecinfoSuite(NFSSuite):
         # know, this is untested code.
         # FIXME: Also verify that all Kerberos and LIPKEY security triples
         # listed in section 3.2.1.1 and 3.2.1.2 are supported.
-        RPCSEC_GSS = 6 # Defined in RFC2203; no .x file
         lookupops = self.ncl.lookup_path(self.dirfile)
         operations = [self.putrootfhop] + lookupops
         operations.append(self.ncl.secinfo_op("README"))
