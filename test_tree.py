@@ -31,9 +31,13 @@ def main(treeroot):
         
     print "Changing current directory to", treeroot
     os.chdir(treeroot)
+    # Sanity check
+    if os.getcwd() == "/":
+        print "Couldn't change to %s, aborting." % treeroot
+        sys.exit(1)
 
     print "Clearing tree"
-    os.system("rm -rf %s/*" % treeroot)
+    os.system("rm -rf *")
 
     print "Creating /dev"
     os.mkdir("dev")
@@ -73,6 +77,7 @@ int main()
 
     print "Creating tmp"
     os.mkdir("tmp")
+    os.chmod("tmp", 777)
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
