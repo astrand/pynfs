@@ -1289,6 +1289,133 @@ class LockuTestCase(NFSTestCase):
     # FIXME
     pass
 
+class LookupTestCase(NFSTestCase):
+    """Test LOOKUP operation
+
+    Equivalence partitioning:
+
+    Input Condition: current filehandle
+        Valid equivalence classes:
+            dir(1)
+        Invalid equivalence classes:
+            notdir(2)
+            invalid filehandle(3)
+    Input Condition: filenames
+        Valid equivalence classes:
+            array of dirs(4)
+            dirs + one non-dir(5)
+            one non-dir(6)
+        Invalid equivalence classes:
+            array with non-existing components(7)
+            array with non-accessable components(8)
+            zero length array(9)
+            array with non-utf8 components(10)
+            array with non-dir components not last(11)
+    """
+    def setUp(self):
+        self.connect()
+        self.putrootfhop = self.ncl.putrootfh_op()
+
+    #
+    # Testcases covering valid equivalence classes.
+    #
+    def testArrayOfDirs(self):
+        """LOOKUP on array of directories
+
+        Covered valid equivalence classes: 1, 4
+        """
+        lookupop = self.ncl.lookup_op(["doc", "porting"])
+        res = self.do_compound([self.putrootfhop, lookupop])
+        self.assert_OK(res)
+
+    def testDirsNonDir(self):
+        """LOOKUP on array of dirs + on non-dir
+
+        Covered valid equivalence classes: 1, 5
+        """
+        lookupop = self.ncl.lookup_op(["doc", "porting", "TODO"])
+        res = self.do_compound([self.putrootfhop, lookupop])
+        self.assert_OK(res)
+
+    def testNonDir(self):
+        """LOOKUP simple non-dir object
+
+        Covered valid equivalence classes: 1, 6
+        """
+        lookupop1 = self.ncl.lookup_op(["doc"])
+        lookupop2 = self.ncl.lookup_op(["README"])
+        res = self.do_compound([self.putrootfhop, lookupop1, lookupop2])
+        self.assert_OK(res)
+
+    #
+    # Testcases covering invalid equivalence classes.
+    #
+    def testFhNotDir(self):
+        """LOOKUP with non-dir (cfh) should give NFS4ERR_NOTDIR
+
+        Covered invalid equivalence classes: 2
+        """
+        lookupop1 = self.ncl.lookup_op(["doc", "README"])
+        lookupop2 = self.ncl.lookup_op(["porting"])
+        res = self.do_compound([self.putrootfhop, lookupop1, lookupop2])
+        self.assert_status(res, [NFS4ERR_NOTDIR])
+
+    def testNoFh(self):
+        """LOOKUP without (cfh) should return NFS4ERR_NOFILEHANDLE
+
+        Covered invalid equivalence classes: 3
+        """
+        lookupop = self.ncl.lookup_op(["doc", "README"])
+        res = self.do_compound([lookupop])
+        self.assert_status(res, [NFS4ERR_NOFILEHANDLE])
+
+    def testNonExistent(self):
+        """LOOKUP with non-existent components should return NFS4ERR_NOENT
+
+        Covered invalid equivalence classes: 7
+        """
+        lookupop = self.ncl.lookup_op(["vapor_object"])
+        res = self.do_compound([self.putrootfhop, lookupop])
+        self.assert_status(res, [NFS4ERR_NOENT])
+
+    def testNonAccessable(self):
+        """LOOKUP with non-accessable components should return NFS4ERR_ACCES
+
+        Covered invalid equivalence classes: 8
+        """
+        lookupop = self.ncl.lookup_op(["private", "info.txt"])
+        res = self.do_compound([self.putrootfhop, lookupop])
+        self.assert_status(res, [NFS4ERR_ACCES])
+
+    def testZeroLengthPath(self):
+        """LOOKUP with zero length array should return NFS4ERR_INVAL
+
+        Covered invalid equivalence classes: 9
+        """
+        lookupop = self.ncl.lookup_op([])
+        res = self.do_compound([self.putrootfhop, lookupop])
+        self.assert_status(res, [NFS4ERR_INVAL])
+
+    def testNonUTF8(self):
+        """LOOKUP with non-UTF8 components should return NFS4ERR_INVAL
+
+        Covered invalid equivalence classes: 10
+
+        Comments: Not yet implemented. 
+        """
+        # FIXME: Implement
+        pass
+
+    def testNonDirNotLast(self):
+        """LOOKUP with non-dir components not last should return NFS4ERR_NOTDIR
+
+        Covered invalid equivalence classes: 11
+        """
+        lookupop = self.ncl.lookup_op(["doc", "README", "porting"])
+        res = self.do_compound([self.putrootfhop, lookupop])
+        self.assert_status(res, [NFS4ERR_NOTDIR])
+
+        
 
 class QuietTextTestRunner(unittest.TextTestRunner):
     def _makeResult(self):
