@@ -303,9 +303,21 @@ class ClientApp(cmd.Cmd):
                 linkdata = args[2]
             objtype = createtype4(self.ncl, type=NF4LNK, linkdata=linkdata)
         elif type == "block":
-            pass
+            if len(args) < 4:
+                print "create block <name> major minor"
+                return
+            major = int(args[2])
+            minor = int(args[3])
+            devdata = specdata4(self.ncl, major, minor)
+            objtype = createtype4(self.ncl, type=NF4BLK, devdata=devdata)
         elif type == "char":
-            pass
+            if len(args) < 4:
+                print "create char <name> major minor"
+                return
+            major = int(args[2])
+            minor = int(args[3])
+            devdata = specdata4(self.ncl, major, minor)
+            objtype = createtype4(self.ncl, type=NF4CHR, devdata=devdata)
         elif type == "socket":
             pass
         elif type == "fifo":
