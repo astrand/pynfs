@@ -224,9 +224,8 @@ class PartialNFS4Client:
 	args = LOOKUP4args(self, path)
 	return nfs_argop4(self, argop=OP_LOOKUP, oplookup=args)
 
-    def lookupp(self):
-        # FIXME
-        raise NotImplementedError()
+    def lookupp_op(self):
+	return nfs_argop4(self, argop=OP_LOOKUPP)
 
     def nverify(self):
         # FIXME
