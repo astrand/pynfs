@@ -278,7 +278,7 @@ def make_auth_null():
 def make_auth_unix(seed, host, uid, gid, groups):
     p = Packer()
     p.pack_auth_unix(seed, host, uid, gid, groups)
-    return p.get_buf()
+    return p.get_buffer()
 
 def make_auth_unix_default():
     try:
@@ -468,7 +468,7 @@ class RawTCPClient(Client):
 	self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     def do_call(self):
-	call = self.packer.get_buf()
+	call = self.packer.get_buffer()
 	sendrecord(self.sock, call)
 	reply = recvrecord(self.sock)
 	u = self.unpacker
@@ -486,7 +486,7 @@ class RawUDPClient(Client):
 	self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     def do_call(self):
-	call = self.packer.get_buf()
+	call = self.packer.get_buffer()
 	self.sock.send(call)
 	try:
 	    from select import select
@@ -542,7 +542,7 @@ class RawBroadcastUDPClient(RawUDPClient):
 	self.start_call(proc)
 	if pack_func:
 	    pack_func(args)
-	call = self.packer.get_buf()
+	call = self.packer.get_buffer()
 	self.sock.sendto(call, (self.host, self.port))
 	try:
 	    from select import select
@@ -765,7 +765,7 @@ class BroadcastUDPClient(Client):
 	else:
 	    self.unpack_func = unpack_func
 	self.replies = []
-	packed_args = self.packer.get_buf()
+	packed_args = self.packer.get_buffer()
 	dummy_replies = self.pmap.Callit( \
 		(self.prog, self.vers, proc, packed_args))
 	return self.replies
@@ -819,26 +819,26 @@ class Server:
 	    self.packer.pack_uint(RPC_MISMATCH)
 	    self.packer.pack_uint(RPCVERSION)
 	    self.packer.pack_uint(RPCVERSION)
-	    return self.packer.get_buf()
+	    return self.packer.get_buffer()
 	self.packer.pack_uint(MSG_ACCEPTED)
 	self.packer.pack_auth((AUTH_NULL, make_auth_null()))
 	prog = self.unpacker.unpack_uint()
 	if prog <> self.prog:
 	    self.packer.pack_uint(PROG_UNAVAIL)
-	    return self.packer.get_buf()
+	    return self.packer.get_buffer()
 	vers = self.unpacker.unpack_uint()
 	if vers <> self.vers:
 	    self.packer.pack_uint(PROG_MISMATCH)
 	    self.packer.pack_uint(self.vers)
 	    self.packer.pack_uint(self.vers)
-	    return self.packer.get_buf()
+	    return self.packer.get_buffer()
 	proc = self.unpacker.unpack_uint()
 	methname = 'handle_' + `proc`
 	try:
 	    meth = getattr(self, methname)
 	except AttributeError:
 	    self.packer.pack_uint(PROC_UNAVAIL)
-	    return self.packer.get_buf()
+	    return self.packer.get_buffer()
 	unused_cred = self.unpacker.unpack_auth()
 	unused_verf = self.unpacker.unpack_auth()
 	try:
@@ -851,7 +851,7 @@ class Server:
 	    self.packer.pack_uint(MSG_ACCEPTED)
 	    self.packer.pack_auth((AUTH_NULL, make_auth_null()))
 	    self.packer.pack_uint(GARBAGE_ARGS)
-	return self.packer.get_buf()
+	return self.packer.get_buffer()
 
     def turn_around(self):
         try:
