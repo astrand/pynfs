@@ -19,6 +19,9 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 # TODO:
+#
+# use assert_status instead of failIf. 
+#
 # Extend unittest with warnings.
 #
 # Handle errors such as NFS4ERR_RESOURCE and NFS4ERR_DELAY.
@@ -1529,7 +1532,159 @@ class LookuppTestCase(NFSTestCase):
         res = self.do_compound([self.putrootfhop, lookuppop])
         self.assert_status(res, [NFS4ERR_NOTDIR])
 
+
+class NverifyTestCase(NFSTestCase):
+    """Test NVERIFY operation
+
+    FIXME: Add attribute directory and named attribute testing. 
+
+    Equivalence partitioning:
+
+    Input Condition: current filehandle
+        Valid equivalence classes:
+            link(1)
+            block(2)
+            char(3)
+            socket(4)
+            FIFO(5)
+            dir(6)
+            file(7)
+        Invalid equivalence classes:
+            invalid filehandle(8)
+    Input Condition: fattr.attrmask
+        Valid equivalence classes:
+            valid attribute(9)
+        Invalid equivalence classes:
+            invalid attrmask(10) (FATTR4_*_SET)
+    Input Condition: fattr.attr_vals
+        Valid equivalence classes:
+            changed attribute(11)
+            same attribute(12)
+        Invalid equivalence classes:
+            -
+    """
+    def setUp(self):
+        self.connect()
+        self.putrootfhop = self.ncl.putrootfh_op()
+
+    #
+    # Testcases covering valid equivalence classes.
+    #
+    def testChanged(self):
+        """NVERIFY with CHANGED attribute should execute remaining ops
+
+        Covering valid equivalence classes: 1, 2, 3, 4, 5, 6, 7, 9, 11
+        """
+
+        # Fetch sizes for all objects
+        obj_sizes = []
+        for lookupop in self.lookup_all_objects():
+            getattrop = self.ncl.getattr([FATTR4_SIZE])
+            res = self.do_compound([self.putrootfhop, lookupop, getattrop])
+            self.assert_OK(res)
+            obj = res.resarray[2].arm.arm.obj_attributes
+            d =  nfs4lib.fattr2dict(obj)
+            obj_sizes.append((lookupop, d["size"]))
         
+        # For each type of object, do nverify with wrong filesize,
+        # get new filesize and check if it match previous size. 
+        for (lookupop, objsize) in obj_sizes:
+            # Nverify op
+            attrmask = nfs4lib.list2attrmask([FATTR4_SIZE])
+            # We simulate a changed object by using a wrong filesize
+            # Size attribute is 8 bytes. 
+            attr_vals = nfs4lib.long2opaque(objsize + 17, 8)
+            obj_attributes = nfs4lib.fattr4(self.ncl, attrmask, attr_vals)
+            nverifyop = self.ncl.nverify_op(obj_attributes)
+
+            # New getattr
+            getattrop = self.ncl.getattr([FATTR4_SIZE])
+
+            res = self.do_compound([self.putrootfhop, lookupop,
+                                    nverifyop, getattrop])
+
+            self.assert_OK(res)
+
+            # Assert the new getattr was executed.
+            # File sizes should match. 
+            obj = res.resarray[-1].arm.arm.obj_attributes
+            d =  nfs4lib.fattr2dict(obj)
+            new_size = d["size"]
+            self.failIf(objsize != new_size,
+                        "GETATTR after NVERIFY returned different filesize")
+
+
+    def testSame(self):
+        """NVERIFY with unchanged attribute should return NFS4ERR_SAME
+
+        Covering valid equivalence classes: 1, 2, 3, 4, 5, 6, 7, 9, 12
+        """
+
+        # Fetch sizes for all objects
+        obj_sizes = []
+        for lookupop in self.lookup_all_objects():
+            getattrop = self.ncl.getattr([FATTR4_SIZE])
+            res = self.do_compound([self.putrootfhop, lookupop, getattrop])
+            self.assert_OK(res)
+            obj = res.resarray[2].arm.arm.obj_attributes
+            d =  nfs4lib.fattr2dict(obj)
+            obj_sizes.append((lookupop, d["size"]))
+        
+        # For each type of object, do nverify with wrong filesize,
+        # get new filesize and check if it match previous size. 
+        for (lookupop, objsize) in obj_sizes:
+            # Nverify op
+            attrmask = nfs4lib.list2attrmask([FATTR4_SIZE])
+            # Size attribute is 8 bytes. 
+            attr_vals = nfs4lib.long2opaque(objsize, 8)
+            obj_attributes = nfs4lib.fattr4(self.ncl, attrmask, attr_vals)
+            nverifyop = self.ncl.nverify_op(obj_attributes)
+
+            # New getattr
+            getattrop = self.ncl.getattr([FATTR4_SIZE])
+
+            res = self.do_compound([self.putrootfhop, lookupop,
+                                    nverifyop, getattrop])
+
+            self.assert_status(res, [NFS4ERR_SAME])
+
+    #
+    # Testcases covering invalid equivalence classes.
+    #
+    def testNoFh(self):
+        """NVERIFY without (cfh) should return NFS4ERR_NOFILEHANDLE
+
+        Covered invalid equivalence classes: 8
+        """
+        attrmask = nfs4lib.list2attrmask([FATTR4_SIZE])
+        # Size attribute is 8 bytes. 
+        attr_vals = nfs4lib.long2opaque(17, 8)
+        obj_attributes = nfs4lib.fattr4(self.ncl, attrmask, attr_vals)
+        nverifyop = self.ncl.nverify_op(obj_attributes)
+        res = self.do_compound([nverifyop])
+        self.assert_status(res, [NFS4ERR_NOFILEHANDLE])
+
+    def testWriteOnlyAttributes(self):
+        """NVERIFY with FATTR4_*_SET should return NFS4ERR_INVAL
+
+        Covered invalid equivalence classes: 10
+
+        Comments: See GetattrTestCase.testWriteOnlyAttributes. 
+        """
+        path = nfs4lib.str2pathname(self.normfile)
+        lookupop = self.ncl.lookup_op(path)
+
+        # Nverify
+        attrmask = nfs4lib.list2attrmask([FATTR4_TIME_ACCESS_SET])
+        # Size attribute is 8 bytes. 
+        attr_vals = nfs4lib.long2opaque(17, 8)
+        obj_attributes = nfs4lib.fattr4(self.ncl, attrmask, attr_vals)
+        nverifyop = self.ncl.nverify_op(obj_attributes)
+        
+        res = self.do_compound([self.putrootfhop, lookupop, nverifyop])
+        self.assert_status(res, [NFS4ERR_INVAL])
+
+
 
 class QuietTextTestRunner(unittest.TextTestRunner):
     def _makeResult(self):
