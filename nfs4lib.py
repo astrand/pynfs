@@ -61,6 +61,8 @@ class PartialNFS4Client:
         self.cwd = "/"
         # Root directory
         self.rootfh = None
+        # Last seqid
+        self.seqid = 0
 
     
     def addpackers(self):
@@ -90,6 +92,11 @@ class PartialNFS4Client:
     def gen_uniq_id(self):
         # Use FQDN and pid as ID.
         return socket.gethostname() + str(os.getpid())
+
+    def get_seqid(self):
+        self.seqid += 1
+        self.seqid = self.seqid % 2**32L
+        return self.seqid
 
     #
     # Operations. Creates complete operations. Does not send them to the server. 
@@ -155,7 +162,7 @@ class PartialNFS4Client:
         # FIXME
         raise NotImplementedError()
 
-    def open(self, claim=None, how=UNCHECKED4, owner=None, seqid=0,
+    def open(self, claim=None, how=UNCHECKED4, owner=None, seqid=None,
              share_access=OPEN4_SHARE_ACCESS_READ, share_deny=OPEN4_SHARE_DENY_NONE,
              clientid=None, file=None, opentype=OPEN4_NOCREATE):
         
@@ -167,6 +174,9 @@ class PartialNFS4Client:
 
         if not clientid:
             clientid = self.clientid
+
+        if not seqid:
+            seqid = self.get_seqid()
 
         openhow = openflag4(self, opentype=opentype, how=how)
         owner = nfs_lockowner4(self, clientid=clientid, owner=owner)
