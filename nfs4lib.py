@@ -70,6 +70,10 @@ class PartialNFS4Client:
     def putrootfh(self):
         return nfs_argop4(self, argop=OP_PUTROOTFH)
 
+    def putfh(self, fh):
+        args = PUTFH4args(self, object=fh)
+        return nfs_argop4(self, argop=OP_PUTFH, opputfh=args)
+
     def setclientid(self, verifier=None, id=None, cb_program=None, r_netid=None, r_addr=None, ):
         if not verifier:
             self.verifier = self.gen_random_64()
@@ -101,6 +105,35 @@ class PartialNFS4Client:
     def setclientid_confirm(self, setclientid_confirm):
         args = SETCLIENTID_CONFIRM4args(self, setclientid_confirm=setclientid_confirm)
         return nfs_argop4(self, argop=OP_SETCLIENTID_CONFIRM, opsetclientid_confirm=args)
+
+
+    def open(self, claim=None, openhow=None, owner=None, seqid=None, share_access=None, share_deny=None, clientid=None, file=None):
+        if not claim:
+            claim = open_claim4(self, claim=CLAIM_NULL, file=file)
+
+        if not openhow:
+            openhow = UNCHECKED4
+
+        # FIXME
+        seqid = 0
+        #
+        share_access = OPEN4_SHARE_ACCESS_READ
+        share_deny = OPEN4_SHARE_DENY_NONE
+
+        #file = pathname4(ncl, path=["foo"])
+
+        openhow = openflag4(self, opentype=OPEN4_NOCREATE, how=UNCHECKED4)
+        owner = nfs_lockowner4(self, clientid=clientid, owner="peter")
+
+        args = OPEN4args(self, claim, openhow, owner, seqid, share_access, share_deny)
+        return nfs_argop4(self, argop=OP_OPEN, opopen=args)
+
+
+
+    def read(self, stateid=0, offset=0, count=0):
+        args = READ4args(self, stateid=stateid, offset=offset, count=count)
+        return nfs_argop4(self, argop=OP_READ, opread=args)
+
     
 
 class UDPNFS4Client(PartialNFS4Client, rpc.RawUDPClient):

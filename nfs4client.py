@@ -126,9 +126,7 @@ if __name__ == "__main__":
     print "fh is", repr(fh)
 
 
-
     # SETCLIENTID4
-    #op = ncl.Setclientid(verifier="4711", id="peterfoo", r_netid="foo", r_addr="foo", cb_program=4711)
     op = ncl.setclientid()
     res =  ncl.compound([op])
 
@@ -139,3 +137,21 @@ if __name__ == "__main__":
     print "got setclientid_confirm", setclientid_confirm
 
 
+    # SETCLIENTID_CONFIRM
+    op = ncl.setclientid_confirm(setclientid_confirm)
+    res =  ncl.compound([op])
+
+
+    # OPEN
+    op = ncl.open(clientid=clientid, file=["foo"])
+    res =  ncl.compound([putrootfhoperation, op, getfhoperation])
+    fh = res.resarray[2].arm.arm.object
+    
+
+    # READ
+    putfhoperation = ncl.putfh(fh)
+    
+    op = ncl.read(count=50)
+    res = ncl.compound([putfhoperation, op])
+
+    print "Fick filinnehållet:", res.resarray[1].arm.arm.data
