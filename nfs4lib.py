@@ -169,7 +169,7 @@ class PartialNFS4Client:
 	    arrint = arrint | (1L << bitpos)
 	    attr_request[arrintpos] = arrint
 
-	self.getattr_op(attr_request)
+	return self.getattr_op(attr_request)
 
     def getfh_op(self):
         return nfs_argop4(self, argop=OP_GETFH)
