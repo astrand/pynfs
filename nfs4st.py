@@ -2958,36 +2958,23 @@ class SetattrSuite(NFSSuite):
         NFSSuite.setUp(self)
         self.new_mode = 0775
 
-    #
-    # Testcases covering valid equivalence classes.
-    #
-    def testStateidOnes(self):
-        """SETATTR(FATTR4_MODE) on regular file with stateid=ones
-        
-        Covered equivalence classes: 10, 21, 30, 40
-        """
-        lookupops = self.ncl.lookup_path(self.regfile)
-        operations = [self.putrootfhop] + lookupops
-
-        stateid = stateid4(self.ncl, 0, nfs4lib.long2opaque(0xffffffffffffffffffffffffL))
-
+    def _setattr_op(self, stateid):
         attrmask = nfs4lib.list2attrmask([FATTR4_MODE])
         dummy_ncl = nfs4lib.DummyNcl()
         dummy_ncl.packer.pack_uint(self.new_mode)
         attr_vals = dummy_ncl.packer.get_buf()
         obj_attributes = fattr4(self.ncl, attrmask, attr_vals)
+        return self.ncl.setattr_op(stateid, obj_attributes)
 
-        operations.append(self.ncl.setattr_op(stateid, obj_attributes))
-
-        res = self.do_compound(operations)
-
+    def _check_notsupp(self, res):
         if res.status == NFS4ERR_ATTRNOTSUPP:
             self.info_message("SETATTR(FATTR4_MODE) not supported on %s" \
                               % self.regfile)
-            return
+            return TRUE
+        
+        return FALSE
 
-        self.assert_status(res, [NFS4_OK, NFS4ERR_ATTRNOTSUPP])
-
+    def _getattr_check(self, lookupops):
         # Ok, SETATTR succeeded. Check that GETATTR matches.
         operations = [self.putrootfhop] + lookupops
         operations.append(self.ncl.getattr([FATTR4_MODE]))
@@ -3001,59 +2988,97 @@ class SetattrSuite(NFSSuite):
         mode = d.get("mode") 
         self.failIf(mode != self.new_mode,
                     "GETATTR after SETATTR(FATTR4_MODE) returned different mode")
-        
-        
 
+    def _valid_setattr(self, file, stateval):
+        lookupops = self.ncl.lookup_path(file)
+        operations = [self.putrootfhop] + lookupops
+
+        stateid = stateid4(self.ncl, 0, stateval)
+        operations.append(self._setattr_op(stateid))
+
+        res = self.do_compound(operations)
+        if self._check_notsupp(res): return
+
+        self.assert_status(res, [NFS4_OK, NFS4ERR_ATTRNOTSUPP])
+        self._getattr_check(lookupops)
+
+    #
+    # Testcases covering valid equivalence classes.
+    #
+    def testStateidOnes(self):
+        """SETATTR(FATTR4_MODE) on regular file with stateid=ones
+        
+        Covered equivalence classes: 10, 21, 30, 40
+        """
+        stateval = nfs4lib.long2opaque(0xffffffffffffffffffffffffL)
+        self._valid_setattr(self.regfile, stateval)
+        
     def testDir(self):
-        """SETATTR on directory
+        """SETATTR(FATTR4_MODE) on directory
 
         Covered equivalence classes: 11, 20, 30, 40
         """
+        self._valid_setattr(self.dirfile, "")
 
     def testBlock(self):
-        """SETATTR on block device
+        """SETATTR(FATTR4_MODE) on block device
 
         Covered equivalence classes: 12, 20, 30, 40
         """
+        self._valid_setattr(self.blockfile, "")
+        
 
     def testChar(self):
-        """SETATTR on char device
+        """SETATTR(FATTR4_MODE) on char device
 
         Covered equivalence classes: 13, 20, 30, 40
         """
+        self._valid_setattr(self.charfile, "")
 
     def testLink(self):
-        """SETATTR on symbolic linke
+        """SETATTR(FATTR4_MODE) on symbolic link
 
         Covered equivalence classes: 14, 20, 30, 40
         """
+        self._valid_setattr(self.linkfile, "")
+
     def testSocket(self):
-        """SETATTR on socket
+        """SETATTR(FATTR4_MODE) on socket
 
         Covered equivalence classes: 15, 20, 30, 40
         """
+        self._valid_setattr(self.socketfile, "")
+        
     def testFIFO(self):
-        """SETATTR on FIFO
+        """SETATTR(FATTR4_MODE) on FIFO
 
         Covered equivalence classes: 16, 20, 30, 40
         """
+        self._valid_setattr(self.fifofile, "")
+        
     def testNamedattrdir(self):
-        """SETATTR on named attribute directory
+        """SETATTR(FATTR4_MODE) on named attribute directory
 
         Covered equivalence classes: 17, 20, 30, 40
         """
+        # FIXME: Implement.
+        self.info_message("(TEST NOT IMPLEMENTED)")
 
     def testNamedattrdir(self):
-        """SETATTR on named attribute 
+        """SETATTR(FATTR4_MODE) on named attribute 
 
         Covered equivalence classes: 18, 20, 30, 40
         """
+        # FIXME: Implement.
+        self.info_message("(TEST NOT IMPLEMENTED)")
 
     def testChangeSize(self):
-        """SETATTR with changes to file size and valid stateid
+        """SETATTR(FATTR4_MODE) with changes to file size and valid stateid
 
         Covered equivalence classes: 10, 22, 31, 40
         """
+        # FIXME: Implement.
+        self.info_message("(TEST NOT IMPLEMENTED)")
 
     #
     # Testcases covering invalid equivalence classes.
@@ -3063,19 +3088,40 @@ class SetattrSuite(NFSSuite):
 
         Covered equivalence classes: 19
         """
-        # Use 20, 30, 40
+        stateid = stateid4(self.ncl, 0, "")
+        operations = [self._setattr_op(stateid)]
+
+        res = self.do_compound(operations)
+        self.assert_status(res, [NFS4ERR_NOFILEHANDLE])
 
     def testInvalidStateid(self):
         """SETATTR with invalid stateid should return FIXME
 
         Covered equivalence classes: 23
         """
+        # FIXME: Move to common method. Check correctness. 
+        stateval = nfs4lib.long2opaque(0x123456)
+        self._valid_setattr(self.regfile, stateval)
 
     def testNonWriteable(self):
-        """SETATTR on non-writeable attribute should return NFS4ERR_INVAL
+        """SETATTR(FATTR4_LINK_SUPPORT) should return NFS4ERR_INVAL
 
         Covered equivalence classes: 32
         """
+        lookupops = self.ncl.lookup_path(self.regfile)
+        operations = [self.putrootfhop] + lookupops
+
+        stateid = stateid4(self.ncl, 0, "")
+
+        attrmask = nfs4lib.list2attrmask([FATTR4_LINK_SUPPORT])
+        dummy_ncl = nfs4lib.DummyNcl()
+        dummy_ncl.packer.pack_bool(FALSE)
+        attr_vals = dummy_ncl.packer.get_buf()
+        obj_attributes = fattr4(self.ncl, attrmask, attr_vals)
+        operations.append(self.ncl.setattr_op(stateid, obj_attributes))
+
+        res = self.do_compound(operations)
+        self.assert_status(res, [NFS4ERR_INVAL])
 
     def testInvalidAttr(self):
         """SETATTR with invalid attribute data should return NFS4ERR_INVAL
