@@ -221,7 +221,7 @@ class NFSSuite(unittest.TestCase):
             del kwargs["ncl"]
         else:
             ncl = self.ncl
-        self.do_rpc(ncl.compound, *args, **kwargs)
+        return self.do_rpc(ncl.compound, *args, **kwargs)
 
     def setUp(self):
         # Note: no network communication should be done in this method. 
