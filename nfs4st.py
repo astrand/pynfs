@@ -1313,15 +1313,10 @@ class LinkSuite(NFSSuite):
         self.assert_status(res, [NFS4ERR_NOTDIR])
 
     def testZeroLengthName(self):
-        """LINK with zero length new name should fail
+        """LINK with zero length new name should fail with NFS4ERR_INVAL
 
         Covered invalid equivalence classes: 13
         """
-        # CITI crashes on zero length names.
-        # FIXME: remove return
-        self.info_message("(DISABLED)")
-        return
-        
         self._remove_object()
         operations = self._prepare_operation(self.regfile)
 
@@ -1329,7 +1324,7 @@ class LinkSuite(NFSSuite):
         linkop = self.ncl.link_op("")
         operations.append(linkop)
         res = self.do_compound(operations)
-        self.assert_OK(res)
+        self.assert_status(res, [NFS4ERR_INVAL])
 
 
 class LockSuite(NFSSuite):
