@@ -134,7 +134,10 @@ class NFSTestCase(unittest.TestCase):
     def get_invalid_fh(self):
         """Return a (guessed) invalid filehandle"""
         return nfs4lib.long2opaque(123456780, NFS4_FHSIZE/8)
-    
+
+    def get_invalid_verifier(self):
+        """Return a (guessed) invalid verifier"""
+        return nfs4lib.long2opaque(123456780, NFS4_VERIFIER_SIZE/8)
 
 class CompoundTestCase(NFSTestCase):
     """Test COMPOUND procedure
@@ -2675,10 +2678,10 @@ class SecinfoTestCase(NFSTestCase):
         self.info_message("(TEST NOT IMPLEMENTED)")
 
         
-
 class SetattrTestCase(NFSTestCase):
     # FIXME
     pass
+
 
 class SetclientidTestCase(NFSTestCase):
     """Test SETCLIENTID operation
@@ -2741,10 +2744,56 @@ class SetclientidTestCase(NFSTestCase):
         res = self.do_compound([setclientidop])
 
     
-
 class SetclientidconfirmTestCase(NFSTestCase):
-    # FIXME
-    pass
+    """Test SETCLIENTID_CONFIRM operation
+
+    Equivalence partitioning:
+
+    Input Condition: setclientid_confirm
+        Valid equivalence classes:
+            valid verifier(10)
+        Invalid equivalence classes:
+            stale verifier(11)
+    """
+    # Override setUp. Just connect, don't do SETCLIENTID etc. 
+    def setUp(self):
+        self.connect()
+
+    #
+    # Testcases covering valid equivalence classes.
+    #
+    def testValid(self):
+        """SETCLIENTID_CONFIRM on valid verifier
+        
+        Covered valid equivalence classes: 10
+        """
+        
+        # SETCLIENTID
+        setclientidop = self.ncl.setclientid()
+        res =  self.do_compound([setclientidop])
+        self.assert_OK(res)
+        
+        setclientid_confirm = res.resarray[0].arm.arm.setclientid_confirm
+
+        # SETCLIENTID_CONFIRM
+        setclientid_confirmop = self.ncl.setclientid_confirm_op(setclientid_confirm)
+        res =  self.do_compound([setclientid_confirmop])
+        self.assert_OK(res)
+
+    #
+    # Testcases covering invalid equivalence classes.
+    #
+    def testStale(self):
+        """SETCLIENTID_CONFIRM on stale vrf should return NFS4ERR_STALE_CLIENTID
+
+        Covered invalid equivalence classes: 11
+        """
+        setclientid_confirm = self.get_invalid_verifier()
+        setclientid_confirmop = self.ncl.setclientid_confirm_op(setclientid_confirm)
+        res =  self.do_compound([setclientid_confirmop])
+        self.assert_status(res, [NFS4ERR_STALE_CLIENTID])
+
+
 
 class VerifyTestCase(NFSTestCase):
     # FIXME
