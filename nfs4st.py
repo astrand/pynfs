@@ -614,6 +614,36 @@ class GetattrTestCase(NFSTestCase):
         res = self.do_compound([getattrop])
         self.failUnlessEqual(res.status, NFS4ERR_NOFILEHANDLE)
 
+    def testSupported(self):
+        """GETATTR(FATTR4_SUPPORTED_ATTRS) should return all mandatory
+        
+        GETATTR(FATTR4_SUPPORTED_ATTRS) should return at least all
+        mandatory attributes
+        """
+
+        path = nfs4lib.str2pathname(self.normfile)
+        lookupop = self.ncl.lookup_op(path)
+
+        getattrop = self.ncl.getattr([FATTR4_SUPPORTED_ATTRS])
+        res = self.do_compound([self.putrootfhop, lookupop, getattrop])
+        self.assert_OK(res)
+
+        obj = res.resarray[-1].arm.arm.obj_attributes
+
+        unpacker = nfs4lib.create_dummy_unpacker(obj.attr_vals)
+        intlist = unpacker.unpack_fattr4_supported_attrs()
+        i = nfs4lib.intlist2long(intlist)
+
+        all_mandatory_bits = 2**(FATTR4_RDATTR_ERROR+1) - 1
+
+        returned_mandatories = i & all_mandatory_bits
+
+        self.failIf(not returned_mandatories == all_mandatory_bits,
+                    "not all mandatory attributes returned: %s" % \
+                    nfs4lib.int2binstring(returned_mandatories)[-12:])
+
+        sys.stdout.flush()
+
 
 
 class QuietTextTestRunner(unittest.TextTestRunner):
