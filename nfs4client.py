@@ -24,7 +24,6 @@
 from nfs4constants import *
 from nfs4types import *
 import nfs4lib
-import readline
 import cmd
 import sys
 import getopt
@@ -46,15 +45,23 @@ BUFSIZE = 4096
 
 # Load readline & completer
 try:
+    import readline
     import pynfs_completer
 except ImportError:
-    print "Module readline not available."
+    print "Module readline not available. Tab-completion disabled."
+    class Completer:
+        def __init__(self):
+            self.pythonmode = 0
+    
 else:
+    # Readline is available
     import __builtin__
     import __main__
     class Completer(pynfs_completer.Completer):
         def __init__(self):
             self.pythonmode = 0
+            readline.set_completer(self.complete)
+            pynfs_completer.set_history_file(".nfs4client")
         
         commands = [
             "help", "cd", "rm", "dir", "ls", "exit", "quit", "get",
@@ -104,21 +111,6 @@ else:
             return matches
 
 
-    readline.parse_and_bind("tab: complete")
-    readline.set_completer_delims(' \t\n`~!@#$%^&*()-=+{}\\|;:\'",<>/?')
-
-# Save history upon exit
-import os
-histfile = os.path.join(os.environ["HOME"], ".nfs4client")
-try:
-    readline.read_history_file(histfile)
-except IOError:
-    pass
-import atexit
-atexit.register(readline.write_history_file, histfile)
-del histfile
-
-
 class ClientApp(cmd.Cmd):
     def __init__(self, transport, host, port, directory, pythonmode):
         self.transport = transport
@@ -129,7 +121,6 @@ class ClientApp(cmd.Cmd):
 
         self.completer = Completer()
         self.completer.pythonmode = pythonmode
-        readline.set_completer(self.completer.complete)
 
         # FIXME: show current directory.
         self.baseprompt = "nfs4: %s>"
