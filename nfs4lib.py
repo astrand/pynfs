@@ -185,6 +185,7 @@ class PartialNFS4Client:
 
         if not owner:
 	    # FIXME: Change to PID?
+	    # FIXME: variable clashing: owner. 
             owner = pwd.getpwuid(os.getuid())[0]
 
         if not clientid:
@@ -298,9 +299,9 @@ class PartialNFS4Client:
         # FIXME
         raise NotImplementedError()
 
-    def write(self):
-        # FIXME
-        raise NotImplementedError()
+    def write(self, data, stateid, offset=0, stable=UNSTABLE4):
+        args = WRITE4args(self, stateid=stateid, offset=offset, stable=stable, data=data)
+        return nfs_argop4(self, argop=OP_WRITE, opwrite=args)
 
     def cb_getattr(self):
         # FIXME
@@ -353,6 +354,12 @@ class PartialNFS4Client:
             return data[:size]
         else:
             return data
+
+    def do_write(self, fh, data, stateid, offset=0, stable=UNSTABLE4):
+        putfhop = self.putfh(fh)
+	writeop = self.write(data, stateid, offset=offset, stable=stable)
+	res = self.compound([putfhop, writeop])
+	check_result(res)
 
     def do_close(self, fh, stateid):
         seqid = self.get_seqid()
@@ -463,7 +470,16 @@ class NFS4OpenFile:
         pathname = str2pathname(filename, pathname)
 
         putrootfhop = self.ncl.putrootfh()
-        openop = self.ncl.open(file=pathname)
+
+	if mode == "r":
+	    share_access = OPEN4_SHARE_ACCESS_READ
+	elif mode == "w":
+	    share_access = OPEN4_SHARE_ACCESS_WRITE
+	else:
+	    # FIXME: More modes allowed. 
+	    raise TypeError("Invalid mode")
+	
+        openop = self.ncl.open(file=pathname, share_access=share_access)
         getfhop = self.ncl.getfh()
         res =  self.ncl.compound([putrootfhop, openop, getfhop])
 
@@ -563,11 +579,12 @@ class NFS4OpenFile:
         # FIXME: SETATTR can probably be used. 
         raise NotImplementedError()
         
-    def write(self, str):
+    def write(self, data):
         if self.closed:
             raise ValueError("I/O operation on closed file")
-        # FIXME
-        raise NotImplementedError()
+
+	self.ncl.do_write(self.fh, data, stateid=self.stateid)
+	self.pos += len(data)
 
     def writelines(self, list):
         if self.closed:
