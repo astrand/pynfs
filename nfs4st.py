@@ -60,6 +60,10 @@ class NFSTestCase(unittest.TestCase):
             return
 
 
+    def assert_OK(self, res):
+        self.failIfRaises(nfs4lib.NFSException, nfs4lib.check_result, res)
+
+
 class AccessTestCase(NFSTestCase):
     """Test ACCESS operation.
 
@@ -98,7 +102,7 @@ class AccessTestCase(NFSTestCase):
         """
         for accessop in self.valid_access_ops():
             res = self.ncl.compound([self.putrootfhop, accessop])
-            self.failIfRaises(nfs4lib.NFSException, nfs4lib.check_result, res)
+            self.assert_OK(res)
             
             supported = res.resarray[1].arm.arm.supported
             access = res.resarray[1].arm.arm.access
@@ -116,7 +120,7 @@ class AccessTestCase(NFSTestCase):
         lookupop = self.ncl.lookup_op(path)
         for accessop in self.valid_access_ops():
             res = self.ncl.compound([self.putrootfhop, lookupop, accessop])
-            self.failIfRaises(nfs4lib.NFSException, nfs4lib.check_result, res)
+            self.assert_OK(res)
 
             supported = res.resarray[2].arm.arm.supported
             access = res.resarray[2].arm.arm.access
@@ -132,7 +136,7 @@ class AccessTestCase(NFSTestCase):
         """
         for accessop in self.valid_access_ops():
             res = self.ncl.compound([self.putrootfhop, accessop])
-            self.failIfRaises(nfs4lib.NFSException, nfs4lib.check_result, res)
+            self.assert_OK(res)
             
             supported = res.resarray[1].arm.arm.supported
             access = res.resarray[1].arm.arm.access
@@ -183,7 +187,6 @@ class CommitTestCase(NFSTestCase):
         COMMIT should fail with NFS4ERR_ISDIR if called with an filehandle
         that corresponds to a directory. 
         """
-        global res
         commitop = self.ncl.commit_op(0, 0)
         res = self.ncl.compound([self.putrootfhop, commitop])
         self.failUnlessEqual(res.status, NFS4ERR_ISDIR)
@@ -201,17 +204,17 @@ class CommitTestCase(NFSTestCase):
         # offset = 0
         commitop = self.ncl.commit_op(0, 0)
         res = self.ncl.compound([self.putrootfhop, lookupop, commitop])
-        self.failUnlessEqual(res.status, NFS4_OK)
+        self.assert_OK(res)
 
         # offset = 1
         commitop = self.ncl.commit_op(1, 0)
         res = self.ncl.compound([self.putrootfhop, lookupop, commitop])
-        self.failUnlessEqual(res.status, NFS4_OK)
+        self.assert_OK(res)
 
         # offset = 2**64 - 1
         commitop = self.ncl.commit_op(-1, 0)
         res = self.ncl.compound([self.putrootfhop, lookupop, commitop])
-        self.failUnlessEqual(res.status, NFS4_OK)
+        self.assert_OK(res)
 
 
     def testCounts(self):
@@ -226,19 +229,46 @@ class CommitTestCase(NFSTestCase):
         # count = 0
         commitop = self.ncl.commit_op(0, 0)
         res = self.ncl.compound([self.putrootfhop, lookupop, commitop])
-        self.failUnlessEqual(res.status, NFS4_OK)
+        self.assert_OK(res)
 
         # count = 1
         commitop = self.ncl.commit_op(0, 1)
         res = self.ncl.compound([self.putrootfhop, lookupop, commitop])
-        self.failUnlessEqual(res.status, NFS4_OK)
+        self.assert_OK(res)
 
         # count = 2**64 - 1
         commitop = self.ncl.commit_op(0, -1)
         res = self.ncl.compound([self.putrootfhop, lookupop, commitop])
-        self.failUnlessEqual(res.status, NFS4_OK)
+        self.assert_OK(res)
 
 
+class CreateTestCase(NFSTestCase):
+    """Test CREATE operation.
+    """
+    
+    def setUp(self):
+        self.connect()
+        self.putrootfhop = self.ncl.putrootfh_op()
+
+
+    def testLink(self):
+        """CREATE link
+
+        Create an (symbolic) link.
+        """
+        
+        objtype = createtype4(self.ncl, type=NF4LNK, linkdata="/etc/X11")
+        operations = [self.putrootfhop]
+        pathname = nfs4lib.str2pathname("/tmp")
+        if pathname:
+            operations.append(self.ncl.lookup_op(pathname))
+
+        createop = self.ncl.create_op("link1", objtype)
+        operations.append(createop)
+
+        res = self.ncl.compound(operations)
+        self.assert_OK(res)
+        
 
 class TestProgram(unittest.TestProgram):
     USAGE = """\
