@@ -31,7 +31,6 @@ import getopt
 import re
 import os
 
-
 SYNTAX = """\
 Syntax:
 nfs4client host[:[port]]<directory> [-u|-t] [-d debuglevel]
@@ -132,8 +131,9 @@ class ClientApp(cmd.Cmd):
         self.completer.pythonmode = pythonmode
         readline.set_completer(self.completer.complete)
 
-        # FIXME: show current directory. 
-        self.prompt = "nfs4: >"
+        # FIXME: show current directory.
+        self.baseprompt = "nfs4: %s>"
+
         # FIXME
         #self.intro = ""
         #self.doc_header = ""
@@ -141,6 +141,7 @@ class ClientApp(cmd.Cmd):
         #self.undoc_header
 
         self._connect()
+        self._set_prompt()
 
 
     def _connect(self):
@@ -151,6 +152,9 @@ class ClientApp(cmd.Cmd):
         else:
             raise RuntimeError, "Invalid protocol"
         self.ncl.init_connection()
+
+    def _set_prompt(self):
+        self.prompt = self.baseprompt % self.ncl.cwd
         
 
     #
@@ -161,15 +165,40 @@ class ClientApp(cmd.Cmd):
         sys.exit(0)
     
     def do_cd(self, line):
-        # FIXME
-        print "not implemented"
+        # FIXME: Check for directory existence. 
+        if line == "..":
+            self.ncl.cwd = self.ncl.cwd[:self.ncl.cwd.rindex("/")]
+            if not self.ncl.cwd:
+                self.ncl.cwd = "/"
+        else:
+            self.ncl.cwd = os.path.join(self.ncl.cwd, line)
+
+        self._set_prompt()
 
     def do_rm(self, line):
         # FIXME
         print "not implemented"
 
     def do_dir(self, line):
-        pass
+        pathname = nfs4lib.str2pathname(self.ncl.cwd)
+
+        putrootfhop = self.ncl.putrootfh()
+        operations = [putrootfhop]
+        
+        if pathname:
+            lookupop = self.ncl.lookup(pathname)
+            operations.append(lookupop)
+
+        getfhop = self.ncl.getfh()
+        operations.append(getfhop)
+
+        res = self.ncl.compound(operations)
+        getfhresult = res.resarray[-1].arm
+        fh = getfhresult.arm.object
+        
+        entries = self.ncl.do_readdir(fh)
+        for entry in entries:
+            print entry.name
 
     do_ls = do_dir
 
