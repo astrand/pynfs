@@ -42,7 +42,8 @@ nfs4client host[:[port]]<directory> [-u|-t] [-d debuglevel]
 VERSION = "0.0"
 
 class CLI(cmd.Cmd):
-    def __init__(self):
+    def __init__(self, ncl):
+        self.ncl = ncl
         # FIXME: show current directory. 
         self.prompt = "nfs4: >"
         # FIXME
@@ -97,8 +98,38 @@ class CLI(cmd.Cmd):
     do_quit = do_EOF
 
     def do_get(self, line):
-        # FIXME
-        print "not implemented"
+        # OPEN
+        putrootfhoperation = self.ncl.putrootfh()
+        op = self.ncl.open(file=["foo"])
+        getfhoperation = self.ncl.getfh()
+        res =  self.ncl.compound([putrootfhoperation, op, getfhoperation])
+        # FIXME: Intelligent error handling: In this app: Print error message.
+        # In nfs4lib: Raise exception. 
+        if res.status:
+            raise " failed with status", res.status
+            
+        fh = res.resarray[2].arm.arm.object
+
+        # READ
+        putfhoperation = self.ncl.putfh(fh)
+        offset = 0
+        data = ""
+        
+        while 1:
+            op = self.ncl.read(count=2, offset=offset)
+            res = self.ncl.compound([putfhoperation, op])
+            # FIXME: Error handling.
+
+            data += res.resarray[1].arm.arm.data
+            
+            if res.resarray[1].arm.arm.eof:
+                break
+
+            offset += 2
+        
+            
+        print "Fick filinnehållet:", data
+
 
     def do_put(self, line):
         # FIXME
@@ -209,46 +240,9 @@ if __name__ == "__main__":
         raise RuntimeError, "Internal error: wrong protocol"
 
     
-    # PUTROOT & GETFH
-    putrootfhoperation = ncl.putrootfh()
-    getfhoperation = ncl.getfh()
-    res =  ncl.compound([putrootfhoperation, getfhoperation])
-    fh = res.resarray[1].opgetfh.resok4.object
-    print "fh is", repr(fh)
+    ncl.init_connection()
 
-
-    # SETCLIENTID4
-    op = ncl.setclientid()
-    res =  ncl.compound([op])
-
-    clientid = res.resarray[0].arm.resok4.clientid
-    setclientid_confirm = res.resarray[0].arm.resok4.setclientid_confirm
-
-    print "got clientid", clientid
-    print "got setclientid_confirm", setclientid_confirm
-
-
-    # SETCLIENTID_CONFIRM
-    op = ncl.setclientid_confirm(setclientid_confirm)
-    res =  ncl.compound([op])
-
-
-    # OPEN
-    op = ncl.open(clientid=clientid, file=["foo"])
-    res =  ncl.compound([putrootfhoperation, op, getfhoperation])
-    fh = res.resarray[2].arm.arm.object
-    
-
-    # READ
-    putfhoperation = ncl.putfh(fh)
-    
-    op = ncl.read(count=50)
-    res = ncl.compound([putfhoperation, op])
-
-    print "Fick filinnehållet:", res.resarray[1].arm.arm.data
-
-
-
-c = CLI()
-c.cmdloop()
+    #c = CLI(ncl)
+    #c.cmdloop()
+    f = nfs4lib.NFS4OpenFile(ncl)
 
