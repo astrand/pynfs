@@ -1275,6 +1275,20 @@ class LinkTestCase(NFSTestCase):
         self.assert_OK(res)
 
 
+class LockTestCase(NFSTestCase):
+    # FIXME
+    pass
+
+
+class LocktTestCase(NFSTestCase):
+    # FIXME
+    pass
+
+
+class LockuTestCase(NFSTestCase):
+    # FIXME
+    pass
+
 
 class QuietTextTestRunner(unittest.TextTestRunner):
     def _makeResult(self):
