@@ -249,7 +249,23 @@ class CreateTestCase(NFSTestCase):
     def setUp(self):
         self.connect()
         self.putrootfhop = self.ncl.putrootfh_op()
+        self.obj_dir = "/tmp"
+        self.obj_name = "object1"
 
+        # Make sure the object to create does not exist.
+        # This tests at the same time the REMOVE operation. Not much
+        # we can do about it. 
+        operations = [self.ncl.putrootfh_op()]
+
+        pathname = nfs4lib.str2pathname(self.obj_dir)
+        self.lookup_dir_op = self.ncl.lookup_op(pathname)
+        operations.append(self.lookup_dir_op)
+
+        operations.append(self.ncl.remove_op(self.obj_name))
+
+        res = self.ncl.compound(operations)
+        self.failIf(res.status not in [NFS4_OK, NFS4ERR_NOENT],
+                    "cannot remove test object in preparation for CREATE test")
 
     def testLink(self):
         """CREATE link
@@ -259,11 +275,9 @@ class CreateTestCase(NFSTestCase):
         
         objtype = createtype4(self.ncl, type=NF4LNK, linkdata="/etc/X11")
         operations = [self.putrootfhop]
-        pathname = nfs4lib.str2pathname("/tmp")
-        if pathname:
-            operations.append(self.ncl.lookup_op(pathname))
+        operations.append(self.lookup_dir_op)
 
-        createop = self.ncl.create_op("link1", objtype)
+        createop = self.ncl.create_op(self.obj_name, objtype)
         operations.append(createop)
 
         res = self.ncl.compound(operations)
