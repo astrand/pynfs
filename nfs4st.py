@@ -2401,6 +2401,9 @@ class PutfhSuite(NFSSuite):
             named attribute(9)
         Invalid equivalence classes:
             invalid filehandle(10)
+
+    Comments: It's not possible to cover eq. class 10, since a filehandle
+    is opaque to the client.
     """
     #
     # Testcases covering valid equivalence classes.
