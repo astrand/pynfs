@@ -8,3 +8,4 @@ parsetab.py
 MANIFEST
 build
 dist
+*.chk
