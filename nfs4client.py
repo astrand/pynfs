@@ -388,56 +388,70 @@ class ClientApp(cmd.Cmd):
 
 
 def usage():
-    print "Usage: %s host[:[port]]<directory> [-u|-t] [-d debuglevel] [-c string]" % sys.argv[0]
-    print "options:"
-    print "-h, --help                   display this help and exit"
-    print "-u, --udp                    use UDP as transport (default)"
-    print "-t, --tcp                    use TCP as transport"
-    print "-d level, --debuglevel level set debuglevel"
-    print "-p, --pythonmode             enable Python interpreter mode"
-    print "-c, --commandstring string   execute semicolon separated commands"
+    USAGE = """\
+Usage: %s host[:[port]]<directory> [-u|-t] [-d debuglevel] [-c string] 
+options:
+-h, --help                   display this help and exit
+-u, --udp                    use UDP as transport (default)
+-t, --tcp                    use TCP as transport
+-d level, --debuglevel level set debuglevel
+-p, --pythonmode             enable Python interpreter mode
+-c, --commandstring string   execute semicolon separated commands
+""" % sys.argv[0]
+
+    print >> sys.stderr, USAGE
     sys.exit(2)
+
+
+# FIXME: Remove if/when Python library supports GNU style scanning. 
+def my_getopt(args, shortopts, longopts = []):
+    opts = []
+    prog_args = []
+    if type(longopts) == type(""):
+        longopts = [longopts]
+    else:
+        longopts = list(longopts)
+
+    # Allow options after non-option arguments?
+    if shortopts[0] == '+':
+        shortopts = shortopts[1:]
+        all_options_first = 1
+    elif os.environ.has_key("POSIXLY_CORRECT"):
+        all_options_first = 1
+    else:
+        all_options_first = 0
+
+    while args:
+        if args[0] == '--':
+            prog_args += args[1:]
+            break
+
+        if args[0][:2] == '--':
+            opts, args = getopt.do_longs(opts, args[0][2:], longopts, args[1:])
+        elif args[0][:1] == '-':
+            opts, args = getopt.do_shorts(opts, args[0][1:], shortopts, args[1:])
+        else:
+            if all_options_first:
+                prog_args += args
+                break
+            else:
+                prog_args.append(args[0])
+                args = args[1:]
+
+    return opts, prog_args
 
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         usage()
 
-
-    # Reorder arguments, so we can add options at the end.
-    # This got a bit complicated, but...
-    ordered_args = []
-    options_with_args = ["-c"]
-
-    arglist = sys.argv[1:]
-    num_args = len(arglist)
-    skip_next = 0
-    for argnum in range(num_args):
-        if skip_next:
-            skip_next = 0
-            continue
-        
-        arg = arglist[argnum]
-        try:
-            nextarg = arglist[argnum+1]
-        except:
-            nextarg = ""
-
-        if arg.startswith("-"):
-            ordered_args.insert(0, arg)
-            if arg in options_with_args:
-                ordered_args.insert(1, nextarg)
-                skip_next = 1
-        else:
-            ordered_args.append(arg)
-
     # Let getopt parse the arguments
     try:
-        opts, args = getopt.getopt(ordered_args, "hutdpc:",
-                                   ["help", "udp", "tcp", "debuglevel",
-                                    "pythonmode", "commandstring="])
-    except getopt.GetoptError:
-        print "invalid option"
+        opts, args = my_getopt(sys.argv[1:], "hutd:pc:",
+                               ["help", "udp", "tcp", "debuglevel=",
+                                "pythonmode", "commandstring="])
+    except getopt.GetoptError, e:
+        print >> sys.stderr, e
         usage()
         sys.exit(2)
 
@@ -464,6 +478,7 @@ if __name__ == "__main__":
 
     # By now, there should only be one argument left.
     if len(args) != 1:
+        print >> sys.stderr, "the number of non-option arguments is not one"
         usage()
     else:
         # Parse host/port/directory part. 
