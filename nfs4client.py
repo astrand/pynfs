@@ -193,7 +193,6 @@ class ClientApp(cmd.Cmd):
 
     def do_dir(self, line):
         pathcomps = self.ncl.get_pathcomps_rel(line)
-        
         putrootfhop = self.ncl.putrootfh_op()
         lookupops = self.ncl.lookup_path(pathcomps)
         operations = [putrootfhop] + lookupops
@@ -256,12 +255,11 @@ class ClientApp(cmd.Cmd):
         allrights = ACCESS4_DELETE + ACCESS4_EXECUTE + ACCESS4_EXTEND + ACCESS4_LOOKUP \
                     + ACCESS4_MODIFY + ACCESS4_READ
         
-
-        # PUTROOT
-        operations = [self.ncl.putrootfh_op()]
-        pathcomps = nfs4lib.unixpath2comps(line)
-        operations.extend(self.ncl.lookup_path(pathcomps))
-
+        pathcomps = self.ncl.get_pathcomps_rel(line)
+        putrootfhop = self.ncl.putrootfh_op()
+        lookupops = self.ncl.lookup_path(pathcomps)
+        operations = [putrootfhop] + lookupops
+        
         # ACCESS
         operations.append(self.ncl.access_op(allrights))
         res = self.ncl.compound(operations)
@@ -287,7 +285,6 @@ class ClientApp(cmd.Cmd):
         print "ACCESS4_EXECUTE is", is_allowed(access, ACCESS4_EXECUTE)
 
     def do_create(self, line):
-        # FIXME: Should be able to create objects in other dirs than cwd.
         args = line.split()
         if len(args) < 2:
             print "create <type> <name> <arguments>"
@@ -327,16 +324,13 @@ class ClientApp(cmd.Cmd):
             print "unknown type"
             return
 
-        # PUTROOT
-        operations = [self.ncl.putrootfh_op()]
-
-        # LOOKUP
-        pathcomps = nfs4lib.unixpath2comps(self.ncl.cwd)
-        if pathcomps:
-            operations.extend(self.ncl.lookup_path(pathcomps))
+        pathcomps = self.ncl.get_pathcomps_rel(objname)
+        dircomps = pathcomps[:-1]
+        lookupops = self.ncl.lookup_path(dircomps)
+        operations = [self.ncl.putrootfh_op()] + lookupops
 
         # CREATE
-        createop = self.ncl.create(objtype, objname)
+        createop = self.ncl.create(objtype, pathcomps[-1])
         operations.append(createop)
 
         try:
@@ -347,31 +341,34 @@ class ClientApp(cmd.Cmd):
             return
 
     def do_put(self, line):
-        # FIXME: Not tested. 
-        filenames = line.split()
-
-        if not filenames:
-            print "put <filename>..."
-            return
+        fields = line.split()
         
-        for file in filenames:
-            basename = os.path.basename(file)
-            remote = nfs4lib.NFS4OpenFile(self.ncl)
-            try:
-                local = open(file)
-                remote.open(basename, "w")
-                
-                while 1:
-                    data = local.read(BUFSIZE*64)
-                    if not data:
-                        break
-                    
-                    remote.write(data)
-                
-                remote.close()
-                local.close()
-            except nfs4lib.BadCompoundRes, r:
-                print "Error fetching file:", r
+        if len(fields) < 1 or len(fields) > 2:
+            print "put <local name> [remote name]"
+            return
+
+        local_name = fields[0]
+        try:
+            remote_name = fields[1]
+        except IndexError:
+            remote_name = os.path.basename(local_name)
+        
+        remote = nfs4lib.NFS4OpenFile(self.ncl)
+        try:
+            local = open(local_name)
+            remote.open(remote_name, "w")
+
+            while 1:
+                data = local.read(BUFSIZE*64)
+                if not data:
+                    break
+
+                remote.write(data)
+
+            remote.close()
+            local.close()
+        except nfs4lib.BadCompoundRes, r:
+            print "Error fetching file:", r
         print
 
     def do_mkdir(self, line):
