@@ -3811,8 +3811,6 @@ class VerifySuite(NFSSuite):
             attr with invalid utf8(13)
 
     """
-
-    # FIXME: Cover class 13. Use "owner" attribute with invalid UTF8.
     
     #
     # Testcases covering valid equivalence classes.
@@ -3910,6 +3908,26 @@ class VerifySuite(NFSSuite):
         
         res = self.do_compound(operations)
         self.assert_status(res, [NFS4ERR_INVAL])
+
+    def testNonUTF8(self):
+        """VERIFY with non-UTF8 FATTR4_OWNER should return NFS4ERR_INVAL
+
+        Covered invalid equivalence classes: 13
+        """
+        lookupops = self.ncl.lookup_path(self.regfile)
+        for name in self.get_invalid_utf8strings():
+            operations = [self.putrootfhop] + lookupops
+            
+            # Verify op
+            attrmask = nfs4lib.list2attrmask([FATTR4_OWNER])
+            dummy_ncl = nfs4lib.DummyNcl()
+            dummy_ncl.packer.pack_utf8string(name)
+            attr_vals = dummy_ncl.packer.get_buf()
+            obj_attributes = fattr4(self.ncl, attrmask, attr_vals)
+            operations.append(self.ncl.verify_op(obj_attributes))
+
+            res = self.do_compound(operations)
+            self.assert_status(res, [NFS4ERR_INVAL])
 
 
 ## class WriteSuite(NFSSuite):
