@@ -336,7 +336,13 @@ def gen_unpack_code(ip, id, typedecl):
 
 # Code generation for <prefix>packer.py
 def gen_packers(id, typeobj):
-    base_type = known_types[typeobj.base_type]
+    base_type = known_types.get(typeobj.base_type)
+    if not base_type:
+        print >>sys.stderr, \
+"""Warning: definition of '%s' is based on '%s' which isn't defined
+yet. Assuming '%s' is composite (struct/union).""" \
+        % (id, typeobj.base_type, typeobj.base_type)
+        base_type = RPCType(composite=1)
     
     # Packers
     ip = IndentPrinter(packer_out)
