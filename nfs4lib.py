@@ -965,9 +965,8 @@ class NFS4OpenFile:
         putfhop = self.ncl.putfh_op(self.fh)
         seqid = self.ncl.get_seqid()
         opconfirm = self.ncl.open_confirm_op(self.stateid, seqid)
-        self.ncl.compound([putfhop, opconfirm])
+        res = self.ncl.compound([putfhop, opconfirm])
         check_result(res)
-        
 
     def close(self):
         if not self.closed:
