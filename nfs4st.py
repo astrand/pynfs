@@ -485,31 +485,30 @@ class CommitTestSuite(NFSTestSuite):
         self.assert_OK(res)        
 
     def testCounts(self):
-        """COMMIT on file with count 0, 1 and 2**64 - 1
+        """COMMIT on file with count 0, 1 and 2**32 - 1
 
         Covered valid equivalence classes: 1, 9, 11, 12
 
         This test case tests boundary values for the count parameter
         in the COMMIT operation. All values are legal. Tested values
-        are 0, 1 and 2**64 - 1 (selected by BVA)
+        are 0, 1 and 2**32 - 1 (selected by BVA)
         """
-        lookupop = self.ncl.lookup_op(self.normfile)
+
+        def test_with_count(self, count):
+            lookupops = self.ncl.lookup_path(self.normfile)
+            operations = [self.putrootfhop] + lookupops
+            operations.append(self.ncl.commit_op(0, count))
+            res = self.do_compound(operations)
+            self.assert_OK(res)
         
         # count = 0
-        commitop = self.ncl.commit_op(0, 0)
-        res = self.do_compound([self.putrootfhop, lookupop, commitop])
-        self.assert_OK(res)
+        test_with_count(self, 0)
 
         # count = 1
-        commitop = self.ncl.commit_op(0, 1)
-        res = self.do_compound([self.putrootfhop, lookupop, commitop])
-        self.assert_OK(res)
-
-        # count = 2**64 - 1
-        commitop = self.ncl.commit_op(0, -1)
-        res = self.do_compound([self.putrootfhop, lookupop, commitop])
-        self.assert_OK(res)
-
+        test_with_count(self, 1)
+        
+        # count = 2**32 - 1
+        test_with_count(self, 0xffffffffL)
 
     #
     # Testcases covering invalid equivalence classes
@@ -519,10 +518,11 @@ class CommitTestSuite(NFSTestSuite):
 
         Covered invalid equivalence classes: 2
         """
-        lookupop = self.ncl.lookup_op(self.linkfile)
-        commitop = self.ncl.commit_op(0, 0)
-        res = self.do_compound([self.putrootfhop, lookupop, commitop])
-        self.failUnlessEqual(res.status, NFS4ERR_INVAL)
+        lookupops = self.ncl.lookup_path(self.linkfile)
+        operations = [self.putrootfhop] + lookupops
+        operations.append(self.ncl.commit_op(0, 0))
+        res = self.do_compound(operations)
+        self.assert_status(res, [NFS4ERR_SYMLINK])
 
     def testOnBlock(self):
         """COMMIT should fail with NFS4ERR_INVAL on block device
