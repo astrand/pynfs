@@ -26,6 +26,80 @@
 
 import sys
 
+#
+# Section: Lexical analysis
+#
+
+# Note: INT is not mentioned in RFC1832 as a reserved word. Why?
+reserved = ("INT", "BOOL", "CASE", "CONST", "DEFAULT", "DOUBLE", "QUADRUPLE",
+            "ENUM", "FLOAT", "HYPER", "OPAQUE", "STRING", "STRUCT",
+            "SWITCH", "TYPEDEF", "UNION", "UNSIGNED", "VOID",
+            # RPC specific
+            "PROGRAM", "VERSION")
+
+reserved_map = { }
+for r in reserved:
+    reserved_map[r.lower()] = r
+
+tokens = reserved + (
+    "ID", "NUMBER",
+    # ( ) [ ] { } 
+    "LPAREN", "RPAREN", "LBRACKET", "RBRACKET", "LBRACE", "RBRACE",
+    # ; : < > * = ,
+    "SEMI", "COLON", "LT", "GT", "STAR", "EQUALS", "COMMA"
+    )
+
+t_ignore = " \t"
+
+def t_ID(t):
+    r'[A-Za-z][A-Za-z0-9_]*'
+    t.type = reserved_map.get(t.value, "ID")
+    return t
+
+def t_NUMBER(t):
+    r'(0x[0-9a-fA-F]+)|(0[0-7]+)|(\d+)'
+    return t
+
+# Tokens
+t_LPAREN           = r'\('
+t_RPAREN           = r'\)'
+t_LBRACKET         = r'\['
+t_RBRACKET         = r'\]'
+t_LBRACE           = r'\{'
+t_RBRACE           = r'\}'
+t_SEMI             = r';'
+t_COLON            = r':'
+t_LT               = r'<'
+t_GT               = r'>'
+t_STAR             = r'\*'
+t_EQUALS           = r'='
+t_COMMA            = r','
+
+def t_newline(t):
+    r'\n+'
+    t.lineno += t.value.count("\n")
+
+def t_mod(t):
+    r'%.*\n'
+    t.lineno += 1
+
+# Comments
+def t_comment(t):
+    r' /\*(.|\n)*?\*/'
+    t.lineno += t.value.count('\n')
+
+def t_error(t):
+    print "Illegal character %s at %d type %s" % (repr(t.value[0]), t.lineno, t.type)
+    t.skip(1)
+    
+# Build the lexer
+import lex
+lex.lex(debug=0)
+
+#
+# Section: Helper classes and functions. 
+#
+
 const_out = None
 types_out = None
 
@@ -78,10 +152,6 @@ python_reserved = ["and", "del", "for", "is", "raise", "assert", "elif", "from",
                    "class", "except", "if", "or", "while", "continue", "exec",
                    "import", "pass", "def", "finally in", "print"]
 
-# kind can be: "unsigned_int", "unsigned_hyper", "float", "double",
-# "quadruple", "bool", "enum_type_spec", "struct_type_spec",
-# "union_type_spec", "unsigned" or some id. 
-
 known_basics = {"int" : "pack_int",
                 "enum" : "pack_enum", 
                 "unsigned_int" : "pack_uint",
@@ -123,7 +193,6 @@ class IndentPrinter:
         for arg in args:
             self.writer.write(arg)
         
-
 class RPCType:
     # Note: The name is not part of this object.
     # This class does not update the global known_types. 
@@ -168,6 +237,34 @@ class RPCType:
             return "[%s]" % lenstring
         else:
             return ""
+
+
+class RPCunion_body:
+    def __init__(self, declaration=None, switch_body=None):
+        self.declaration = declaration
+        self.switch_body = switch_body
+
+
+class RPCswitch_body:
+    def __init__(self, first_declaration=None, case_list=None, default_declaration=None):
+        self.first_declaration = first_declaration
+        self.case_list = case_list # No class, just list of declarations. 
+        self.default_declaration = default_declaration
+
+
+class RPCcase_declaration:
+    def __init__(self, value=None, declaration=None):
+        self.value = value # No class, just value. 
+        self.declaration = declaration # declaration or None.
+
+# Initialize known_types. 
+for t in known_basics.keys():
+    packer = known_basics[t]
+    known_types[t] = RPCType(packer=packer)
+
+#
+# Section: Functions for code generation
+#
 
 def gen_pack_code(ip, id, rpctype):
     array = (rpctype.vararray or rpctype.fixarray)
@@ -280,100 +377,9 @@ def gen_switch_code(ip, union_body, packer, assertions=0):
     ip.pr("\n")
     ip.change(-4)
 
-
-
-for t in known_basics.keys():
-    packer = known_basics[t]
-    known_types[t] = RPCType(packer=packer)
-
-
-class RPCunion_body:
-    def __init__(self, declaration=None, switch_body=None):
-        self.declaration = declaration
-        self.switch_body = switch_body
-
-class RPCswitch_body:
-    def __init__(self, first_declaration=None, case_list=None, default_declaration=None):
-        self.first_declaration = first_declaration
-        self.case_list = case_list # No class, just list of declarations. 
-        self.default_declaration = default_declaration
-
-class RPCcase_declaration:
-    def __init__(self, value=None, declaration=None):
-        self.value = value # No class, just value. 
-        self.declaration = declaration # declaration or None.
-
-
-# Note: INT is not mentioned in RFC1832 as a reserved word. Why?
-reserved = ("INT", "BOOL", "CASE", "CONST", "DEFAULT", "DOUBLE", "QUADRUPLE",
-            "ENUM", "FLOAT", "HYPER", "OPAQUE", "STRING", "STRUCT",
-            "SWITCH", "TYPEDEF", "UNION", "UNSIGNED", "VOID",
-            # RPC specific
-            "PROGRAM", "VERSION")
-
-reserved_map = { }
-for r in reserved:
-    reserved_map[r.lower()] = r
-
-tokens = reserved + (
-    "ID", "NUMBER",
-    # ( ) [ ] { } 
-    "LPAREN", "RPAREN", "LBRACKET", "RBRACKET", "LBRACE", "RBRACE",
-    # ; : < > * = ,
-    "SEMI", "COLON", "LT", "GT", "STAR", "EQUALS", "COMMA"
-    )
-
-t_ignore = " \t"
-
-def t_ID(t):
-    r'[A-Za-z][A-Za-z0-9_]*'
-    t.type = reserved_map.get(t.value, "ID")
-    return t
-
-def t_NUMBER(t):
-    r'(0x[0-9a-fA-F]+)|(0[0-7]+)|(\d+)'
-    return t
-
-# Tokens
-t_LPAREN           = r'\('
-t_RPAREN           = r'\)'
-t_LBRACKET         = r'\['
-t_RBRACKET         = r'\]'
-t_LBRACE           = r'\{'
-t_RBRACE           = r'\}'
-t_SEMI             = r';'
-t_COLON            = r':'
-t_LT               = r'<'
-t_GT               = r'>'
-t_STAR             = r'\*'
-t_EQUALS           = r'='
-t_COMMA            = r','
-
-def t_newline(t):
-    r'\n+'
-    t.lineno += t.value.count("\n")
-
-def t_mod(t):
-    r'%.*\n'
-    t.lineno += 1
-
-# Comments
-def t_comment(t):
-    r' /\*(.|\n)*?\*/'
-    t.lineno += t.value.count('\n')
-
-def t_error(t):
-    print "Illegal character %s at %d type %s" % (repr(t.value[0]), t.lineno, t.type)
-    t.skip(1)
-    
-# Build the lexer
-import lex
-lex.lex(debug=0)
-
-# Parsing rules
-# dictionary of names
-names = { }
-types = {}
+#
+# Section: Parsing
+#
 
 # specification 
 def p_specification(t):
@@ -405,7 +411,6 @@ def p_type_def_2(t):
     (id, typeobj) = t[2]
     known_types[id] = typeobj
     # Returns nothing. 
-
 
 def p_type_def_3(t):
     '''type_def : STRUCT ID struct_body SEMI'''
@@ -644,6 +649,7 @@ def p_default_declaration_2(t):
     '''default_declaration : empty'''
     t[0] = None
 
+
 # union-type-spec
 def p_union_type_spec(t):
     '''union_type_spec : UNION union_body'''
@@ -656,12 +662,10 @@ def p_struct_body(t):
     # Append struct_declaration on struct_declaration_list (which may be []).
     t[0] = [t[2]] + t[3]
 
-
 def p_struct_declaration(t):
     '''struct_declaration : declaration SEMI'''
     # return declaration
     t[0] = t[1]
-
 
 def p_struct_declaration_list_1(t):
     '''struct_declaration_list : struct_declaration_list struct_declaration'''
@@ -693,7 +697,6 @@ def p_enum_constant(t):
     # Print VAR = value
     check_not_reserved(t[1], t[2], t[3])
     print >> const_out, t[1], t[2], t[3]
-
 
 def p_enum_constant_list(t):
     '''enum_constant_list : enum_constant_list COMMA enum_constant
@@ -826,7 +829,6 @@ def p_rpc_type_specifier(t):
     '''rpc_type_specifier : type_specifier
                           | VOID''' # This is strange and not mentioned in RFC1831/1832. Why?
     
-
 # special 
 def p_empty(t):
     'empty :'
@@ -835,6 +837,9 @@ def p_error(t):
     print "Syntax error at '%s' (lineno %d)" % (t.value, t.lineno)
 
 
+#
+# Section: main
+#
 if __name__ == "__main__":
     import sys
     if len(sys.argv) < 2:
