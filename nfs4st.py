@@ -144,7 +144,7 @@ class NFSSuite(unittest.TestCase):
             operations.append(getattrop)
             res = self.do_compound(operations)
             self.assert_OK(res)
-            obj = res.resarray[2].arm.arm.obj_attributes
+            obj = res.resarray[-1].arm.arm.obj_attributes
             d =  nfs4lib.fattr2dict(obj)
             obj_sizes.append((lookupops, d["size"]))
 
@@ -1523,21 +1523,21 @@ class NverifySuite(NFSSuite):
         
         # For each type of object, do nverify with wrong filesize,
         # get new filesize and check if it match previous size. 
-        for (lookupop, objsize) in obj_sizes:
+        for (lookupops, objsize) in obj_sizes:
+            operations = [self.putrootfhop] + lookupops
+            
             # Nverify op
             attrmask = nfs4lib.list2attrmask([FATTR4_SIZE])
             # We simulate a changed object by using a wrong filesize
             # Size attribute is 8 bytes. 
             attr_vals = nfs4lib.long2opaque(objsize + 17, 8)
             obj_attributes = nfs4lib.fattr4(self.ncl, attrmask, attr_vals)
-            nverifyop = self.ncl.nverify_op(obj_attributes)
+            operations.append(self.ncl.nverify_op(obj_attributes))
 
             # New getattr
-            getattrop = self.ncl.getattr([FATTR4_SIZE])
+            operations.append(self.ncl.getattr([FATTR4_SIZE]))
 
-            res = self.do_compound([self.putrootfhop, lookupop,
-                                    nverifyop, getattrop])
-
+            res = self.do_compound(operations)
             self.assert_OK(res)
 
             # Assert the new getattr was executed.
@@ -1559,17 +1559,17 @@ class NverifySuite(NFSSuite):
         obj_sizes = self.lookup_all_objects_and_sizes()
         
         # For each type of object, do nverify with wrong filesize. 
-        for (lookupop, objsize) in obj_sizes:
+        for (lookupops, objsize) in obj_sizes:
+            operations = [self.putrootfhop] + lookupops
+            
             # Nverify op
             attrmask = nfs4lib.list2attrmask([FATTR4_SIZE])
             # Size attribute is 8 bytes. 
             attr_vals = nfs4lib.long2opaque(objsize, 8)
             obj_attributes = nfs4lib.fattr4(self.ncl, attrmask, attr_vals)
-            nverifyop = self.ncl.nverify_op(obj_attributes)
+            operations.append(self.ncl.nverify_op(obj_attributes))
 
-            res = self.do_compound([self.putrootfhop, lookupop,
-                                    nverifyop])
-
+            res = self.do_compound(operations)
             self.assert_status(res, [NFS4ERR_SAME])
 
     #
@@ -1595,7 +1595,8 @@ class NverifySuite(NFSSuite):
 
         Comments: See GetattrSuite.testWriteOnlyAttributes. 
         """
-        lookupop = self.ncl.lookup_op(self.regfile)
+        lookupops = self.ncl.lookup_path(self.regfile)
+        operations = [self.putrootfhop] + lookupops
 
         # Nverify
         attrmask = nfs4lib.list2attrmask([FATTR4_TIME_ACCESS_SET])
@@ -1603,8 +1604,9 @@ class NverifySuite(NFSSuite):
         attr_vals = nfs4lib.long2opaque(17, 8)
         obj_attributes = nfs4lib.fattr4(self.ncl, attrmask, attr_vals)
         nverifyop = self.ncl.nverify_op(obj_attributes)
+        operations.append(nverifyop)
         
-        res = self.do_compound([self.putrootfhop, lookupop, nverifyop])
+        res = self.do_compound(operations)
         self.assert_status(res, [NFS4ERR_INVAL])
 
 
