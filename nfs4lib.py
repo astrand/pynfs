@@ -309,7 +309,7 @@ class PartialNFS4Client:
         args = OPENATTR4args(self, createdir)
         return nfs_argop4(self, argop=OP_OPENATTR, opopenattr=args)
 
-    def open_confirm(self, open_stateid, seqid):
+    def open_confirm_op(self, open_stateid, seqid):
         args = OPEN_CONFIRM4args(self, open_stateid, seqid)
         return nfs_argop4(self, argop=OP_OPEN_CONFIRM, opopen_confirm=args)
 
