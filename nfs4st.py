@@ -69,6 +69,9 @@ class NFSTestCase(unittest.TestCase):
 
         # FIXME: Add sample named attribute.
         self.tmp_dir = nfs4lib.unixpath2comps("/tmp")
+
+        # Some more filenames
+        self.hello_c = nfs4lib.unixpath2comps("/src/hello.c")
     
     def connect(self):
         if transport == "tcp":
@@ -2494,8 +2497,65 @@ class RenewTestCase(NFSTestCase):
     pass
 
 class RestorefhTestCase(NFSTestCase):
-    # FIXME
-    pass
+    """Test RESTOREFH operation
+
+    Equivalence partitioning:
+
+    Input Condition: saved filehandle
+        Valid equivalence classes:
+            valid filehandle(10)
+        Invalid equivalence classes:
+            no filehandle(11)
+
+    Comments: We do not test restoration of a invalid filehandle,
+    since it's hard to save one. It's not possible to PUTFH an invalid
+    filehandle, for example.
+    """
+    #
+    # Testcases covering valid equivalence classes.
+    #
+    def testValid(self):
+        """RESTOREFH on valid, saved filehandle
+
+        Covered equivalence classes: 10
+        """
+        # The idea is to use a sequence of operations like this:
+        # PUTROOTFH, LOOKUP, GETFH#1, SAVEFH, LOOKUP, RESTOREFH, GETH#2.
+        # If this procedure succeeds and result from GETFH#1 and GETFH#2 match,
+        # things should be OK.
+
+        # Lookup a file, get and save FH. 
+        operations = [self.putrootfhop]
+        operations.append(self.ncl.lookup_op(self.normfile))
+        operations.append(self.ncl.getfh_op())
+        operations.append(self.ncl.savefh_op())
+
+        # Lookup another file.
+        operations.append(self.putrootfhop)
+        operations.append(self.ncl.lookup_op(self.hello_c))
+
+        # Restore saved fh and get fh. 
+        operations.append(self.ncl.restorefh_op())
+        operations.append(self.ncl.getfh_op())
+        
+        res = self.do_compound(operations)
+        self.assert_OK(res)
+
+        fh1 = res.resarray[2].arm.arm.object
+        fh2 = res.resarray[7].arm.arm.object 
+        self.failIf(fh1 != fh2, "restored FH does not match saved FH")
+
+    #
+    # Testcases covering invalid equivalence classes.
+    #
+    def testNoFh(self):
+        """RESTOREFH without (sfh) should return NFS4ERR_NOFILEHANDLE
+
+        Covered invalid equivalence classes: 11
+        """
+        res = self.do_compound([self.ncl.savefh_op()])
+        self.assert_status(res, [NFS4ERR_NOFILEHANDLE])
+        
 
 class SavefhTestCase(NFSTestCase):
     # FIXME
