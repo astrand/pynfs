@@ -226,7 +226,6 @@ class NFSSuite(unittest.TestCase):
         """Remove object in /tmp, if it exists. Return false on failure.
         object defaults to self.obj_name
         """
-        # FIXME: Rename to remove_object
         if not name:
             name = self.obj_name
         if not directory:
@@ -245,7 +244,6 @@ class NFSSuite(unittest.TestCase):
         """Create (dir) object in /tmp, if it does not exist. Return false on failure.
         object defaults to self.obj_name
         """
-        # FIXME: Rename to make_sure_existent
         # We create a directory, because it's simple.
         if not name:
             name = self.obj_name
@@ -1283,7 +1281,7 @@ class LinkSuite(NFSSuite):
     """Test operation 11: LINK
 
     FIXME: Add attribute directory and named attribute testing.
-    FIXME: More combintations of invalid filehandle types. 
+    FIXME: More combinations of invalid filehandle types. 
 
     Equivalence partitioning:
 
