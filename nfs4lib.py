@@ -22,7 +22,6 @@
 # Remove self.rootfh?
 # Implement buffering in NFS4OpenFile.
 # Translation of error- and operation codes to enums.
-# FIXME: Constitent use of "op", "operation" and "somethinglongoperation".
 # FIXME: Error when transferring large files?
 
 NFS_PROGRAM = 100003
