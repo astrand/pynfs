@@ -157,9 +157,9 @@ class PartialNFS4Client:
     def cd_dotdot(self):
         self.cwd = self.cwd[:-1]
 
-    def try_cd(self, dir_component):
+    def try_cd(self, dir):
         # FIXME: Better error messages. 
-        candidate_cwd = self.cwd + [dir_component]
+        candidate_cwd = unixpath2comps(dir, self.cwd)
         lookupops = self.lookup_path(candidate_cwd)
         operations = [self.putrootfh_op()] + lookupops
         getattrop = self.getattr([FATTR4_TYPE])
@@ -170,10 +170,10 @@ class PartialNFS4Client:
             check_result(res)
             obj_type = opaque2long(res.resarray[-1].arm.arm.obj_attributes.attr_vals)
             if not obj_type == NF4DIR:
-                raise ChDirError(dir_component)
+                raise ChDirError(dir)
             
         except rpc.RPCException:
-            raise ChDirError(dir_component)
+            raise ChDirError(dir)
 
         self.cwd = candidate_cwd
 
