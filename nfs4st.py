@@ -511,10 +511,7 @@ class GetattrTestCase(NFSTestCase):
     """Test GETATTR operation.
     """
 
-    # FIXME: Test:
-    # GETATTR både för filer, kataloger och andra objekt.
-    # Testa "supported attributes". 
-
+    # FIXME: Test directories, FIFOs etc. 
     
     def setUp(self):
         self.connect()
@@ -643,6 +640,21 @@ class GetattrTestCase(NFSTestCase):
                     nfs4lib.int2binstring(returned_mandatories)[-12:])
 
         sys.stdout.flush()
+
+    def testWriteOnlyAttributes(self):
+        """GETATTR(FATTR4_*_SET) should return NFS4ERR_INVAL
+
+        Some attributes are write-only (currently
+        FATTR4_TIME_ACCESS_SET and FATTR4_TIME_MODIFY_SET). If GETATTR
+        is called with any of these, NFS4ERR_INVAL should be returned.
+        """
+
+        path = nfs4lib.str2pathname(self.normfile)
+        lookupop = self.ncl.lookup_op(path)
+
+        getattrop = self.ncl.getattr([FATTR4_TIME_ACCESS_SET])
+        res = self.do_compound([self.putrootfhop, lookupop, getattrop])
+        self.failUnlessEqual(res.status, NFS4ERR_INVAL)
 
 
 
