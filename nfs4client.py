@@ -176,8 +176,7 @@ class CLI(cmd.Cmd):
         print "nfs4client.py version", VERSION
 
     def do_shell(self, line):
-        # FIXME
-        print "Not implemented yet. "
+        os.system(line)
 
     #
     # Misc. 
@@ -192,7 +191,18 @@ class CLI(cmd.Cmd):
         pass
 
     def default(self, line):
-        print "Unknown command: %s" % line
+        if line[:1] == '@':
+            line = line[1:]
+
+        try:
+            code = compile(line + '\n', '<stdin>', 'single')
+            exec code in globals()
+        except:
+            t, v = sys.exc_info()[:2]
+            if type(t) == type(''):
+                exc_type_name = t
+            else: exc_type_name = t.__name__
+            print '***', exc_type_name + ':', v
 
 
 def usage():
