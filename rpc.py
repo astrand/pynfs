@@ -38,6 +38,7 @@
 import xdrlib
 import socket
 import os
+import time
 
 RPCVERSION = 2
 
@@ -284,7 +285,6 @@ def make_auth_unix_default():
 	gid = getgid()
     except ImportError:
 	uid = gid = 0
-    import time
     return make_auth_unix(int(time.time()-unix_epoch()), \
 	      socket.gethostname(), uid, gid, [])
 
@@ -302,7 +302,6 @@ def unix_epoch():
     """
     global _unix_epoch
     if _unix_epoch >= 0: return _unix_epoch
-    import time
     now = time.time()
     localt = time.localtime(now)	# (y, m, d, hh, mm, ss, ..., ..., ...)
     gmt = time.gmtime(now)
@@ -446,7 +445,6 @@ def bindresvport(sock, host):
     global last_resv_port_tried
     FIRST, LAST = 600, 1024 # Range of ports to try
     if last_resv_port_tried == None:
-	import os
 	last_resv_port_tried = FIRST + os.getpid() % (LAST-FIRST)
     for i in range(last_resv_port_tried, LAST) + \
 	      range(FIRST, last_resv_port_tried):
@@ -909,7 +907,6 @@ class TCPServer(Server):
 
     def forksession(self, connection):
 	# Like session but forks off a subprocess
-	import os
 	# Wait for deceased children
 	try:
 	    while 1:
