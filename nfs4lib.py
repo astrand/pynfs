@@ -323,9 +323,9 @@ class PartialNFS4Client:
     def savefh_op(self):
         return nfs_argop4(self, argop=OP_SAVEFH)
 
-    def secinfo(self):
-        # FIXME
-        raise NotImplementedError()
+    def secinfo_op(self, name):
+        args = SECINFO4args(self, name)
+        return nfs_argop4(self, argop=OP_SECINFO, opsecinfo=args)
 
     def setattr(self):
         # FIXME
