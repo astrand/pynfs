@@ -2,6 +2,10 @@ TODO
 
 General
 =======
+* XIDs shouldn't start at 0 every time. Start with something like:
+ gettimeofday(&tv);
+ xid = (tv.secs << 20) | (tv.usecs)
+
 * Fix all FIXMEs in the source. 
 
 
