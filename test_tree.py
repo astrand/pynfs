@@ -22,6 +22,7 @@
 import os
 import sys
 import socket
+import glob
 
 UID = 4711
 GID = 4711
@@ -34,9 +35,17 @@ def main(treeroot):
     print "Changing current directory to", treeroot
     os.chdir(treeroot)
     # Sanity check
-    if os.getcwd() == "/":
+    if os.getcwd() != treeroot:
         print "Couldn't change to %s, aborting." % treeroot
         sys.exit(1)
+
+    if glob.glob("*"):
+        if not glob.glob("src/hello.c"):
+            print "Files exists, but src/hello.c does not."
+            print "Cowardly refusing to clear directory."
+            print "Are you sure you want to use this directory as treeroot?"
+            print "Clear it manually, then."
+            sys.exit(1)
 
     print "Clearing tree"
     os.system("rm -rf *")
