@@ -206,9 +206,9 @@ def main():
     outfile = StringIO.StringIO()
     outfile.write(EPINFO_HEAD)
     for attr in dir(nfs4st):
-        if attr == "NFSTestCase":
+        if attr == "NFSTestSuite":
             continue
-        if attr.endswith("TestCase"):
+        if attr.endswith("TestSuite"):
             parse_testcase(eval("nfs4st." + attr))
 
     ending = """
