@@ -2294,10 +2294,200 @@ class RemoveTestCase(NFSTestCase):
         
 
 class RenameTestCase(NFSTestCase):
-    # FIXME
-    # Note: Test renaming of a named attribute
-    # to be a regular file and vice versa.
-    pass
+    """Test RENAME operation
+
+    FIXME: Test renaming of a named attribute
+    to be a regular file and vice versa.
+
+    Equivalence partitioning:
+
+    Input Condition: saved filehandle
+        Valid equivalence classes:
+            dir(10)
+        Invalid equivalence classes:
+            non-dir(11)
+            no filehandle(12)
+            invalid filehandle(13)
+    Input Condition: oldname
+        Valid equivalence classes:
+            valid name(20)
+        Invalid equivalence classes:
+            non-existent name(21)
+            zerolength(22)
+            non-utf8(23)
+    Input Condition: current filehandle
+        Valid equivalence classes:
+            dir(30)
+        Invalid equivalence classes:
+            non-dir(31)
+            no filehandle(32)
+            invalid filehandle(33)
+    Input Condition: newname
+        Valid equivalence classes:
+            valid name(40)
+        Invalid equivalence classes:
+            zerolength(41)
+            non-utf8(42)
+
+    Comments: It's not possible to cover eq. class 32, since saving a filehandle
+    gives a current filehandle as well. 
+    """
+    def setUp(self):
+        NFSTestCase.setUp(self)
+        self.oldname = "object1"
+        self.newname = "object2"
+
+        self.lookup_dir_op = self.ncl.lookup_op(self.tmp_dir)
+
+    def _create_object(self):
+        # Make sure we have something to rename. We create a directory, because
+        # it's simple.
+        objtype = createtype4(self.ncl, type=NF4DIR)
+        createop = self.ncl.create_op(self.oldname, objtype)
+        res = self.do_compound([self.putrootfhop, self.lookup_dir_op, createop])
+
+        self.assert_status(res, [NFS4_OK, NFS4ERR_EXIST])
+
+    def _prepare_operation(self):
+        operations = [self.putrootfhop]
+        
+        # Lookup source and save FH
+        operations.append(self.lookup_dir_op)
+        operations.append(self.ncl.savefh_op())
+
+        # Lookup target directory
+        operations.append(self.putrootfhop)
+        operations.append(self.lookup_dir_op)
+
+        return operations
+
+    #
+    # Testcases covering valid equivalence classes.
+    #
+    def testValid(self):
+        """Test valid RENAME operation
+
+        Covered valid equivalence classes: 10, 20, 30, 40
+        """
+        self._create_object()
+
+        operations = self._prepare_operation()
+
+        # Rename
+        renameop = self.ncl.rename_op(self.oldname, self.newname)
+        operations.append(renameop)
+        res = self.do_compound(operations)
+        self.assert_OK(res)
+
+    #
+    # Testcases covering invalid equivalence classes.
+    #
+    def testSfhNotDir(self):
+        """RENAME with non-dir (sfh) should return NFS4ERR_NOTDIR
+
+        Covered invalid equivalence classes: 11
+        """
+        operations = [self.putrootfhop]
+        
+        # Lookup source and save FH
+        operations.append(self.ncl.lookup_op(self.normfile))
+        operations.append(self.ncl.savefh_op())
+
+        # Lookup target directory
+        operations.append(self.putrootfhop)
+        operations.append(self.lookup_dir_op)
+
+        # Rename
+        renameop = self.ncl.rename_op(self.oldname, self.newname)
+        operations.append(renameop)
+        res = self.do_compound(operations)
+        self.assert_status(res, [NFS4ERR_NOTDIR])
+
+    def testNoSfh(self):
+        """RENAME without (sfh) should return NFS4ERR_NOFILEHANDLE
+
+        Covered invalid equivalence classes: 12
+        """
+        # Lookup target directory
+        operations = [self.putrootfhop]
+        operations.append(self.lookup_dir_op)
+        
+        # Rename
+        renameop = self.ncl.rename_op(self.oldname, self.newname)
+        operations.append(renameop)
+        res = self.do_compound(operations)
+        self.assert_status(res, [NFS4ERR_NOFILEHANDLE])
+
+    # FIXME: Cover eq. class 13.
+
+    def testNonExistent(self):
+        """RENAME on non-existing object should return NFS4ERR_NOENT
+
+        Covered invalid equivalence classes: 21
+        """
+        self._create_object()
+        operations = self._prepare_operation()
+
+        # Rename
+        renameop = self.ncl.rename_op("vapor_object", self.newname)
+        operations.append(renameop)
+        res = self.do_compound(operations)
+        self.assert_status(res, [NFS4ERR_NOENT])
+
+    def testZeroLengthOldname(self):
+        """RENAME with zero length oldname should return NFS4ERR_INVAL
+
+        Covered invalid equivalence classes: 22
+        """
+        self._create_object()
+        operations = self._prepare_operation()
+
+        # Rename
+        renameop = self.ncl.rename_op("", self.newname)
+        operations.append(renameop)
+        res = self.do_compound(operations)
+        self.assert_status(res, [NFS4ERR_INVAL])
+
+    # FIXME: Cover eq. class 23. 
+        
+    def testCfhNotDir(self):
+        """RENAME with non-dir (cfh) should return NFS4ERR_NOTDIR
+
+        Covered invalid equivalence classes: 31
+        """
+        operations = [self.putrootfhop]
+        
+        # Lookup source and save FH
+        operations.append(self.lookup_dir_op)
+        operations.append(self.ncl.savefh_op())
+
+        # Lookup target directory
+        operations.append(self.putrootfhop)
+        operations.append(self.ncl.lookup_op(self.normfile))
+
+        # Rename
+        renameop = self.ncl.rename_op(self.oldname, self.newname)
+        operations.append(renameop)
+        res = self.do_compound(operations)
+        self.assert_status(res, [NFS4ERR_NOTDIR])
+
+    # FIXME: Cover eq. class 33.
+    
+    def testZeroLengthNewname(self):
+        """RENAME with zero length newname should return NFS4ERR_INVAL
+
+        Covered invalid equivalence classes: 41
+        """
+        self._create_object()
+        operations = self._prepare_operation()
+
+        # Rename
+        renameop = self.ncl.rename_op(self.oldname, "")
+        operations.append(renameop)
+        res = self.do_compound(operations)
+        self.assert_status(res, [NFS4ERR_INVAL])
+    
+    # FIXME: Cover eq. class 42.     
 
 class RenewTestCase(NFSTestCase):
     # FIXME
