@@ -988,7 +988,7 @@ def parse_nfs_url(s):
     else:
         return None
 
-def create_client(host, port, transport):
+def create_client(host, port, transport, **kwargs):
     """Create instance of TCPNFS4Client or UDPNFS4Client, depending on
     given transport. transport should be tcp, udp or auto. When auto, TCP is
     tried first, then UDP. 
@@ -996,14 +996,14 @@ def create_client(host, port, transport):
     if transport == "auto":
         # Try TCP first, then UDP, according to RFC2224
         try:
-            ncl = TCPNFS4Client(host, port)
+            ncl = TCPNFS4Client(host, port, kwargs)
         except socket.error:
             print "TCP Connection refused, trying UDP"
-            ncl = UDPNFS4Client(host, port)
+            ncl = UDPNFS4Client(host, port, kwargs)
     elif transport == "tcp":
-        ncl = TCPNFS4Client(host, port)
+        ncl = TCPNFS4Client(host, port, kwargs)
     elif transport == "udp":
-        ncl = UDPNFS4Client(host, port)
+        ncl = UDPNFS4Client(host, port, kwargs)
     else:
         raise RuntimeError, "Invalid protocol"
 
