@@ -1,7 +1,7 @@
 
 # rpc.py - RFC1057/RFC1831
 #
-# Copyright (C) 2001 Peter Åstrand <peter@cendio.se>
+# Copyright (C) 2001 Cendio Systems AB (http://www.cendio.se)
 # All rights reserved.
 # 
 # Copyright (c) 2001 Python Software Foundation.

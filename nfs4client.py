@@ -2,7 +2,8 @@
 
 # nfs4client.py - NFS4 client. 
 #
-# Copyright (C) 2001  Peter Åstrand <peter@cendio.se>
+# Written by Peter Åstrand <peter@cendio.se>
+# Copyright (C) 2001 Cendio Systems AB (http://www.cendio.se)
 # 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
