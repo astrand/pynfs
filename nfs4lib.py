@@ -59,8 +59,8 @@ if not hasattr(os, "getgroups"):
 
 
 # All NFS errors are subclasses of NFSException
-class NFSException(Exception):
-	pass
+class NFSException(rpc.RPCException):
+    pass
 
 class BadCompoundRes(NFSException):
     """The COMPOUND procedure returned some kind of error"""
