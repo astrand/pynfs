@@ -17,6 +17,9 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
+# TODO:
+# completion: should not complete commands as arguments. 
+
 from nfs4constants import *
 from nfs4types import *
 import nfs4lib
@@ -25,6 +28,18 @@ import cmd
 import sys
 import getopt
 import re
+
+SYNTAX = """\
+Syntax:
+nfs4client host[:[port]]<directory> [-u|-t] [-d debuglevel]
+
+-u --udp (default)
+-t --tcp
+
+-d --debuglevel debuglevel
+"""
+
+VERSION = "0.0"
 
 class CLI(cmd.Cmd):
     def __init__(self):
@@ -35,7 +50,12 @@ class CLI(cmd.Cmd):
         #self.doc_header = ""
         #self.misc_header
         #self.undoc_header
-        self.commands = ["cd", "get", "cat"]
+        self.commands = [
+            # Commands
+            "help", "cd", "rm", "dir", "ls", "exit", "quit", "get",
+            "put", "mkdir", "md", "rmdir", "rd", "cat", "page",
+            "debug", "ping", "version"]
+            
         readline.parse_and_bind("tab: complete")
         readline.set_completer(self.completer)
 
@@ -50,23 +70,81 @@ class CLI(cmd.Cmd):
         except IndexError:
             return None
 
+
+    #
+    # Commands
+    #
     def do_EOF(self, line):
         print
         sys.exit(0)
     
     def do_cd(self, line):
-        print "cd is not implemented yet"
-
-    def help_foo(self):
-        print "Change current directory"
-
-    def help_overview(self):
         # FIXME
-        print "No info yet."
+        print "not implemented"
+
+    def do_rm(self, line):
+        # FIXME
+        print "not implemented"
+
+    def do_dir(self, line):
+        # FIXME
+        print "not implemented"
+
+    do_ls = do_dir
+
+    do_exit = do_EOF
+
+    do_quit = do_EOF
+
+    def do_get(self, line):
+        # FIXME
+        print "not implemented"
+
+    def do_put(self, line):
+        # FIXME
+        print "not implemented"
+
+    def do_mkdir(self, line):
+        # FIXME
+        print "not implemented"
+
+    do_md = do_mkdir
+
+    def do_rmdir(self, line):
+        # FIXME
+        print "not implemented"
+
+    do_rd = do_rmdir
+
+    def do_cat(self, line):
+        # FIXME
+        print "not implemented"
+
+    do_page = do_cat
+
+    def do_debug(self, line):
+        # FIXME
+        print "not implemented"
+
+    def do_ping(self, line):
+        # FIXME
+        print "not implemented"
+
+    def do_version(self, line):
+        print "nfs4client.py version", VERSION
 
     def do_shell(self, line):
         # FIXME
         print "Not implemented yet. "
+
+    #
+    # Misc. 
+    #
+    def help_cd(self):
+        print "Change current directory"
+    
+    def help_overview(self):
+        print SYNTAX
 
     def emptyline(self):
         pass
