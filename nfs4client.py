@@ -59,7 +59,7 @@ else:
         commands = [
             "help", "cd", "rm", "dir", "ls", "exit", "quit", "get",
             "put", "mkdir", "md", "rmdir", "rd", "cat", "page",
-            "debug", "ping", "version", "pythonmode", "shell"]
+            "debug", "ping", "version", "pythonmode", "shell", "access"]
 
         def complete(self, text, state):
             """Return the next possible completion for 'text'.
@@ -231,6 +231,42 @@ class ClientApp(cmd.Cmd):
             except nfs4lib.BadCompoundRes, r:
                 print "Error fetching file: operation %d returned %d" % (r.operation, r.errcode)
         print
+
+    def do_access(self, line):
+        if not line:
+            print "access <filename>"
+            return
+
+        allrights = ACCESS4_DELETE + ACCESS4_EXECUTE + ACCESS4_EXTEND + ACCESS4_LOOKUP \
+                    + ACCESS4_MODIFY + ACCESS4_READ
+        
+        pathname = self.ncl.get_pathname(line)
+
+        # PUTROOT
+        operations = [self.ncl.putrootfh_op()]
+        if pathname:
+            # LOOKUP
+            operations.append(self.ncl.lookup_op(pathname))
+
+        # ACCESS
+        operations.append(self.ncl.access_op(allrights))
+        res = self.ncl.compound(operations)
+        nfs4lib.check_result(res)
+
+        access = res.resarray[-1].arm.arm.access
+
+        def is_allowed(access, bit):
+            if access & bit:
+                return "allowed"
+            else:
+                return "not allowed"
+
+        print "ACCESS4_READ is", is_allowed(access, ACCESS4_READ)
+        print "ACCESS4_LOOKUP is", is_allowed(access, ACCESS4_LOOKUP)
+        print "ACCESS4_MODIFY is", is_allowed(access, ACCESS4_MODIFY)
+        print "ACCESS4_EXTEND is", is_allowed(access, ACCESS4_EXTEND)
+        print "ACCESS4_DELETE is", is_allowed(access, ACCESS4_DELETE)
+        print "ACCESS4_EXECUTE is", is_allowed(access, ACCESS4_EXECUTE)
 
 
     def do_put(self, line):
