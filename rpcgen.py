@@ -22,6 +22,7 @@
 # Note <something>_list means zero or more of <something>.
 #
 # TODO:
+# Replace MemFile with StringIO. 
 # Code generation for programs and procedures. 
 # __repr__ with discriminants should print symbolic values. 
 
