@@ -361,7 +361,7 @@ class ClientApp(cmd.Cmd):
                 remote.open(basename, "w")
                 
                 while 1:
-                    data = local.read(BUFSIZE)
+                    data = local.read(BUFSIZE*64)
                     if not data:
                         break
                     
