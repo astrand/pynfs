@@ -2759,9 +2759,11 @@ class RemoveSuite(NFSSuite):
         """REMOVE with non-UTF8 components should return NFS4ERR_INVAL
 
         Covered invalid equivalence classes: 22
+
+        Comments: There is no need to create the object first; the
+        UTF8 check should be done before verifying if the object exists. 
         """
         for name in self.get_invalid_utf8strings():
-            if not self.create_object(name=name): return
             operations = [self.putrootfhop] + self.lookup_dir_ops
             operations.append(self.ncl.remove_op(name))
             res = self.do_compound(operations)
@@ -2948,7 +2950,22 @@ class RenameSuite(NFSSuite):
         res = self.do_compound(operations)
         self.assert_status(res, [NFS4ERR_INVAL])
 
-    # FIXME: Cover eq. class 23. 
+    def testNonUTF8Oldname(self):
+        """RENAME with non-UTF8 oldname should return NFS4ERR_INVAL
+
+        Covered invalid equivalence classes: 23
+
+        Comments: There is no need to create the object first; the
+        UTF8 check should be done before verifying if the object exists. 
+        """
+        for name in self.get_invalid_utf8strings():
+            operations = self._prepare_operation()
+
+            # Rename
+            renameop = self.ncl.rename_op(name, self.newname)
+            operations.append(renameop)
+            res = self.do_compound(operations)
+            self.assert_status(res, [NFS4ERR_INVAL])
         
     def testCfhNotDir(self):
         """RENAME with non-dir (cfh) should return NFS4ERR_NOTDIR
