@@ -44,6 +44,18 @@ transport = "udp"
 
 
 class NFSTestCase(unittest.TestCase):
+    def __init__(self, methodName='runTest'):
+        unittest.TestCase.__init__(self, methodName)
+    
+        # Filename constants
+        self.linkfile = "/dev/floppy"
+        self.blockfile = "/dev/fd0"
+        self.charfile = "/dev/ttyS0"
+        self.socketfile = "/dev/log"
+        self.fifofile = "/dev/initctl"
+        self.dirfile = "/doc"
+        self.normfile = "/doc/README"
+    
     def connect(self):
         if transport == "tcp":
             self.ncl = nfs4lib.TCPNFS4Client(host, port)
@@ -150,7 +162,27 @@ class AccessTestCase(NFSTestCase):
     Note: We do not examine if the "access" result actually corresponds to
     the correct rights. This is hard since the rights for a object can
     change at any time.
+
+    Equivalence partitioning:
+    
+    Input Condition: current filehandle
+        Valid equivalence classes:
+            link(1)
+            block(2)
+            char(3)
+            socket(4)
+            FIFO(5)
+            dir(6)
+            file(10)
+        Invalid equivalence classes:
+            invalid filehandle(7)
+    Input Condition: accessreq
+        Valid equivalence classes:
+            valid accessreq(8)
+        Invalid equivalence classes:
+            invalid accessreq(9)
     """
+            
     
     maxval = ACCESS4_DELETE + ACCESS4_EXECUTE + ACCESS4_EXTEND + ACCESS4_LOOKUP \
              + ACCESS4_MODIFY + ACCESS4_READ
@@ -170,7 +202,14 @@ class AccessTestCase(NFSTestCase):
     def setUp(self):
         self.connect()
         self.putrootfhop = self.ncl.putrootfh_op()
-        self.normfile = "/doc/README"
+
+    def testLink(self):
+        """
+        Valid ACCESS on link
+        
+        Covered valid equivalence classes: 1, 8
+        Covered invalid equivalence classes: -
+        """
 
     def testSanityOnDir(self):
         """All valid combinations of ACCESS arguments on directory
@@ -261,15 +300,6 @@ class CommitTestCase(NFSTestCase):
     def setUp(self):
         self.connect()
         self.putrootfhop = self.ncl.putrootfh_op()
-
-        # Filenames
-        self.linkfile = "/dev/floppy"
-        self.blockfile = "/dev/fd0"
-        self.charfile = "/dev/ttyS0"
-        self.socketfile = "/dev/log"
-        self.fifofile = "/dev/initctl"
-        self.dirfile = "/doc"
-        self.normfile = "/doc/README"
 
     def testOnLink(self):
         """COMMIT should fail with NFS4ERR_INVAL on Links"""
@@ -516,7 +546,6 @@ class GetattrTestCase(NFSTestCase):
     def setUp(self):
         self.connect()
         self.putrootfhop = self.ncl.putrootfh_op()
-        self.normfile = "/doc/README"
 
     def testOnFile(self):
         """Simple GETATTR on file
