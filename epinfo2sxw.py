@@ -29,21 +29,18 @@ import os
 import time
 
 def parse_method(meth):
-    # One row per method
-    outfile.write('<table:table-row>\n')
-    outfile.write('<table:table-cell table:style-name="Table2.A2" table:value-type="string">\n')
-    outfile.write('<text:p text:style-name="EP Table Contents">%s</text:p>\n' % meth.__name__)
-    outfile.write('</table:table-cell>\n')
-
+    name = meth.__name__
     doc = meth.__doc__
     if doc:
         lines = doc.split("\n")
     else:
         lines = []
 
-    valid_classes = "-"
-    invalid_classes = "-"
+    valid_classes = ""
+    invalid_classes = ""
     comments = ""
+    # First line in docstring is the test case description.
+    description = lines[0]
     while lines:
         line = lines[0]
         del lines[0]
@@ -58,7 +55,9 @@ def parse_method(meth):
             data = data.strip()
             invalid_classes = data
             
-
+        if line.find("Extra test") != -1:
+            valid_classes = "-"
+            invalid_classes = "-"
 
         if line.find("Comments:") != -1:
             data = line[line.find(":") + 1:]
@@ -68,10 +67,33 @@ def parse_method(meth):
                 line = lines[0]
                 data = data + " " + line.strip()
                 del lines[0]
-            comments = data
+            comments += data
 
-    if valid_classes == "-" and invalid_classes == "-":
-        print "ERROR: Method %s does not cover any equivalence classes" % meth.__name__
+    if not valid_classes and not invalid_classes:
+        print "ERROR: Method %s does not have any coverage information" % meth.__name__
+
+    # Cells without contents look ugly. 
+    if not valid_classes:
+        valid_classes = "-"
+
+    if not invalid_classes:
+        invalid_classes = "-"
+
+    if not comments:
+        comments = "-"
+
+    #
+    # Write output
+    #
+
+    # One row per method
+    outfile.write('<table:table-row>\n')
+    outfile.write('<table:table-cell table:style-name="Table2.A2" table:value-type="string">\n')
+    # Test name
+    outfile.write('<text:p text:style-name="EP Table Contents">%s</text:p>\n' % name)
+    # Test description
+    outfile.write('<text:p text:style-name="EP Table Contents">%s</text:p>\n' % description)
+    outfile.write('</table:table-cell>\n')
 
     # Valid equivalence classes. 
     xmlstr = """
@@ -283,7 +305,7 @@ TCPART_HEAD = """
    </table:table-header-rows>
    <table:table-row>
     <table:table-cell table:style-name="Table2.A2" table:value-type="string">
-     <text:p text:style-name="EP Table Heading">Name</text:p>
+     <text:p text:style-name="EP Table Heading">Name and description</text:p>
     </table:table-cell>
     <table:table-cell table:style-name="Table2.A2" table:value-type="string">
      <text:p text:style-name="EP Table Heading">Covered valid equivalence classes</text:p>
@@ -349,7 +371,7 @@ EPINFO_HEAD = """\
    <style:properties fo:padding="0.097cm" fo:border-left="0.002cm solid #000000" fo:border-right="0.002cm solid #000000" fo:border-top="none" fo:border-bottom="0.002cm solid #000000"/>
   </style:style>
   <style:style style:name="Table2.B3" style:family="table-cell" style:data-style-name="N0">
-   <style:properties fo:vertical-align="bottom" fo:padding="0.097cm" fo:border-left="0.002cm solid #000000" fo:border-right="none" fo:border-top="none" fo:border-bottom="0.002cm solid #000000"/>
+   <style:properties fo:padding="0.097cm" fo:border-left="0.002cm solid #000000" fo:border-right="none" fo:border-top="none" fo:border-bottom="0.002cm solid #000000"/>
   </style:style>
   
   <style:style style:name="P1" style:family="paragraph" style:parent-style-name="EP Table Contents">
