@@ -282,9 +282,8 @@ class PartialNFS4Client:
         args = PUTFH4args(self, object)
         return nfs_argop4(self, argop=OP_PUTFH, opputfh=args)
 
-    def putpubfh(self, fh):
-        # FIXME
-        raise NotImplementedError()
+    def putpubfh_op(self):
+        return nfs_argop4(self, argop=OP_PUTPUBFH)
 
     def putrootfh_op(self):
         return nfs_argop4(self, argop=OP_PUTROOTFH)
