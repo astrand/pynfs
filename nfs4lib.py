@@ -317,9 +317,8 @@ class PartialNFS4Client:
         # FIXME
         raise NotImplementedError()
 
-    def restorefh(self):
-        # FIXME
-        raise NotImplementedError()
+    def restorefh_op(self):
+        return nfs_argop4(self, argop=OP_RESTOREFH)
 
     def savefh_op(self):
         return nfs_argop4(self, argop=OP_SAVEFH)
