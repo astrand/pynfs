@@ -113,6 +113,8 @@ class PartialNFS4Client:
         # Set in sub-classes
         self.gid = None
         self.uid = None
+        # Send call stack in COMPOUND tag?
+        self.debugtags = 0
 
     def mkcred(self):
 	if self.cred == None:
@@ -140,6 +142,9 @@ class PartialNFS4Client:
 
     def compound(self, argarray, tag="", minorversion=0):
         """A Compound call"""
+        if not tag and self.debugtags:
+            tag = str(get_callstack())
+
         compoundargs = COMPOUND4args(self, argarray=argarray, tag=tag, minorversion=minorversion)
         res = COMPOUND4res(self)
         
@@ -451,6 +456,7 @@ class PartialNFS4Client:
     def cb_recall(self):
         # FIXME
         raise NotImplementedError()
+
     
     #
     # NFS convenience methods. Calls server. 
@@ -466,7 +472,7 @@ class PartialNFS4Client:
 
         # SETCLIENTID_CONFIRM
         setclientid_confirmop = self.setclientid_confirm_op(self.clientid)
-        res =  self.compound([setclientid_confirmop])
+        res = self.compound([setclientid_confirmop])
 
         check_result(res)
 
@@ -909,6 +915,27 @@ def list2attrmask(attrlist):
         arrint = arrint | (1L << bitpos)
         attr_request[arrintpos] = arrint
     return attr_request
+
+
+def get_callstack_full():
+    """Return a list with call stack, using traceback.extract_stack
+
+    The last frame (this function) is omitted
+    """
+    import sys, traceback
+    try:
+        raise ZeroDivisionError
+    except ZeroDivisionError:
+        f = sys.exc_info()[2].tb_frame.f_back
+        return traceback.extract_stack(f)[:-1]
+
+
+def get_callstack():
+    """Just as get_callstack_full, but omit the statement
+    """
+    l = get_callstack_full()
+    without_stmt = [(x[0], x[1], x[2]) for x in l]
+    return without_stmt[:-1]
 
 
 class UDPNFS4Client(PartialNFS4Client, rpc.RawUDPClient):
