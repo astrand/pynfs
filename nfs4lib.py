@@ -68,6 +68,15 @@ class BadCompoundRes(NFSException):
         return "operation %s returned result %s" % (nfs_opnum4_id[self.operation],
                                                     nfsstat4_id[self.errcode])
 
+class EmptyBadCompoundRes(NFSException):
+    """The COMPOUND procedure returned some kind of error. No result array"""
+    def __init__(self, errcode):
+        self.errcode = errcode
+
+    def __str__(self):
+        return "compound call returned %s" % nfsstat4_id[self.errcode]
+    
+
 class InvalidCompoundRes(NFSException):
     """The COMPOUND procedure returned is invalid"""
     def __str__(self):
