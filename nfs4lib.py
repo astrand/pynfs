@@ -216,13 +216,13 @@ class PartialNFS4Client:
         createattrs = fattr4(self, [], "")
         return self.create_op(objtype, objname, createattrs)
 
-    def delegpurge(self):
-        # FIXME
-        raise NotImplementedError()
+    def delegpurge_op(self, clientid):
+        args = DELEGPURGE4args(self, clientid)
+        return nfs_argop4(self, argop=OP_DELEGPURGE, opdelegpurge=args)
 
-    def delegreturn(self):
-        # FIXME
-        raise NotImplementedError()
+    def delegreturn_op(self, deleg_stateid):
+        args = DELEGRETURN4args(self, deleg_stateid)
+        return nfs_argop4(self, argop=OP_DELEGRETURN, opdelegreturn=args)
 
     def getattr_op(self, attr_request):
 	args = GETATTR4args(self, attr_request)
