@@ -33,6 +33,11 @@ def main(treeroot, force):
         sys.exit(1)
         
     if treeroot[-1] == os.sep: treeroot = treeroot[:-1]
+    treeroot += os.sep + "nfs4st"
+    if not os.path.exists(treeroot):
+        print "Creating", treeroot
+        os.mkdir(treeroot)
+    
     print "Changing current directory to", treeroot
     os.chdir(treeroot)
     # Sanity check
@@ -49,6 +54,7 @@ def main(treeroot, force):
             sys.exit(1)
 
     print "Clearing tree"
+    os.system("chmod -R 777 *")
     os.system("rm -rf *")
 
     print "Creating /dev"
@@ -111,10 +117,10 @@ int main()
 
     print "Creating private directory with info.txt"
     os.mkdir("private")
-    os.chmod("private", 0000)
     f = open("private/info.txt", "w")
     f.write("Personal data.\n")
     f.close()
+    os.chmod("private", 0000)
 
     print "Creating symlink src/doc -> ../doc"
     os.symlink("../doc", "src/doc")
@@ -136,6 +142,16 @@ if __name__ == "__main__":
     if len(sys.argv) < 2:
         print "Usage: %s <treeroot> [--force]" % sys.argv[0]
         print "Creates tree contents for nfs4st testing"
+        print "Directories and files will be created"
+        print "under <treeroot>/nfs4st/"
+        sys.exit(1)
+
+    if not hasattr(os, "getuid"):
+        print "This script (currently) only works on UNIX. Port me."
+        sys.exit(1)
+
+    if os.getuid() != 0:
+        print "You must be root to run this script"
         sys.exit(1)
 
     main(sys.argv[1], (sys.argv[2:3] == ["--force"]))
