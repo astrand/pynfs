@@ -173,9 +173,7 @@ class ClientApp(cmd.Cmd):
             try:
                 nfs4lib.check_result(res)
             except nfs4lib.BadCompoundRes, r:
-                # FIXME: More detailed error handling. 
-                print "Cannot change directory to %s: operation %d returned %d" \
-                      % (line, r.operation, r.errcode)
+                print "Cannot change directory to %s: %s" % (line, r)
                 return
 
             self.ncl.cwd = candidate_cwd
@@ -203,8 +201,7 @@ class ClientApp(cmd.Cmd):
         try:
             nfs4lib.check_result(res)
         except nfs4lib.BadCompoundRes, r:
-            print "Cannot list directory: operation %d returned %d" \
-                  % (r.operation, r.errcode)
+            print "Cannot list directory:", r
             return
             
         getfhresult = res.resarray[-1].arm
@@ -243,7 +240,7 @@ class ClientApp(cmd.Cmd):
                 remote.close()
                 local.close()
             except nfs4lib.BadCompoundRes, r:
-                print "Error fetching file: operation %d returned %d" % (r.operation, r.errcode)
+                print "Error fetching file:", r
         print
 
     def do_access(self, line):
@@ -268,8 +265,7 @@ class ClientApp(cmd.Cmd):
         try:
             nfs4lib.check_result(res)
         except nfs4lib.BadCompoundRes, r:
-            print "access failed: operation %d returned %d" \
-                  % (r.operation, r.errcode)
+            print "access failed:", r
             return
 
         access = res.resarray[-1].arm.arm.access
@@ -344,8 +340,7 @@ class ClientApp(cmd.Cmd):
             res = self.ncl.compound(operations)
             nfs4lib.check_result(res)
         except nfs4lib.BadCompoundRes, r:
-            print "create failed: operation %d returned %d" \
-                  % (r.operation, r.errcode)
+            print "create failed:", r
             return
 
     def do_put(self, line):
@@ -373,7 +368,7 @@ class ClientApp(cmd.Cmd):
                 remote.close()
                 local.close()
             except nfs4lib.BadCompoundRes, r:
-                print "Error fetching file: operation %d returned %d" % (r.operation, r.errcode)
+                print "Error fetching file:", r
         print
 
     def do_mkdir(self, line):
@@ -402,7 +397,7 @@ class ClientApp(cmd.Cmd):
                 print f.read(),
                 f.close()
             except nfs4lib.BadCompoundRes, r:
-                print "Error fetching file: operation %d returned %d" % (r.operation, r.errcode)
+                print "Error fetching file:", r
         print
         
     do_page = do_cat
