@@ -168,7 +168,7 @@ def main(ncl, unix_prefix):
 
     print "Creating doc/porting/TODO"
     remote = nfs4lib.NFS4OpenFile(ncl)
-    remote.open("/nfs4st/doc/porting/TODO", "w")
+    remote.open(os.path.join(unix_prefix, "doc/porting/TODO"), "w")
     data ="""\
     Need to work on DNIX support...
     Enjoy.
@@ -186,7 +186,7 @@ def main(ncl, unix_prefix):
 
     print "Creating src/hello.c"
     remote = nfs4lib.NFS4OpenFile(ncl)
-    remote.open("/nfs4st/src/hello.c", "w")
+    remote.open(os.path.join(unix_prefix, "src/hello.c"), "w")
     data = """\
     #include <stdio.h>
     #include <stdlib.h>
