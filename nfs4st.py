@@ -66,6 +66,7 @@ class NFSTestCase(unittest.TestCase):
         self.fifofile = "/dev/initctl"
         self.dirfile = "/doc"
         self.normfile = "/doc/README"
+        # FIXME: Add sample named attribute. 
     
     def connect(self):
         if transport == "tcp":
@@ -110,8 +111,14 @@ class NFSTestCase(unittest.TestCase):
     def lookup_all_objects(self):
         """Generate a list of lookup operations with all types of objects"""
         result = []
-        for name in [self.linkfile, self.blockfile, self.charfile, self.socketfile,
-                     self.fifofile, self.dirfile, self.normfile]:
+        # FIXME: Add NF4ATTRDIR and NF4NAMEDATTR types. 
+        for name in [self.normfile,
+                     self.dirfile,
+                     self.blockfile,
+                     self.charfile,
+                     self.linkfile,
+                     self.socketfile,
+                     self.fifofile]:
             path = nfs4lib.str2pathname(name)
             result.append(self.ncl.lookup_op(path))
 
@@ -225,6 +232,8 @@ class AccessTestCase(NFSTestCase):
     Note: We do not examine if the "access" result actually corresponds to
     the correct rights. This is hard since the rights for a object can
     change at any time.
+
+    FIXME: Add attribute directory and named attribute testing. 
 
     Equivalence partitioning:
     
@@ -382,6 +391,8 @@ class CloseTestCase(NFSTestCase):
 
 class CommitTestCase(NFSTestCase):
     """Test COMMIT operation.
+
+    FIXME: Add attribute directory and named attribute testing. 
 
     Equivalence partitioning:
 
@@ -584,6 +595,8 @@ class CommitTestCase(NFSTestCase):
 
 class CreateTestCase(NFSTestCase):
     """Test CREATE operation.
+
+    FIXME: Add attribute directory and named attribute testing. 
 
     Equivalence partitioning:
 
@@ -814,6 +827,8 @@ class DelegreturnTestCase(NFSTestCase):
 class GetattrTestCase(NFSTestCase):
     """Test GETATTR operation.
 
+    FIXME: Add attribute directory and named attribute testing. 
+
     Equivalence partitioning:
 
     Input Condition: currrent filehandle
@@ -996,6 +1011,8 @@ class GetattrTestCase(NFSTestCase):
 class GetFhTestCase(NFSTestCase):
     """Test GETH operation
 
+    FIXME: Add attribute directory and named attribute testing. 
+
     Equivalence partitioning:
 
     Input Condition: currrent filehandle
@@ -1044,6 +1061,8 @@ class GetFhTestCase(NFSTestCase):
 
 class LinkTestCase(NFSTestCase):
     """Test LINK operation
+
+    FIXME: Add attribute directory and named attribute testing. 
 
     Equivalence partitioning:
 
@@ -1425,8 +1444,6 @@ class LookupTestCase(NFSTestCase):
         lookupop = self.ncl.lookup_op(["doc", "README", "porting"])
         res = self.do_compound([self.putrootfhop, lookupop])
         self.assert_status(res, [NFS4ERR_NOTDIR])
-
-        
 
     #
     # Misc. tests.
