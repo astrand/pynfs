@@ -57,7 +57,7 @@ class NFSTestSuite(unittest.TestCase):
         unittest.TestCase.__init__(self, methodName)
     
         # Filename constants. Same order as in nfs_ftype4 enum. 
-        self.normfile = nfs4lib.unixpath2comps("/doc/README") # NF4REG
+        self.regfile = nfs4lib.unixpath2comps("/doc/README") # NF4REG
         self.dirfile = nfs4lib.unixpath2comps("/doc") # NF4DIR
         self.blockfile = nfs4lib.unixpath2comps("/dev/fd0") # NF4DIR
         self.charfile = nfs4lib.unixpath2comps("/dev/ttyS0") # NF4CHR
@@ -113,7 +113,7 @@ class NFSTestSuite(unittest.TestCase):
         """Generate a list of lists with lookup operations with all types of objects"""
         result = []
         # FIXME: Add NF4ATTRDIR and NF4NAMEDATTR types. 
-        for pathcomps in [self.normfile,
+        for pathcomps in [self.regfile,
                           self.dirfile,
                           self.blockfile,
                           self.charfile,
@@ -340,7 +340,7 @@ class AccessTestSuite(NFSTestSuite):
 
         Comments: See testDir. 
         """
-        lookupops = self.ncl.lookup_path(self.normfile)
+        lookupops = self.ncl.lookup_path(self.regfile)
         
         for accessop in self.valid_access_ops():
             operations = [self.putrootfhop] + lookupops
@@ -461,7 +461,7 @@ class CommitTestSuite(NFSTestSuite):
         parameter in the COMMIT operation. All values are
         legal. Tested values are 0, 1 and 2**64 - 1 (selected by BVA)
         """
-        lookupops = self.ncl.lookup_path(self.normfile)
+        lookupops = self.ncl.lookup_path(self.regfile)
 
         # Offset = 0
         operations = [self.putrootfhop] + lookupops
@@ -482,7 +482,7 @@ class CommitTestSuite(NFSTestSuite):
         self.assert_OK(res)
 
     def _testWithCount(self, count):
-        lookupops = self.ncl.lookup_path(self.normfile)
+        lookupops = self.ncl.lookup_path(self.regfile)
         operations = [self.putrootfhop] + lookupops
         operations.append(self.ncl.commit_op(0, count))
         res = self.do_compound(operations)
@@ -579,7 +579,7 @@ class CommitTestSuite(NFSTestSuite):
         plus count that is larger than 2**64, the server should return
         NFS4ERR_INVAL
         """
-        lookupops = self.ncl.lookup_path(self.normfile)
+        lookupops = self.ncl.lookup_path(self.regfile)
         operations = [self.putrootfhop] + lookupops
         operations.append(self.ncl.commit_op(-1, -1))
         res = self.do_compound(operations)
@@ -745,7 +745,7 @@ class CreateTestSuite(NFSTestSuite):
         Covered invalid equivalence classes: 2
         """
         self._remove_object()
-        lookupop = self.ncl.lookup_op(self.normfile)
+        lookupop = self.ncl.lookup_op(self.regfile)
         
         operations = [self.putrootfhop, lookupop]
         objtype = createtype4(self.ncl, type=NF4DIR)
@@ -877,7 +877,7 @@ class GetattrTestSuite(NFSTestSuite):
         FATTR4_TIME_ACCESS_SET and FATTR4_TIME_MODIFY_SET). If GETATTR
         is called with any of these, NFS4ERR_INVAL should be returned.
         """
-        lookupop = self.ncl.lookup_op(self.normfile)
+        lookupop = self.ncl.lookup_op(self.regfile)
 
         getattrop = self.ncl.getattr([FATTR4_TIME_ACCESS_SET])
         res = self.do_compound([self.putrootfhop, lookupop, getattrop])
@@ -914,7 +914,7 @@ class GetattrTestSuite(NFSTestSuite):
         for attrname in all_mandatory_names:
             all_mandatory.append(attrbitnum_dict[attrname])
         
-        lookupop = self.ncl.lookup_op(self.normfile)
+        lookupop = self.ncl.lookup_op(self.regfile)
         getattrop = self.ncl.getattr(all_mandatory)
         
         res = self.do_compound([self.putrootfhop, lookupop, getattrop])
@@ -939,7 +939,7 @@ class GetattrTestSuite(NFSTestSuite):
         Comments: This test calls GETATTR with request for attribute
         number 1000.  Servers should not fail on unknown attributes.
         """
-        lookupop = self.ncl.lookup_op(self.normfile)
+        lookupop = self.ncl.lookup_op(self.regfile)
 
         getattrop = self.ncl.getattr([1000])
         res = self.do_compound([self.putrootfhop, lookupop, getattrop])
@@ -952,7 +952,7 @@ class GetattrTestSuite(NFSTestSuite):
 
         Comments: GETATTR should accept empty request
         """
-        lookupop = self.ncl.lookup_op(self.normfile)
+        lookupop = self.ncl.lookup_op(self.regfile)
 
         getattrop = self.ncl.getattr([])
         res = self.do_compound([self.putrootfhop, lookupop, getattrop])
@@ -966,7 +966,7 @@ class GetattrTestSuite(NFSTestSuite):
         Comments: GETATTR(FATTR4_SUPPORTED_ATTRS) should return at
         least all mandatory attributes
         """
-        lookupop = self.ncl.lookup_op(self.normfile)
+        lookupop = self.ncl.lookup_op(self.regfile)
 
         getattrop = self.ncl.getattr([FATTR4_SUPPORTED_ATTRS])
         res = self.do_compound([self.putrootfhop, lookupop, getattrop])
@@ -1113,7 +1113,7 @@ class LinkTestSuite(NFSTestSuite):
         Covered valid equivalence classes: 1, 9, 12
         """
         self._remove_object()
-        operations = self._prepare_operation(self.normfile)
+        operations = self._prepare_operation(self.regfile)
 
         # Link operation
         linkop = self.ncl.link_op(self.obj_name)
@@ -1235,12 +1235,12 @@ class LinkTestSuite(NFSTestSuite):
         operations = [self.putrootfhop]
 
         # Lookup source and save FH
-        operations.append(self.ncl.lookup_op(self.normfile))
+        operations.append(self.ncl.lookup_op(self.regfile))
         operations.append(self.ncl.savefh_op())
 
         # Lookup target directory (a file, this time)
         operations.append(self.putrootfhop)
-        operations.append(self.ncl.lookup_op(self.normfile))
+        operations.append(self.ncl.lookup_op(self.regfile))
 
         # Link operation
         linkop = self.ncl.link_op(self.obj_name)
@@ -1259,7 +1259,7 @@ class LinkTestSuite(NFSTestSuite):
         return
         
         self._remove_object()
-        operations = self._prepare_operation(self.normfile)
+        operations = self._prepare_operation(self.regfile)
 
         # Link operation
         linkop = self.ncl.link_op("")
@@ -1623,7 +1623,7 @@ class NverifyTestSuite(NFSTestSuite):
 
         Comments: See GetattrTestSuite.testWriteOnlyAttributes. 
         """
-        lookupop = self.ncl.lookup_op(self.normfile)
+        lookupop = self.ncl.lookup_op(self.regfile)
 
         # Nverify
         attrmask = nfs4lib.list2attrmask([FATTR4_TIME_ACCESS_SET])
@@ -1709,13 +1709,13 @@ class OpenattrTestSuite(NFSTestSuite):
         Comments: Not yet implemented. 
         """
         # Open attribute dir for doc/README
-        lookupop = self.ncl.lookup_op(self.normfile)
+        lookupop = self.ncl.lookup_op(self.regfile)
         openattrop = self.ncl.openattr_op()
         res = self.do_compound([self.putrootfhop, lookupop, openattrop])
 
         if res.status == NFS4ERR_NOTSUPP:
             self.info_message("OPENATTR not supported on %s, cannot try this test" \
-                              % self.normfile)
+                              % self.regfile)
             return
 
 
@@ -1881,7 +1881,7 @@ class ReadTestSuite(NFSTestSuite):
 
         Covered valid equivalence classes: 1, 11, 14, 17
         """
-        lookupop = self.ncl.lookup_op(self.normfile)
+        lookupop = self.ncl.lookup_op(self.regfile)
         
         readop = self.ncl.read(offset=0, count=0, stateid=0)
         res = self.do_compound([self.putrootfhop, lookupop, readop])
@@ -1900,7 +1900,7 @@ class ReadTestSuite(NFSTestSuite):
 
         Covered valid equivalence classes: 1, 12, 15, 18
         """
-        lookupop = self.ncl.lookup_op(self.normfile)
+        lookupop = self.ncl.lookup_op(self.regfile)
         
         readop = self.ncl.read(offset=2, count=1, stateid=0xffffffffffffffffL)
         res = self.do_compound([self.putrootfhop, lookupop, readop])
@@ -1912,7 +1912,7 @@ class ReadTestSuite(NFSTestSuite):
         Covered valid equivalence classes: 1, 13, 16, 19
         """
         # OPEN
-        openop = self.ncl.open(file=self.normfile)
+        openop = self.ncl.open(file=self.regfile)
         getfhop = self.ncl.getfh_op()
         res = self.do_compound([self.putrootfhop, openop, getfhop])
         self.assert_OK(res)
@@ -2164,7 +2164,7 @@ class ReadlinkTestSuite(NFSTestSuite):
 
         Covered valid equivalence classes: 11
         """
-        for pathcomps in [self.normfile,
+        for pathcomps in [self.regfile,
                           self.blockfile,
                           self.charfile,
                           self.socketfile,
@@ -2260,7 +2260,7 @@ class RemoveTestSuite(NFSTestSuite):
 
         Covered invalid equivalence classes: 11
         """
-        lookupop = self.ncl.lookup_op(self.normfile)
+        lookupop = self.ncl.lookup_op(self.regfile)
         removeop = self.ncl.remove_op(self.obj_name)
         res = self.do_compound([self.putrootfhop, lookupop, removeop])
 
@@ -2405,7 +2405,7 @@ class RenameTestSuite(NFSTestSuite):
         operations = [self.putrootfhop]
         
         # Lookup source and save FH
-        operations.append(self.ncl.lookup_op(self.normfile))
+        operations.append(self.ncl.lookup_op(self.regfile))
         operations.append(self.ncl.savefh_op())
 
         # Lookup target directory
@@ -2478,7 +2478,7 @@ class RenameTestSuite(NFSTestSuite):
 
         # Lookup target directory
         operations.append(self.putrootfhop)
-        operations.append(self.ncl.lookup_op(self.normfile))
+        operations.append(self.ncl.lookup_op(self.regfile))
 
         # Rename
         renameop = self.ncl.rename_op(self.oldname, self.newname)
@@ -2542,7 +2542,7 @@ class RestorefhTestSuite(NFSTestSuite):
 
         # Lookup a file, get and save FH. 
         operations = [self.putrootfhop]
-        operations.append(self.ncl.lookup_op(self.normfile))
+        operations.append(self.ncl.lookup_op(self.regfile))
         operations.append(self.ncl.getfh_op())
         operations.append(self.ncl.savefh_op())
 
@@ -2648,7 +2648,7 @@ class SecinfoTestSuite(NFSTestSuite):
 
         Covered invalid equivalence classes: 11
         """
-        lookupop = self.ncl.lookup_op(self.normfile)
+        lookupop = self.ncl.lookup_op(self.regfile)
         secinfoop = self.ncl.secinfo_op("README")
 
         res = self.do_compound([self.putrootfhop, lookupop, secinfoop])
@@ -2915,7 +2915,7 @@ class VerifyTestSuite(NFSTestSuite):
 
         Comments: See GetattrTestSuite.testWriteOnlyAttributes. 
         """
-        lookupop = self.ncl.lookup_op(self.normfile)
+        lookupop = self.ncl.lookup_op(self.regfile)
 
         # Verify
         attrmask = nfs4lib.list2attrmask([FATTR4_TIME_ACCESS_SET])
