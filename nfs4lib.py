@@ -439,7 +439,7 @@ class PartialNFS4Client:
     def init_connection(self):
         # SETCLIENTID
         setclientidop = self.setclientid()
-        res =  self.compound([setclientidop])
+        res = self.compound([setclientidop])
 
         check_result(res)
         
