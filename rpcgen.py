@@ -184,10 +184,11 @@ class BadDiscriminant(NFSException):
 
 """
 
-
 packerheader = """
 import rpc
-from nfs4types import *
+import nfs4types
+import nfs4constants
+import xdrlib
 
 """
 
@@ -287,29 +288,30 @@ for t in known_basics.keys():
 # Section: Functions for code generation
 #
 
+# Code generation for <prefix>types.py
 def gen_pack_code(ip, id, typedecl):
     base_type = known_types[typedecl.base_type]
     if base_type.composite:
         if typedecl.isarray:
-            ip.pr("pack_objarray(self.ncl, self.%s)" % id)
+            ip.pr("pack_objarray(self, self.%s)" % id)
         else:
             ip.pr("self.%s.pack()" % id)
     else:
         ip.pr("self.packer.pack_%s(self.%s)" % (typedecl.base_type, id))
 
-
+# Code generation for <prefix>types.py
 def gen_unpack_code(ip, id, typedecl):
     base_type = known_types[typedecl.base_type]
     if base_type.composite:
         if typedecl.isarray:
-            ip.pr("self.%s = unpack_objarray(self.ncl, %s)" % (id, typedecl.base_type))
+            ip.pr("self.%s = unpack_objarray(self, %s)" % (id, typedecl.base_type))
         else:
-            ip.pr("self.%s = %s(self.ncl)" % (id, typedecl.base_type))
+            ip.pr("self.%s = %s(self)" % (id, typedecl.base_type))
             ip.pr("self.%s.unpack()" % id)
     else:
         ip.pr("self.%s = self.unpacker.unpack_%s()" % (id, typedecl.base_type))
 
-
+# Code generation for <prefix>packer.py
 def gen_packers(id, typeobj):
     base_type = known_types[typeobj.base_type]
     
@@ -323,16 +325,18 @@ def gen_packers(id, typeobj):
         ip.pr("def pack_%s(self, data):" % id)
         ip.change(4)
         if base_type.composite:
-            # Handled by class
-            ip.pr("pack_objarray(self.ncl, data)")
+            # Struct or Union type
+            if typeobj.isarray:
+                ip.pr("nfs4types.pack_objarray(self, data)")
+            else:
+                ip.pr("data.pack()")
         else:
-            # Array
             if typeobj.base_type == "string":
                 ip.pr("self.pack_string(data)")
             elif typeobj.base_type == "opaque":
                 if typeobj.fixarray:
                     # Fixed length opaque data
-                    ip.pr("self.pack_fopaque(%s, data)" % typeobj.arraylen)
+                    ip.pr("self.pack_fopaque(nfs4constants.%s, data)" % typeobj.arraylen)
                 else:
                     # Variable length opaque data
                     ip.pr("self.pack_opaque(data)")
@@ -352,16 +356,20 @@ def gen_packers(id, typeobj):
         ip.pr("def unpack_%s(self):" % id)
         ip.change(4)
         if base_type.composite:
-            # Handled by class
-            ip.pr("return self.unpack_objarray(self.ncl, %s)" % typeobj.base_type)
+            # Struct or Union type
+            if typeobj.isarray:
+                ip.pr("return nfs4types.unpack_objarray(self.ncl, nfs4types.%s)" % typeobj.base_type)
+            else:
+                ip.pr("obj = nfs4types.%s(self.ncl)" % typeobj.base_type)
+                ip.pr("obj.unpack()")
+                ip.pr("return obj")
         else:
-            # Array
             if typeobj.base_type == "string":
                 ip.pr("return self.unpack_string()")
             elif typeobj.base_type == "opaque":
                 if typeobj.fixarray:
                     # Fixed length opaque data
-                    ip.pr("return self.unpack_fopaque(%s)" % typeobj.arraylen)
+                    ip.pr("return self.unpack_fopaque(nfs4constants.%s)" % typeobj.arraylen)
                 else:
                     # Variable length opaque data
                     ip.pr("return self.unpack_opaque()")
@@ -974,6 +982,11 @@ if __name__ == "__main__":
         ip.pr("pack_%s = rpc.Packer.%s\n" % (t, packer))
 
     unpacker_out.write("class NFS4Unpacker(rpc.Unpacker):\n")
+    unpacker_out.write("    def __init__(self, ncl, data=''):\n")
+    unpacker_out.write("        xdrlib.Unpacker.__init__(self, data)\n")
+    unpacker_out.write("        self.ncl = ncl\n")
+
+    
     ip = IndentPrinter(unpacker_out)
     ip.change(4)
     for t in known_basics.keys():
