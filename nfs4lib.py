@@ -444,6 +444,7 @@ class PartialNFS4Client:
 
     def do_read_fast(self, fh, offset=0, size=None):
         """Fast implementation of do_read"""
+        # FIXME: broken. 
 
         def fast_pack(args):
             (ncl, fh, offset) = args
@@ -895,6 +896,7 @@ class NFS4OpenFile:
             raise ValueError("I/O operation on closed file")
         data = self.ncl.do_read(self.stateid, self.fh, self.pos, size)
         # do_read_fast is about 40% faster. But:
+        # FIXME: do_read_fast is currently broken. 
         # FIXME: Verify that do_read_fast is robust. 
         #data = self.ncl.do_read_fast(self.fh, self.pos, size)
         self.pos += len(data)
