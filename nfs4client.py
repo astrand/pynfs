@@ -149,7 +149,7 @@ class ClientApp(cmd.Cmd):
         self.ncl.init_connection()
 
     def _set_prompt(self):
-        self.prompt = self.baseprompt % self.ncl.cwd
+        self.prompt = self.baseprompt % nfs4lib.comps2unixpath(self.ncl.cwd)
         
 
     #
@@ -161,25 +161,14 @@ class ClientApp(cmd.Cmd):
     
     def do_cd(self, line):
         if line == "..":
-            self.ncl.cwd = self.ncl.cwd[:self.ncl.cwd.rindex("/")]
-            if not self.ncl.cwd:
-                self.ncl.cwd = "/"
+            self.ncl.cd_dotdot()
+        elif line == ".":
+            pass
         else:
-            candidate_cwd = os.path.join(self.ncl.cwd, line)
-            pathcomps = nfs4lib.unixpath2comps(candidate_cwd)
-            operations = [self.ncl.putrootfh_op()]
-            if pathcomps:
-                lookupops = self.ncl.lookup_path(pathcomps)
-                operations.extend(lookupops)
-
-            res = self.ncl.compound(operations)
             try:
-                nfs4lib.check_result(res)
-            except nfs4lib.BadCompoundRes, r:
-                print "Cannot change directory to %s: %s" % (line, r)
-                return
-
-            self.ncl.cwd = candidate_cwd
+                self.ncl.try_cd(line)
+            except nfs4lib.ChDirError, e:
+                print e
 
         self._set_prompt()
 
@@ -188,14 +177,9 @@ class ClientApp(cmd.Cmd):
         print "not implemented"
 
     def do_dir(self, line):
-        pathcomps = nfs4lib.unixpath2comps(self.ncl.cwd)
-
         putrootfhop = self.ncl.putrootfh_op()
-        operations = [putrootfhop]
-        
-        if pathcomps:
-            lookupops = self.ncl.lookup_path(pathcomps)
-            operations.extend(lookupops)
+        lookupops = self.ncl.lookup_path(self.ncl.cwd)
+        operations = [putrootfhop] + lookupops
 
         getfhop = self.ncl.getfh_op()
         operations.append(getfhop)
