@@ -228,7 +228,7 @@ class ClientApp(cmd.Cmd):
                 
                 remote.close()
                 local.close()
-            except nfs4lib.BadCompondRes, r:
+            except nfs4lib.BadCompoundRes, r:
                 print "Error fetching file: operation %d returned %d" % (r.operation, r.errcode)
         print
 
@@ -262,7 +262,7 @@ class ClientApp(cmd.Cmd):
                 f.open(file)
                 print f.read(),
                 f.close()
-            except nfs4lib.BadCompondRes, r:
+            except nfs4lib.BadCompoundRes, r:
                 print "Error fetching file: operation %d returned %d" % (r.operation, r.errcode)
         print
         

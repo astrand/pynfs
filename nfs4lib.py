@@ -45,7 +45,7 @@ import pwd
 class NFSException(Exception):
 	pass
 
-class BadCompondRes(NFSException):
+class BadCompoundRes(NFSException):
     def __init__(self, operation, errcode):
         self.operation = operation
         self.errcode = errcode
@@ -417,7 +417,7 @@ def check_result(compoundres):
 
     for resop in compoundres.resarray:
         if resop.arm.status:
-            raise BadCompondRes(resop.resop, resop.arm.status)
+            raise BadCompoundRes(resop.resop, resop.arm.status)
 
 def str2pathname(str, pathname=[]):
     pathname = pathname[:]
