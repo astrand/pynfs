@@ -933,6 +933,26 @@ class CreateSuite(NFSSuite):
         res = self.do_compound(operations)
         self.assert_status(res, [NFS4ERR_BADXDR])
 
+    #
+    # Extra tests.
+    #
+    def testDots(self):
+        """CREATE with . or .. should succeed or return NFS4ERR_INVAL
+
+        Extra test
+
+        Servers supporting . and .. in file names should return NFS4_OK. Others
+        should return NFS4ERR_INVAL. 
+        """
+        operations = [self.putrootfhop] + self.lookup_dir_ops
+        objtype = createtype4(self.ncl, type=NF4DIR)
+        createop = self.ncl.create(objtype, ".")
+        operations.append(createop)
+
+        res = self.do_compound(operations)
+        self.assert_status(res, [NFS4_OK, NFS4ERR_INVAL]) 
+        
+
 
 ## class DelegpurgeSuite(NFSSuite):
 ##     """Test operation 7: DELEGPURGE
