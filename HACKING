@@ -11,3 +11,11 @@ Misc
 ====
 "object" is preferred over "file", when talking about nfs_ftype4's. 
 
+
+Test tree principle
+===================
+Initial tree content is created by test_tree.py. Test cases may create
+additional objects, but should use the tmp directory. Test cases need
+not to delete created objects; failed test cases are unable to do so
+anyway. Instead, test cases creating objects should remove the object
+in question before trying the creation. 
