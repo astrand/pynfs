@@ -1,6 +1,10 @@
 #!/usr/bin/env python2
 
+import sys
+sys.path.append("..")
+
 import nfs4st
+
 
 def main():
     for attr in dir(nfs4st):
