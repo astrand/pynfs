@@ -492,9 +492,7 @@ def fattr2dict(obj):
     unpacker = nfs4packer.NFS4Unpacker(ncl, obj.attr_vals)
     ncl.unpacker = unpacker
 
-    
-    result = []
-
+    result = {}
     attrunpackers = get_attrunpackers(unpacker)
     bitnums_to_unpack = unpack_these.keys()
     # The data on the wire is ordered according to attribute bit number. 
@@ -502,7 +500,7 @@ def fattr2dict(obj):
     for bitnum in bitnums_to_unpack:
 	attrname = unpack_these[bitnum]
 	unpack_method = attrunpackers[attrname]
-	result.append(unpack_method())
+	result[attrname] = unpack_method()
 
     return result
 
