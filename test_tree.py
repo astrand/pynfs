@@ -110,7 +110,7 @@ int main()
 
     print "Creating private directory with info.txt"
     os.mkdir("private")
-    os.chmod("private", 0700)
+    os.chmod("private", 0000)
     f = open("private/info.txt", "w")
     f.write("Personal data.\n")
     f.close()
