@@ -1298,8 +1298,9 @@ class LookupTestCase(NFSTestCase):
         Valid equivalence classes:
             dir(1)
         Invalid equivalence classes:
-            notdir(2)
+            not directory or symlink(2)
             invalid filehandle(3)
+            symlink(12)
     Input Condition: filenames
         Valid equivalence classes:
             array of dirs(4)
@@ -1369,6 +1370,16 @@ class LookupTestCase(NFSTestCase):
         res = self.do_compound([lookupop])
         self.assert_status(res, [NFS4ERR_NOFILEHANDLE])
 
+    def testSymlinkFh(self):
+        """LOOKUP with (cfh) as symlink should return NFS4ERR_SYMLINK
+
+        Covered invalid equivalence classes: 12
+        """
+        lookupop1 = self.ncl.lookup_op(["src", "doc"])
+        lookupop2 = self.ncl.lookup_op(["README"])
+        res = self.do_compound([self.putrootfhop, lookupop1, lookupop2])
+        self.assert_OK(res)
+
     def testNonExistent(self):
         """LOOKUP with non-existent components should return NFS4ERR_NOENT
 
@@ -1414,6 +1425,8 @@ class LookupTestCase(NFSTestCase):
         lookupop = self.ncl.lookup_op(["doc", "README", "porting"])
         res = self.do_compound([self.putrootfhop, lookupop])
         self.assert_status(res, [NFS4ERR_NOTDIR])
+
+        
 
     #
     # Misc. tests.
