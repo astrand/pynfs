@@ -1663,22 +1663,40 @@ class LookupSuite(NFSSuite):
         res = self.do_compound(operations)
         self.assert_status(res, [NFS4ERR_NOENT])
 
+    def _assert_lookup_response(self, pathcomps):
+        lookupops = self.ncl.lookup_path(pathcomps)
+        operations = [self.putrootfhop] + lookupops
+        res = self.do_compound(operations)
+        self.assert_status(res, [NFS4ERR_NOENT, NFS4ERR_INVAL])
+
     def testDots(self):
-        # FIXME: Maybe not NFS4ERR_ENOENT, but INVAL?
-        """LOOKUP on . and .. should return NFS4ERR_ENOENT
+        """LOOKUP on . and .. should return NFS4ERR_NOENT or NFS4ERR_INVAL
 
         Extra test
+
+        Servers supporting . and .. in file names should return NFS4ERR_NOENT.
+        Others should return NFS4ERR_INVAL. NFS4ERR_EXIST should not be returned.
         """
-        # . in root dir should not exist
-        self._assert_noent(["."])
-
-        # .. in root dir should not exist
-        self._assert_noent([".."])
-
-        # . in the middle of path should yield ENOENT
-        self._assert_noent(["doc", ".", "README"])
+        testname = "."
+        if not self.make_sure_nonexistent(testname): return
+        self._assert_lookup_response([testname])
         
-        # .. in the middle of path should yield ENOENT
+        testname = ".."
+        if not self.make_sure_nonexistent(testname): return
+        self._assert_lookup_response([testname])
+
+        # Try lookup on ["doc", ".", "README"]
+        # First, make sure there is no object named "."
+        # in the doc directory
+        if not self.make_sure_nonexistent(".", ["doc"]): return
+        # Of course it wasn't. Try LOOKUP with this strange path.
+        # Note: The file doc/./README actually exists on a UNIX server. 
+        self._assert_lookup_response(["doc", ".", "README"])
+        
+        # Same goes for ".."
+        # Note: The file doc/porting/../README actually exists on a
+        # UNIX server.
+        if not self.make_sure_nonexistent("..", ["doc", "porting"]): return
         self._assert_noent(["doc", "porting", "..", "README"])
 
 
@@ -2543,7 +2561,8 @@ class ReaddirSuite(NFSSuite):
         """READDIR should not return . and .. in /doc
 
         Extra test
-        
+
+        No files named "." or ".." should exist in /doc. 
         """
         # Lookup fh for /doc
         fh = self.ncl.do_getfh(self.dirfile)
@@ -2739,11 +2758,10 @@ class RemoveSuite(NFSSuite):
         operations = [self.putrootfhop] + self.ncl.lookup_path(self.dirfile)
         operations.append(self.ncl.remove_op(name))
         res = self.do_compound(operations)
-        self.assert_status(res, [NFS4ERR_NOENT])
+        self.assert_status(res, [NFS4ERR_NOENT, NFS4ERR_INVAL])
     
     def testDots(self):
-        # FIXME: Maybe not NFS4ERR_ENOENT, but INVAL?
-        """REMOVE on . or .. should return NFS4ERR_NOENT
+        """REMOVE on . or .. should return NFS4ERR_NOENT or NFS4ERR_INVAL
         
         Extra test
 
@@ -2952,7 +2970,7 @@ class RenameSuite(NFSSuite):
         renameop = self.ncl.rename_op(oldname, self.newname)
         operations.append(renameop)
         res = self.do_compound(operations)
-        self.assert_status(res, [NFS4ERR_NOENT])
+        self.assert_status(res, [NFS4ERR_NOENT, NFS4ERR_INVAL])
 
     def _do_test_newname(self, newname):
         operations = self._prepare_operation()
@@ -2962,34 +2980,30 @@ class RenameSuite(NFSSuite):
         self.assert_status(res, [NFS4_OK, NFS4ERR_INVAL])
     
     def testDotsOldname(self):
-        # FIXME: Maybe not NFS4ERR_ENOENT, but INVAL?
-        """RENAME with oldname containing . or .. should return NFS4ERR_NOENT
+        """RENAME with oldname containing . or .. should return NOENT/INVAL
 
         Extra test
         
-        No files named . or .. should exist in doc directory
+        No files named . or .. should exist in /doc directory. RENAME should
+        return NFS4ERR_NOENT (if server supports "." and ".." as file names)
+        or NFS4ERR_INVAL. 
         """
-        testname = "."
-        if not self.make_sure_nonexistent(testname): return
-        # Assert NOENT
         self._do_test_oldname(".")
-
-        testname = ".."
-        if not self.make_sure_nonexistent(testname): return
-        # Assert NOENT
         self._do_test_oldname("..")
 
     def testDotsNewname(self):
-        """RENAME with newname . or .. should succeed or return NFS4ERR_INVAL
+        """RENAME with newname . or .. should succeed or return OK/INVAL
 
         Extra test
         """
-        # name = .
-        if not self._remove_object("."): return
+        # Create dummy object
+        if not self._create_object(): return
+        # Try to rename it to "."
         self._do_test_newname(".")
 
-        # name = ..
-        if not self._remove_object(".."): return
+        # Create dummy object
+        if not self._create_object(): return
+        # Try to rename it to ".."
         self._do_test_newname("..")
 
 
@@ -3213,25 +3227,26 @@ class SecinfoSuite(NFSSuite):
                     "SECINFO did not return (mandatory) flavor RPCSEC_GSS")
 
 
-    def _assert_noent(self, name):
+    def _assert_secinfo_response(self, name):
         lookupops = self.ncl.lookup_path(self.dirfile)
         operations = [self.putrootfhop] + lookupops
         operations.append(self.ncl.secinfo_op(name))
         
         res = self.do_compound(operations)
-        self.assert_status(res, [NFS4ERR_NOENT])
+        self.assert_status(res, [NFS4ERR_NOENT, NFS4ERR_INVAL])
 
     def testDots(self):
-        # FIXME: Maybe not NFS4ERR_ENOENT, but INVAL?
-        """SECINFO on . and .. should return NFS4ERR_ENOENT in /doc
+        """SECINFO on . and .. should return NOENT/INVAL in /doc
 
         Extra test
         """
         # . should not exist in doc dir
-        self._assert_noent(".")
+        if not self.make_sure_nonexistent(".", ["doc"]): return
+        self._assert_secinfo_response(".")
 
-        # .. should not exist in doc dir 
-        self._assert_noent("..")
+        # .. should not exist in doc dir
+        if not self.make_sure_nonexistent("..", ["doc"]): return
+        self._assert_secinfo_response("..")
 
         
 class SetattrSuite(NFSSuite):
