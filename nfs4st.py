@@ -1812,6 +1812,10 @@ class NverifySuite(NFSSuite):
 ##     FIXME: Verify that this eqv.part is correct, when updated state
 ##     description is available.
 
+##     FIXME: Add test for file named "." and ".." in
+##     open_claim_delegate_cur4.file, open_claim4.file and
+##     open_claim4.file_delegate_prev. 
+
 ##     Equivalence partitioning:
 
 ##     Input Condition: seqid
