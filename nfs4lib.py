@@ -608,10 +608,9 @@ def check_result(compoundres):
     if not compoundres.status:
         return
 
-    # FIXME: Only necessary to check last operation. 
-    for resop in compoundres.resarray:
-        if resop.arm.status:
-            raise BadCompoundRes(resop.resop, resop.arm.status)
+    # If there was an error, it should be the last operation. 
+    resop = compoundres.resarray[-1]
+    raise BadCompoundRes(resop.resop, resop.arm.status)
 
 def verify_compound_result(res):
     """Check that COMPOUND result is sane"""
