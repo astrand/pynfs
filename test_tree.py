@@ -139,6 +139,9 @@ def set_owner(unused, dirname, names):
         os.chown(abs_name, UID, GID)
 
 if __name__ == "__main__":
+    print "This program is obsolete. Use test_tree_net.py instead."
+    sys.exit(1)
+    
     if len(sys.argv) < 2:
         print "Usage: %s <treeroot> [--force]" % sys.argv[0]
         print "Creates tree contents for nfs4st testing"
