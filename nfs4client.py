@@ -59,7 +59,7 @@ else:
         commands = [
             "help", "cd", "rm", "dir", "ls", "exit", "quit", "get",
             "put", "mkdir", "md", "rmdir", "rd", "cat", "page",
-            "debug", "ping", "version", "pythonmode"]
+            "debug", "ping", "version", "pythonmode", "shell"]
 
         def complete(self, text, state):
             """Return the next possible completion for 'text'.
