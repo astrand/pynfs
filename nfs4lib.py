@@ -427,13 +427,15 @@ class TCPNFS4Client(PartialNFS4Client, rpc.RawTCPClient):
 class NFS4OpenFile:
     """Emulates a Python file object.
     """
+    # BUGS: If pos is set beyond file size and data is later written,
+    # we should fill in zeros. 
     def __init__(self, ncl):
         self.ncl = ncl
         self.__set_priv("closed", 1)
         self.__set_priv("mode", "")
         self.__set_priv("name", "")
         self.softspace = 0
-        self.pos = 0
+        self.pos = 0L
         # NFS4 file handle. 
         self.fh = None
         # NFS4 stateid
@@ -538,9 +540,12 @@ class NFS4OpenFile:
             newpos = self.pos + offset
         elif whence == 2:
             # seek relative to the file's end
-            #offset += self.len
-            # FIXME: Fetch len via NFS. 
-            raise NotImplementedError()
+	    putfhop = self.ncl.putfh(self.fh)
+	    getattrop = self.ncl.getattr([FATTR4_SIZE])
+	    res =  self.ncl.compound([putfhop, getattrop])
+	    check_result(res)
+	    size = opaque2long(res.resarray[1].arm.arm.obj_attributes.attr_vals)
+	    newpos = size + offset
         else:
             raise IOError("[Errno 22] Invalid argument")
         self.pos = max(0, newpos)
