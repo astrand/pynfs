@@ -55,15 +55,15 @@ try:
     import pynfs_completer
 except ImportError:
     print "Module readline not available. Tab-completion disabled."
-    class Completer:
+    class FakeCompleter:
         def __init__(self):
             self.pythonmode = 0
-    
+    Completer = FakeCompleter
 else:
     # Readline is available
     import __builtin__
     import __main__
-    class Completer(pynfs_completer.Completer):
+    class RealCompleter(pynfs_completer.Completer):
         def __init__(self):
             self.pythonmode = 0
             readline.set_completer(self.complete)
@@ -116,7 +116,7 @@ else:
                         matches.append(word)
 
             return matches
-
+    Completer = RealCompleter
 
 class ClientApp(cmd.Cmd):
     def __init__(self, transport, host, port, directory, pythonmode,
@@ -156,7 +156,7 @@ class ClientApp(cmd.Cmd):
     #
     # Commands
     #
-    def do_EOF(self, line):
+    def do_EOF(self, unused_line):
         print
         sys.exit(0)
     
@@ -477,20 +477,20 @@ class ClientApp(cmd.Cmd):
                 return
             self.debuglevel = l
 
-    def do_ping(self, line):
+    def do_ping(self, unused_line):
         print "pinging", self.ncl.host, "via RPC NULL procedure"
         start = time.time()
         self.ncl.null()
         end = time.time()
         print self.ncl.host, "responded in %f seconds" % (end - start)
 
-    def do_version(self, line):
+    def do_version(self, unused_line):
         print "nfs4client.py version", VERSION
 
     def do_shell(self, line):
         os.system(line)
 
-    def do_pythonmode(self, line):
+    def do_pythonmode(self, unused_line):
         self.completer.pythonmode = (not self.completer.pythonmode)
         print "pythonmode is now",
         if self.completer.pythonmode:
