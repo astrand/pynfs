@@ -466,11 +466,11 @@ class NFS4OpenFile:
     # fileno() should not be implemented.
 
     def read(self, size=None):
-        # FIXME: update pos. 
         if self.closed:
             raise ValueError("I/O operation on closed file")
         data = self.ncl.do_read(self.fh)
-        print "got data:", data
+        self.pos += len(data)
+        return data
 
     def readline(self, size=None):
         if self.closed:
