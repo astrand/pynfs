@@ -905,7 +905,7 @@ class NFS4OpenFile:
         # Confirm open
         putfhop = self.ncl.putfh_op(self.fh)
         seqid = self.ncl.get_seqid()
-        opconfirm = self.ncl.open_confirm(self.stateid, seqid)
+        opconfirm = self.ncl.open_confirm_op(self.stateid, seqid)
         self.ncl.compound([putfhop, opconfirm])
         check_result(res)
         
