@@ -8,7 +8,7 @@
  *
  */
 
-%#pragma ident	"@(#)nfs4_prot.x	1.103	01/10/22"
+%#pragma ident	"@(#)nfs4_prot.x	1.106"
 
 /*
  * Basic typedefs for RFC 1832 data type definitions
@@ -21,20 +21,20 @@ typedef unsigned hyper	uint64_t;
 /*
  * Sizes
  */
-const NFS4_FHSIZE         	= 128;
+const NFS4_FHSIZE		= 128;
 const NFS4_VERIFIER_SIZE	= 8;
 
 /*
  * File types
  */
 enum nfs_ftype4 {
-	NF4REG 		= 1,	/* Regular File */
-	NF4DIR 		= 2,	/* Directory */
-	NF4BLK 		= 3,	/* Special File - block device */
-	NF4CHR 		= 4,	/* Special File - character device */
-	NF4LNK 		= 5,	/* Symbolic Link */
-	NF4SOCK 	= 6,	/* Special File - socket */
-	NF4FIFO 	= 7,	/* Special File - fifo */
+	NF4REG		= 1,	/* Regular File */
+	NF4DIR		= 2,	/* Directory */
+	NF4BLK		= 3,	/* Special File - block device */
+	NF4CHR		= 4,	/* Special File - character device */
+	NF4LNK		= 5,	/* Symbolic Link */
+	NF4SOCK		= 6,	/* Special File - socket */
+	NF4FIFO		= 7,	/* Special File - fifo */
 	NF4ATTRDIR	= 8,	/* Attribute Directory */
 	NF4NAMEDATTR	= 9	/* Named Attribute */
 };
@@ -43,44 +43,44 @@ enum nfs_ftype4 {
  * Error status
  */
 enum nfsstat4 {
-	NFS4_OK 		= 0,
+	NFS4_OK			= 0,
 	NFS4ERR_PERM		= 1,
-	NFS4ERR_NOENT 		= 2,
-	NFS4ERR_IO 		= 5,
-	NFS4ERR_NXIO 		= 6,
-	NFS4ERR_ACCES 		= 13,
-	NFS4ERR_EXIST 		= 17,
-	NFS4ERR_XDEV 		= 18,
-	NFS4ERR_NODEV 		= 19,
-	NFS4ERR_NOTDIR 		= 20,
-	NFS4ERR_ISDIR 		= 21,
-	NFS4ERR_INVAL 		= 22,
-	NFS4ERR_FBIG 		= 27,
-	NFS4ERR_NOSPC 		= 28,
-	NFS4ERR_ROFS 		= 30,
-	NFS4ERR_MLINK 		= 31,
-	NFS4ERR_NAMETOOLONG 	= 63,
-	NFS4ERR_NOTEMPTY 	= 66,
-	NFS4ERR_DQUOT 		= 69,
-	NFS4ERR_STALE 		= 70,
-	NFS4ERR_BADHANDLE 	= 10001,
-	NFS4ERR_BAD_COOKIE 	= 10003,
-	NFS4ERR_NOTSUPP 	= 10004,
-	NFS4ERR_TOOSMALL 	= 10005,
-	NFS4ERR_SERVERFAULT 	= 10006,
-	NFS4ERR_BADTYPE 	= 10007,
+	NFS4ERR_NOENT		= 2,
+	NFS4ERR_IO		= 5,
+	NFS4ERR_NXIO		= 6,
+	NFS4ERR_ACCES		= 13,
+	NFS4ERR_EXIST		= 17,
+	NFS4ERR_XDEV		= 18,
+	NFS4ERR_NODEV		= 19,
+	NFS4ERR_NOTDIR		= 20,
+	NFS4ERR_ISDIR		= 21,
+	NFS4ERR_INVAL		= 22,
+	NFS4ERR_FBIG		= 27,
+	NFS4ERR_NOSPC		= 28,
+	NFS4ERR_ROFS		= 30,
+	NFS4ERR_MLINK		= 31,
+	NFS4ERR_NAMETOOLONG	= 63,
+	NFS4ERR_NOTEMPTY	= 66,
+	NFS4ERR_DQUOT		= 69,
+	NFS4ERR_STALE		= 70,
+	NFS4ERR_BADHANDLE	= 10001,
+	NFS4ERR_BAD_COOKIE	= 10003,
+	NFS4ERR_NOTSUPP		= 10004,
+	NFS4ERR_TOOSMALL	= 10005,
+	NFS4ERR_SERVERFAULT	= 10006,
+	NFS4ERR_BADTYPE		= 10007,
 	NFS4ERR_DELAY		= 10008,
-	NFS4ERR_SAME 		= 10009,/* nverify says attrs same */
-	NFS4ERR_DENIED 		= 10010,/* lock unavailable        */
-	NFS4ERR_EXPIRED 	= 10011,/* lock lease expired      */
-	NFS4ERR_LOCKED 		= 10012,/* I/O failed due to lock  */
-	NFS4ERR_GRACE 		= 10013,/* in grace period         */
-	NFS4ERR_FHEXPIRED 	= 10014,/* file handle expired     */
-	NFS4ERR_SHARE_DENIED	= 10015,/* share reserve denied    */
+	NFS4ERR_SAME		= 10009,/* nverify says attrs same */
+	NFS4ERR_DENIED		= 10010,/* lock unavailable	   */
+	NFS4ERR_EXPIRED		= 10011,/* lock lease expired	   */
+	NFS4ERR_LOCKED		= 10012,/* I/O failed due to lock  */
+	NFS4ERR_GRACE		= 10013,/* in grace period	   */
+	NFS4ERR_FHEXPIRED	= 10014,/* file handle expired	   */
+	NFS4ERR_SHARE_DENIED	= 10015,/* share reserve denied	   */
 	NFS4ERR_WRONGSEC	= 10016,/* wrong security flavor   */
-	NFS4ERR_CLID_INUSE	= 10017,/* clientid in use         */
-	NFS4ERR_RESOURCE	= 10018,/* resource exhaustion     */
-	NFS4ERR_MOVED		= 10019,/* filesystem relocated    */
+	NFS4ERR_CLID_INUSE	= 10017,/* clientid in use	   */
+	NFS4ERR_RESOURCE	= 10018,/* resource exhaustion	   */
+	NFS4ERR_MOVED		= 10019,/* filesystem relocated	   */
 	NFS4ERR_NOFILEHANDLE	= 10020,/* current FH is not set   */
 	NFS4ERR_MINOR_VERS_MISMATCH = 10021,/* minor vers not supp */
 	NFS4ERR_STALE_CLIENTID	= 10022,
@@ -88,7 +88,7 @@ enum nfsstat4 {
 	NFS4ERR_OLD_STATEID	= 10024,
 	NFS4ERR_BAD_STATEID	= 10025,
 	NFS4ERR_BAD_SEQID	= 10026,
-	NFS4ERR_NOT_SAME 	= 10027,/* verify - attrs not same */
+	NFS4ERR_NOT_SAME	= 10027,/* verify - attrs not same */
 	NFS4ERR_LOCK_RANGE	= 10028,
 	NFS4ERR_SYMLINK		= 10029,
 	NFS4ERR_READDIR_NOSPC	= 10030,
@@ -104,7 +104,7 @@ enum nfsstat4 {
 /*
  * Basic data types
  */
-typedef uint32_t        bitmap4<>;
+typedef uint32_t	bitmap4<>;
 typedef uint64_t	offset4;
 typedef uint32_t	count4;
 typedef	uint64_t	length4;
@@ -254,7 +254,7 @@ const ACE4_GENERIC_READ	= 0x00120081;
 
 /*
  * ACE4_GENERIC_WRITE -- defined as combination of
- * 	ACE4_READ_ACL |
+ *	ACE4_READ_ACL |
  *	ACE4_WRITE_DATA |
  *	ACE4_WRITE_ATTRIBUTES |
  *	ACE4_WRITE_ACL |
@@ -439,7 +439,7 @@ struct fattr4 {
  * Change info for the client
  */
 struct change_info4 {
-        bool		atomic;
+	bool		atomic;
 	changeid4	before;
 	changeid4	after;
 };
@@ -471,7 +471,7 @@ struct stateid4 {
  */
 struct nfs_client_id4 {
 	verifier4	verifier;
-	opaque 		id<>;
+	opaque		id<>;
 };
 
 struct open_owner4 {
@@ -485,11 +485,11 @@ struct lock_owner4 {
 };
 
 enum nfs_lock_type4 {
-	READ_LT 	= 1,
-	WRITE_LT 	= 2,
-	READW_LT 	= 3,	/* blocking read */
-	WRITEW_LT 	= 4,	/* blocking write */
-	RELEASE_STATE	= 5	/* release lock_stateid state at server */
+	READ_LT		= 1,
+	WRITE_LT	= 2,
+	READW_LT	= 3,	/* blocking read */
+	WRITEW_LT	= 4,	/* blocking write */
+	RELEASE_STATE	= 5	/* release lock_stateid at server */
 };
 
 /*
@@ -569,6 +569,8 @@ union createtype4 switch (nfs_ftype4 type) {
  case NF4FIFO:
  case NF4DIR:
 	 void;
+ default:
+	 void;		/* server should return NFS4ERR_BADTYPE */
 };
 
 struct CREATE4args {
@@ -579,7 +581,7 @@ struct CREATE4args {
 };
 
 struct CREATE4resok {
-	change_info4    cinfo;
+	change_info4	cinfo;
 	bitmap4		attrset;	/* attributes set */
 };
 
@@ -617,11 +619,11 @@ struct DELEGRETURN4res {
  */
 struct GETATTR4args {
 	/* CURRENT_FH: directory or file */
-	bitmap4 	attr_request;
+	bitmap4		attr_request;
 };
 
 struct GETATTR4resok {
-	fattr4 		obj_attributes;
+	fattr4		obj_attributes;
 };
 
 union GETATTR4res switch (nfsstat4 status) {
@@ -635,7 +637,7 @@ union GETATTR4res switch (nfsstat4 status) {
  * GETFH: Get current filehandle
  */
 struct GETFH4resok {
-	nfs_fh4 	object;
+	nfs_fh4		object;
 };
 
 union GETFH4res switch (nfsstat4 status) {
@@ -709,11 +711,7 @@ struct LOCK4denied {
 	lock_owner4	owner;
 };
 
-/* Client must confirm lock */
-const LOCK4_RESULT_CONFIRM	= 0x000000001;
-
 struct LOCK4resok {
-	uint32_t	rflags;		/* Result flags */
 	stateid4	lock_stateid;
 };
 
@@ -764,7 +762,7 @@ union LOCKU4res switch (nfsstat4 status) {
  */
 struct LOOKUP4args {
 	/* CURRENT_FH: directory */
-	component4 	objname;
+	component4	objname;
 };
 
 struct LOOKUP4res {
@@ -785,7 +783,7 @@ struct LOOKUPP4res {
  */
 struct NVERIFY4args {
 	/* CURRENT_FH: object */
-	fattr4 		obj_attributes;
+	fattr4		obj_attributes;
 };
 
 struct NVERIFY4res {
@@ -829,8 +827,8 @@ enum limit_by4 {
 };
 
 struct nfs_modified_limit4 {
-        uint32_t	num_blocks;
-        uint32_t	bytes_per_block;
+	uint32_t	num_blocks;
+	uint32_t	bytes_per_block;
 };
 
 union nfs_space_limit4 switch (limit_by4 limitby) {
@@ -856,7 +854,7 @@ const OPEN4_SHARE_DENY_BOTH	= 0x00000003;
 
 enum open_delegation_type4 {
 	OPEN_DELEGATE_NONE	= 0,
-        OPEN_DELEGATE_READ	= 1,
+	OPEN_DELEGATE_READ	= 1,
 	OPEN_DELEGATE_WRITE	= 2
 };
  
@@ -919,7 +917,7 @@ struct OPEN4args {
 
 struct open_read_delegation4 {
 	stateid4	stateid;	/* Stateid for delegation*/
-        bool		recall;         /* Pre-recalled flag for
+	bool		recall;		/* Pre-recalled flag for
 					   delegations obtained
 					   by reclaim
 					   (CLAIM_PREVIOUS) */
@@ -930,7 +928,7 @@ struct open_read_delegation4 {
 
 struct open_write_delegation4 {
 	stateid4	stateid;	/* Stateid for delegation */
-	bool            recall;         /* Pre-recalled flag for
+	bool		recall;		/* Pre-recalled flag for
 					   delegations obtained
 					   by reclaim
 					   (CLAIM_PREVIOUS) */
@@ -968,7 +966,7 @@ struct OPEN4resok {
 	stateid4	stateid;	/* Stateid for open */
 	change_info4	cinfo;		/* Directory Change Info */
 	uint32_t	rflags;		/* Result flags */
-	bitmap4		attrset;	/* attributes set for create */
+	bitmap4		attrset;	/* attribute set for create*/
 	open_delegation4 delegation;	/* Info on any open
 					   delegation */
 };
@@ -1040,7 +1038,7 @@ union OPEN_DOWNGRADE4res switch(nfsstat4 status) {
  * PUTFH: Set current filehandle
  */
 struct PUTFH4args {
-	nfs_fh4 	object;
+	nfs_fh4		object;
 };
 
 struct PUTFH4res {
@@ -1219,17 +1217,18 @@ struct SECINFO4args {
  * From RFC 2203
  */
 enum rpc_gss_svc_t {
-	RPC_GSS_SVC_NONE 	= 1,
-	RPC_GSS_SVC_INTEGRITY 	= 2,
-	RPC_GSS_SVC_PRIVACY 	= 3
+	RPC_GSS_SVC_NONE	= 1,
+	RPC_GSS_SVC_INTEGRITY	= 2,
+	RPC_GSS_SVC_PRIVACY	= 3
 };
 
 struct rpcsec_gss_info {
-	sec_oid4 	oid;   
-	qop4 		qop;
+	sec_oid4	oid;   
+	qop4		qop;
 	rpc_gss_svc_t	service;
 };  
  
+/* RPCSEC_GSS has a value of '6' - See RFC 2203 */
 union secinfo4 switch (uint32_t flavor) {
  case RPCSEC_GSS:
 	 rpcsec_gss_info	flavor_info;
@@ -1252,7 +1251,7 @@ union SECINFO4res switch (nfsstat4 status) {
 struct SETATTR4args {
 	/* CURRENT_FH: target object */
 	stateid4	stateid;
-	fattr4 		obj_attributes;
+	fattr4		obj_attributes;
 };
 
 struct SETATTR4res {
@@ -1294,7 +1293,7 @@ struct SETCLIENTID_CONFIRM4res {
  */
 struct VERIFY4args {
 	/* CURRENT_FH: object */
-	fattr4 		obj_attributes;
+	fattr4		obj_attributes;
 };
 
 struct VERIFY4res {
@@ -1305,9 +1304,9 @@ struct VERIFY4res {
  * WRITE: Write to file
  */
 enum stable_how4 {
-	UNSTABLE4  	= 0,
-	DATA_SYNC4 	= 1,
-	FILE_SYNC4 	= 2
+	UNSTABLE4	= 0,
+	DATA_SYNC4	= 1,
+	FILE_SYNC4	= 2
 };
 
 struct WRITE4args {
@@ -1455,15 +1454,15 @@ union nfs_resop4 switch (nfs_opnum4 resop){
 };
 
 struct COMPOUND4args {
-	utf8string 	tag;
+	utf8string	tag;
 	uint32_t	minorversion;
 	nfs_argop4	argarray<>;
 };
 
 struct COMPOUND4res {
 	nfsstat4 status;
-	utf8string 	tag;
-	nfs_resop4 	resarray<>;
+	utf8string	tag;
+	nfs_resop4	resarray<>;
 };
 
 /*
@@ -1537,15 +1536,15 @@ union nfs_cb_resop4 switch (unsigned resop){
 };
 
 struct CB_COMPOUND4args {
-	utf8string 	tag;
+	utf8string	tag;
 	uint32_t	minorversion;
 	nfs_cb_argop4	argarray<>;
 };
 
 struct CB_COMPOUND4res {
 	nfsstat4 status;
-	utf8string 	tag;
-	nfs_cb_resop4 	resarray<>;
+	utf8string	tag;
+	nfs_cb_resop4	resarray<>;
 };
 
 
