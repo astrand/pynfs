@@ -245,7 +245,7 @@ class NFSSuite(unittest.TestCase):
         """Create (dir) object in /tmp, if it does not exist. Return false on failure.
         object defaults to self.obj_name
         """
-        # FIXME: Rename to create_object
+        # FIXME: Rename to make_sure_existent
         # We create a directory, because it's simple.
         if not name:
             name = self.obj_name
@@ -1028,23 +1028,13 @@ class CreateSuite(NFSSuite):
         # |-- "gazonk/foo.c"
         # `-- gazonk
         #     `--foo.c
-        testname = "gazonk/foo.c"
-
-        # Lookup fh for /tmp
-        fh = self.ncl.do_getfh(self.tmp_dir)
+        #
+        # /tmp/gazonk/foo.c is created by test_tree.py. 
         
-        # Get entries
-        entries = self.ncl.do_readdir(fh)
-        names = [entry.name for entry in entries]
-
-        if testname in names:
-            # Strange, a file called "gazonk/foo.c" already exists.
-            # Try to remove it. 
-            if not self._remove_object(testname): return
-
+        testname = "gazonk/foo.c"
+        if not self.make_sure_nonexistent(testname): return
         # Try to create "gazonk/foo.c"
         self._do_create(testname)
-
 
 
 
