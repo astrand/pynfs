@@ -36,14 +36,6 @@ import array
 import socket
 import os
 import re
-try:
-    import pwd
-except ImportError:
-    class pwdStub:
-	def getpwuid(self, uid):
-	    return "winuser"
-    pwd = pwdStub()
-
 
 # Stubs for Win32 systems
 if not hasattr(os, "getuid"):
@@ -121,7 +113,7 @@ class PartialNFS4Client:
         # Send call stack in COMPOUND tag?
         self.debugtags = 0
         # Owners
-        self.default_owner = os.getlogin()
+        self.default_owner = os.getenv("USER", "pynfs-user")
         self._active_owners = {}
 
     def mkcred(self):
@@ -540,7 +532,15 @@ class PartialNFS4Client:
     # def do_lock
     # def do_lockt
     # def do_locku
-    # def do_lookup
+    def do_lookup(self, cfh, component):
+        """Lookup"""
+        operations = [self.putfh_op(cfh)] 
+        operations.append(self.lookup_op(component))
+        operations.append(self.getfh_op())
+        res = self.compound(operations)
+        check_result(res)
+        return res.resarray[-1].arm.arm.object
+    
     # def do_lookupp
     # def do_nverify
     # def do_open
