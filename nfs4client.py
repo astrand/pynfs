@@ -29,6 +29,7 @@ import sys
 import getopt
 import re
 import os
+import time
 
 SYNTAX = """\
 Syntax:
@@ -338,8 +339,11 @@ class ClientApp(cmd.Cmd):
         print "not implemented"
 
     def do_ping(self, line):
-        # FIXME
-        print "not implemented"
+        print "pinging", self.ncl.host, "via RPC NULL procedure"
+        start = time.time()
+        self.ncl.null()
+        end = time.time()
+        print self.ncl.host, "responded in %f seconds" % (end - start)
 
     def do_version(self, line):
         print "nfs4client.py version", VERSION
