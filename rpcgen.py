@@ -145,6 +145,7 @@ known_types = {}
 typesheader = """
 from %s import *
 from %s import *
+import rpc
 
 def init_type_class(klass, ncl):
     # Initilize type class
@@ -173,13 +174,13 @@ def unpack_objarray(ncl, klass):
     return list
 
 
-# All RPC errors are subclasses of RPCException
-class RPCException(Exception):
-	pass
-
-class BadDiscriminant(RPCException):
-    def __init__(self, value):
+class BadDiscriminant(rpc.RPCException):
+    def __init__(self, value, klass):
         self.value = value
+        self.klass = klass
+
+    def __str__(self):
+        return "Bad Discriminant %%s in %%s" %% (self.value, self.klass)
 
 """ 
 
@@ -445,7 +446,7 @@ def gen_switch_code(ip, union_body, packer, assertions=0):
         else:
             ip.pr("pass")
     else:
-        ip.pr("raise BadDiscriminant(self.%s)" % switch_id)
+        ip.pr("raise BadDiscriminant(self.%s, self)" % switch_id)
 
     ip.pr("\n")
     ip.change(-4)
