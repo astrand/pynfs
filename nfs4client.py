@@ -121,6 +121,7 @@ else:
 class ClientApp(cmd.Cmd):
     def __init__(self, transport, host, port, directory, pythonmode,
                  debuglevel):
+        cmd.Cmd.__init__(self)
         self.transport = transport
         self.host = host
         self.port = port
