@@ -241,7 +241,7 @@ class NFSSuite(unittest.TestCase):
             self.info_message("Cannot prepare by removing object, skipping test")
         return status
 
-    def _create_object(self, name=None, directory=None):
+    def create_object(self, name=None, directory=None):
         """Create (dir) object in /tmp, if it does not exist. Return false on failure.
         object defaults to self.obj_name
         """
@@ -2680,7 +2680,7 @@ class RemoveSuite(NFSSuite):
 
         Covered valid equivalence classes: 10, 20
         """
-        if not self._create_object(): return
+        if not self.create_object(): return
         operations = [self.putrootfhop] + self.lookup_dir_ops
         operations.append(self.ncl.remove_op(self.obj_name))
         res = self.do_compound(operations)
@@ -2714,7 +2714,7 @@ class RemoveSuite(NFSSuite):
 
         Covered invalid equivalence classes: 21
         """
-        if not self._create_object(): return
+        if not self.create_object(): return
         operations = [self.putrootfhop] + self.lookup_dir_ops
         operations.append(self.ncl.remove_op(""))
         res = self.do_compound(operations)
@@ -2806,7 +2806,7 @@ class RenameSuite(NFSSuite):
     def setUp(self):
         NFSSuite.setUp(self)
         self.oldname = "object1"
-        self.obj_name = self.oldname # Easier call of _create_object()
+        self.obj_name = self.oldname # Easier call of create_object()
         self.newname = "object2"
 
         self.lookup_dir_ops = self.ncl.lookup_path(self.tmp_dir)
@@ -2832,7 +2832,7 @@ class RenameSuite(NFSSuite):
 
         Covered valid equivalence classes: 10, 20, 30, 40
         """
-        if not self._create_object(): return
+        if not self.create_object(): return
 
         operations = self._prepare_operation()
 
@@ -2888,7 +2888,7 @@ class RenameSuite(NFSSuite):
 
         Covered invalid equivalence classes: 21
         """
-        if not self._create_object(): return
+        if not self.create_object(): return
         operations = self._prepare_operation()
 
         # Rename
@@ -2902,7 +2902,7 @@ class RenameSuite(NFSSuite):
 
         Covered invalid equivalence classes: 22
         """
-        if not self._create_object(): return
+        if not self.create_object(): return
         operations = self._prepare_operation()
 
         # Rename
@@ -2941,7 +2941,7 @@ class RenameSuite(NFSSuite):
 
         Covered invalid equivalence classes: 41
         """
-        if not self._create_object(): return
+        if not self.create_object(): return
         operations = self._prepare_operation()
 
         # Rename
@@ -2987,12 +2987,12 @@ class RenameSuite(NFSSuite):
         Extra test
         """
         # Create dummy object
-        if not self._create_object(): return
+        if not self.create_object(): return
         # Try to rename it to "."
         self._do_test_newname(".")
 
         # Create dummy object
-        if not self._create_object(): return
+        if not self.create_object(): return
         # Try to rename it to ".."
         self._do_test_newname("..")
 
@@ -3907,7 +3907,7 @@ class FilehandleSuite(NFSSuite):
 
         See section 4.2.2 in specification. 
         """
-        if not self._create_object(): return
+        if not self.create_object(): return
         # This test requires persistent a filehandle
         if not self._verify_persistent():
             self.info_message("Directory fh is not persistent, which is required")
