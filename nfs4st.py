@@ -1868,7 +1868,7 @@ class OpenattrSuite(NFSSuite):
     def _openattr(self, createdir):
         for lookupops in self.ncl.lookup_all_objects():
             operations = [self.putrootfhop] + lookupops
-            operations.append(self.ncl.openattr_op(TRUE))
+            operations.append(self.ncl.openattr_op(createdir))
             res = self.do_compound(operations)
 
             if res.status == NFS4ERR_NOTSUPP:
