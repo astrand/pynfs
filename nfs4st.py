@@ -218,9 +218,11 @@ class NFSSuite(unittest.TestCase):
         """Return a (guessed) invalid clientid"""
         return 0x1234567890L
 
-    def get_invalid_utf8string(self):
-        """Return an invalid UTF-8 string"""
-        return "\xc0\xc1"
+    def get_invalid_utf8strings(self):
+        """Return a list of invalid ISO10646-UTF-8 strings"""
+        # FIXME: More invalid strings. Do equivalence partitioning on UTF8 definition
+        return ["\xc0\xc1",
+                "\xe0\x8a"]
 
     def remove_object(self, name=None, directory=None):
         """Remove object in /tmp, if it exists. Return false on failure.
@@ -1670,15 +1672,13 @@ class LookupSuite(NFSSuite):
         """LOOKUP with non-UTF8 name should return NFS4ERR_INVAL
 
         Covered invalid equivalence classes: 22
-
         """
-        operations = [self.putrootfhop]
-        name = self.get_invalid_utf8string()
-        operations.append(self.ncl.lookup_op(name))
-        res = self.do_compound(operations)
-        self.assert_status(res, [NFS4ERR_INVAL])
-
-
+        for name in self.get_invalid_utf8strings():
+            operations = [self.putrootfhop]
+            operations.append(self.ncl.lookup_op(name))
+            res = self.do_compound(operations)
+            self.assert_status(res, [NFS4ERR_INVAL])
+            
     #
     # Extra tests.
     #
@@ -2759,11 +2759,13 @@ class RemoveSuite(NFSSuite):
         """REMOVE with non-UTF8 components should return NFS4ERR_INVAL
 
         Covered invalid equivalence classes: 22
-
-        Comments: Not yet implemented. 
         """
-        # FIXME: Implement
-        self.info_message("(TEST NOT IMPLEMENTED)")
+        for name in self.get_invalid_utf8strings():
+            if not self.create_object(name=name): return
+            operations = [self.putrootfhop] + self.lookup_dir_ops
+            operations.append(self.ncl.remove_op(name))
+            res = self.do_compound(operations)
+            self.assert_status(res, [NFS4ERR_INVAL])
 
     def testNonExistent(self):
         """REMOVE on non-existing object should return NFS4ERR_NOENT
