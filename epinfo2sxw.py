@@ -323,22 +323,21 @@ EPINFO_HEAD = """\
   <style:style style:name="Table1.C2" style:family="table-cell">
    <style:properties fo:padding="0.097cm" fo:border-left="0.002cm solid #000000" fo:border-right="0.002cm solid #000000" fo:border-top="none" fo:border-bottom="0.002cm solid #000000"/>
   </style:style>
-
-
+  
   <style:style style:name="Table2" style:family="table">
-   <style:properties style:width="16.999cm" table:align="margins"/>
+   <style:properties style:width="16.002cm" table:align="margins"/>
   </style:style>
   <style:style style:name="Table2.A" style:family="table-column">
-   <style:properties style:column-width="4.03cm" style:rel-column-width="2285*"/>
+   <style:properties style:column-width="4.399cm" style:rel-column-width="2494*"/>
   </style:style>
   <style:style style:name="Table2.B" style:family="table-column">
-   <style:properties style:column-width="2.341cm" style:rel-column-width="1327*"/>
+   <style:properties style:column-width="3cm" style:rel-column-width="1701*"/>
   </style:style>
   <style:style style:name="Table2.C" style:family="table-column">
-   <style:properties style:column-width="2.431cm" style:rel-column-width="1378*"/>
+   <style:properties style:column-width="3cm" style:rel-column-width="1701*"/>
   </style:style>
   <style:style style:name="Table2.D" style:family="table-column">
-   <style:properties style:column-width="8.195cm" style:rel-column-width="4646*"/>
+   <style:properties style:column-width="5.602cm" style:rel-column-width="3176*"/>
   </style:style>
   <style:style style:name="Table2.A1" style:family="table-cell">
    <style:properties fo:padding="0.097cm" fo:border="0.002cm solid #000000"/>
@@ -352,12 +351,7 @@ EPINFO_HEAD = """\
   <style:style style:name="Table2.B3" style:family="table-cell" style:data-style-name="N0">
    <style:properties fo:vertical-align="bottom" fo:padding="0.097cm" fo:border-left="0.002cm solid #000000" fo:border-right="none" fo:border-top="none" fo:border-bottom="0.002cm solid #000000"/>
   </style:style>
-  <style:style style:name="Table2.B10" style:family="table-cell">
-   <style:properties fo:vertical-align="top" fo:padding="0.097cm" fo:border-left="0.002cm solid #000000" fo:border-right="none" fo:border-top="none" fo:border-bottom="0.002cm solid #000000"/>
-  </style:style>
-  <style:style style:name="Table2.D10" style:family="table-cell" style:data-style-name="N0">
-   <style:properties fo:vertical-align="bottom" fo:padding="0.097cm" fo:border-left="0.002cm solid #000000" fo:border-right="0.002cm solid #000000" fo:border-top="none" fo:border-bottom="0.002cm solid #000000"/>
-  </style:style>
+  
   <style:style style:name="P1" style:family="paragraph" style:parent-style-name="EP Table Contents">
    <style:properties fo:text-align="end" style:justify-single-word="false"/>
   </style:style>
