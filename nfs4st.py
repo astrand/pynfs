@@ -90,11 +90,13 @@ class NFSSuite(unittest.TestCase):
             raise RuntimeError, "Invalid protocol"
     
     def failIfRaises(self, excClass, callableObj, *args, **kwargs):
-        """Fail if exception of excClass is raised"""
+        """Fail if exception of excClass or EOFError is raised"""
         try:
             return apply(callableObj, args, kwargs)
         except excClass, e:
             self.fail(e)
+        except EOFError, e:
+            self.fail("EOFError: short response")
 
     def assert_OK(self, res):
         """Assert result from compound call is NFS4_OK"""
@@ -1837,6 +1839,8 @@ class PutrootfhSuite(NFSSuite):
 class ReadSuite(NFSSuite):
     """Test operation 25: READ
 
+    FIXME: Adapt to protocol changes. 
+
     FIXME: Add attribute directory and named attribute testing.
     FIXME: Try reading a locked file. 
 
@@ -1881,10 +1885,11 @@ class ReadSuite(NFSSuite):
 
         Covered valid equivalence classes: 1, 11, 14, 17
         """
-        lookupop = self.ncl.lookup_op(self.regfile)
+        lookupops = self.ncl.lookup_path(self.regfile)
+        operations = [self.putrootfhop] + lookupops
         
-        readop = self.ncl.read(offset=0, count=0, stateid=0)
-        res = self.do_compound([self.putrootfhop, lookupop, readop])
+        operations.append(self.ncl.read(offset=0, count=0, stateid=0))
+        res = self.do_compound(operations)
         self.assert_OK(res)
 
     def testReadAttr(self):
@@ -2061,11 +2066,14 @@ class ReaddirSuite(NFSSuite):
 
         Covered invalid equivalence classes: 11
         """
-        lookupop = self.ncl.lookup_op(["doc", "README"])
+        lookupops = self.ncl.lookup_path(self.regfile)
+        operations = [self.putrootfhop] + lookupops
+        
         readdirop = self.ncl.readdir_op(cookie=0, cookieverf="\x00",
                                         dircount=0, maxcount=4096,
                                         attr_request=[])
-        res = self.do_compound([self.putrootfhop, lookupop, readdirop])
+        operations.append(readdirop)
+        res = self.do_compound(operations)
         self.assert_status(res, [NFS4ERR_NOTDIR])
 
     def testNoFh(self):
