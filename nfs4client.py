@@ -372,8 +372,11 @@ class ClientApp(cmd.Cmd):
         print
 
     def do_mkdir(self, line):
-        # FIXME
-        print "not implemented"
+        if not line:
+            print "mkdir <dirname>"
+            return
+
+        self.do_create("dir " + line)
 
     do_md = do_mkdir
 
