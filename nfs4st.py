@@ -226,6 +226,7 @@ class NFSSuite(unittest.TestCase):
         """Remove object in /tmp, if it exists. Return false on failure.
         object defaults to self.obj_name
         """
+        # FIXME: Rename to remove_object
         if not name:
             name = self.obj_name
         if not directory:
@@ -244,6 +245,7 @@ class NFSSuite(unittest.TestCase):
         """Create (dir) object in /tmp, if it does not exist. Return false on failure.
         object defaults to self.obj_name
         """
+        # FIXME: Rename to create_object
         # We create a directory, because it's simple.
         if not name:
             name = self.obj_name
@@ -259,6 +261,29 @@ class NFSSuite(unittest.TestCase):
         if not status:
             self.info_message("Cannot prepare by creating object, skipping test")
         return status
+
+    def make_sure_nonexistent(self, name=None, directory=None):
+        """Make sure file does not exist. A READDIR is done. If file is not
+        found in READDIR, return. If file is found in READDIR results, try to
+        remove it.
+
+        Returns true if file did not exist or it was possible to remove it.
+        Returns false if file exists and it was not possible to remove it.
+        """
+        if not name:
+            name = self.obj_name
+        if not directory:
+            directory = self.tmp_dir
+
+        fh = self.ncl.do_getfh(directory)
+        entries = self.ncl.do_readdir(fh)
+        names = [entry.name for entry in entries]
+        if name in names:
+            # Strange, this file already exists
+            # Try to remove it.
+            return self._remove_object(name, directory)
+        else:
+            return 1
     
 
 class CompoundSuite(NFSSuite):
@@ -970,8 +995,8 @@ class CreateSuite(NFSSuite):
         operations.append(createop)
 
         res = self.do_compound(operations)
-        self.assert_status(res, [NFS4_OK, NFS4ERR_INVAL]) 
-    
+        self.assert_status(res, [NFS4_OK, NFS4ERR_INVAL])
+
     def testDots(self):
         """CREATE with . or .. should succeed or return NFS4ERR_INVAL
 
@@ -980,13 +1005,13 @@ class CreateSuite(NFSSuite):
         Servers supporting . and .. in file names should return NFS4_OK. Others
         should return NFS4ERR_INVAL. NFS4ERR_EXIST should not be returned.
         """
-        # name = .
-        if not self._remove_object("."): return
-        self._do_create(".")
+        testname = "."
+        if not self.make_sure_nonexistent(testname): return
+        self._do_create(testname)
 
-        # name = ..
-        if not self._remove_object(".."): return
-        self._do_create("..")
+        testname = ".."
+        if not self.make_sure_nonexistent(testname): return
+        self._do_create(testname)
 
     def testSlash(self):
         """CREATE WITH "/" in filename should succeed or return NFS4ERR_INVAL
@@ -1499,14 +1524,13 @@ class LinkSuite(NFSSuite):
         Servers supporting . and .. in file names should return NFS4_OK. Others
         should return NFS4ERR_INVAL. NFS4ERR_EXIST should not be returned.
         """
-        # newname = .
-        self._remove_object(".")
-        self._do_link(".")
-        
-        # newname = ..
-        self._remove_object("..")
-        self._do_link("..")
+        testname = "."
+        if not self.make_sure_nonexistent(testname): return
+        self._do_link(testname)
 
+        testname = ".."
+        if not self.make_sure_nonexistent(testname): return
+        self._do_link(testname)
 
 
 ## class LockSuite(NFSSuite):
@@ -1640,6 +1664,7 @@ class LookupSuite(NFSSuite):
         self.assert_status(res, [NFS4ERR_NOENT])
 
     def testDots(self):
+        # FIXME: Maybe not NFS4ERR_ENOENT, but INVAL?
         """LOOKUP on . and .. should return NFS4ERR_ENOENT
 
         Extra test
@@ -2710,6 +2735,7 @@ class RemoveSuite(NFSSuite):
         self.assert_status(res, [NFS4ERR_NOENT])
     
     def testDots(self):
+        # FIXME: Maybe not NFS4ERR_ENOENT, but INVAL?
         """REMOVE on . or .. should return NFS4ERR_NOENT
         
         Extra test
@@ -2929,18 +2955,21 @@ class RenameSuite(NFSSuite):
         self.assert_status(res, [NFS4_OK, NFS4ERR_INVAL])
     
     def testDotsOldname(self):
+        # FIXME: Maybe not NFS4ERR_ENOENT, but INVAL?
         """RENAME with oldname containing . or .. should return NFS4ERR_NOENT
 
         Extra test
         
         No files named . or .. should exist in doc directory
         """
-        # Use /doc as dir in this test
-        self.lookup_dir_ops = self.ncl.lookup_path(self.dirfile)
-        # name = .
+        testname = "."
+        if not self.make_sure_nonexistent(testname): return
+        # Assert NOENT
         self._do_test_oldname(".")
 
-        # name = ..
+        testname = ".."
+        if not self.make_sure_nonexistent(testname): return
+        # Assert NOENT
         self._do_test_oldname("..")
 
     def testDotsNewname(self):
@@ -3186,6 +3215,7 @@ class SecinfoSuite(NFSSuite):
         self.assert_status(res, [NFS4ERR_NOENT])
 
     def testDots(self):
+        # FIXME: Maybe not NFS4ERR_ENOENT, but INVAL?
         """SECINFO on . and .. should return NFS4ERR_ENOENT in /doc
 
         Extra test
