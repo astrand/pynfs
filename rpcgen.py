@@ -1068,6 +1068,9 @@ if __name__ == "__main__":
     # Write beginning of packer file.
     packer_file_out.write(comment_string)
     packer_file_out.write(packerheader % (types_file, constants_file))
+    print >>packer_file_out, '__all__ = ["%sPacker", "%sUnpacker"]' \
+          % (name_base.upper(), name_base.upper())
+    print >>packer_file_out
 
     packer_out.write("class %sPacker(rpc.Packer):\n" % name_base.upper())
     packer_out.write("    def __init__(self, ncl):\n")
@@ -1084,7 +1087,6 @@ if __name__ == "__main__":
     unpacker_out.write("    def __init__(self, ncl, data=''):\n")
     unpacker_out.write("        xdrlib.Unpacker.__init__(self, data)\n")
     unpacker_out.write("        self.ncl = ncl\n\n")
-
     
     ip = IndentPrinter(unpacker_out)
     ip.change(4)
