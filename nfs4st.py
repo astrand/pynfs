@@ -991,7 +991,7 @@ class GetattrSuite(NFSSuite):
         sys.stdout.flush()
 
 
-class GetFhSuite(NFSSuite):
+class GetfhSuite(NFSSuite):
     """Test operation 10: GETFH
 
     FIXME: Add attribute directory and named attribute testing. 
@@ -1018,9 +1018,10 @@ class GetFhSuite(NFSSuite):
 
         Covered valid equivalence classes: 1, 2, 3, 4, 5, 6, 7
         """
-        for lookupop in self.lookup_all_objects():
-            getfhop = self.ncl.getfh_op()
-            res = self.do_compound([self.putrootfhop, lookupop, getfhop])
+        for lookupops in self.lookup_all_objects():
+            operations = [self.putrootfhop] + lookupops
+            operations.append(self.ncl.getfh_op())
+            res = self.do_compound(operations)
             self.assert_OK(res)            
     #
     # Testcases covering invalid equivalence classes.
