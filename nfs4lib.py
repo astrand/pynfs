@@ -63,6 +63,7 @@ class NFSException(Exception):
 	pass
 
 class BadCompoundRes(NFSException):
+    """The COMPOUND procedure returned some kind of error"""
     def __init__(self, operation, errcode):
         self.operation = operation
         self.errcode = errcode
@@ -70,6 +71,16 @@ class BadCompoundRes(NFSException):
     def __str__(self):
         return "operation %s returned result %s" % (nfs_opnum4_id[self.operation],
                                                     nfsstat4_id[self.errcode])
+
+class InvalidCompoundRes(NFSException):
+    """The COMPOUND procedure returned is invalid"""
+    def __str__(self):
+        return "invalid COMPOUND result"
+    
+    
+class EmptyCompoundRes(NFSException):
+    def __str__(self):
+        return "empty COMPOUND result"
 
 class DummyNcl:
     def __init__(self, packer=None, unpacker=None):
@@ -106,6 +117,8 @@ class PartialNFS4Client:
         res = COMPOUND4res(self)
         
         self.make_call(1, None, compoundargs.pack, res.unpack)
+        verify_compound_result(res)
+        
         return res
 
     #
@@ -478,6 +491,20 @@ def check_result(compoundres):
     for resop in compoundres.resarray:
         if resop.arm.status:
             raise BadCompoundRes(resop.resop, resop.arm.status)
+
+def verify_compound_result(res):
+    """Check that COMPOUND result is sane"""
+    if res.status == NFS4_OK:
+        # All operations status should also be NFS4_OK
+        for resop in res.resarray:
+            if resop.arm.status != NFS4_OK:
+                raise InvalidCompoundRes()
+    else:
+        # res.status must be equal to lastop.arm.status
+        if res.resarray:
+            lastop = res.resarray[-1]
+            if res.status != lastop.arm.status:
+                raise InvalidCompoundRes()
 
 def str2pathname(str, pathname=[]):
     pathname = pathname[:]
