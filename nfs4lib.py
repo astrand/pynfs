@@ -631,7 +631,10 @@ def verify_compound_result(res):
                 raise InvalidCompoundRes()
 
 def unixpath2comps(str, pathcomps=[]):
-    pathcomps = pathcomps[:]
+    if str[0] == "/":
+        pathcomps = []
+    else:
+        pathcomps = pathcomps[:]
     for component in str.split("/"):
         if (component == "") or (component == "."):
             pass
