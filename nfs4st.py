@@ -111,17 +111,64 @@ class NFSTestCase(unittest.TestCase):
 
 
 class CompoundTestCase(NFSTestCase):
-    """Test COMPOUND procedure"""
+    """Test COMPOUND procedure
 
+    Equivalence partitioning:
+
+    Input Condition: tag
+        Valid equivalence classes:
+            no tag (0)
+            tag (1)
+        Invalid equivalence classes:
+            -
+    Input Condition: minorversion
+        Valid equivalence classes:
+            supported minorversions(2)
+        Invalid equivalence classes:
+            unsupported minorversions(3)
+    Input Condition: argarray
+        Valid equivalence classes:
+            valid operations array(4)
+        Invalid equivalence classes:
+            invalid operations array(5)
+
+    """
 
     def setUp(self):
         self.connect()
         self.putrootfhop = self.ncl.putrootfh_op()
 
+    #
+    # Testcases covering valid equivalence classes.
+    #
+    def testZeroOps(self):
+        """Test COMPOUND without operations
+
+        Covered valid equivalence classes: 0, 2, 4
+        """
+        res = self.do_compound([])
+        self.assert_OK(res)
+
+    def testWithTag(self):
+        """Simple COMPOUND with tag
+
+        Covered valid equivalence classes: 1, 2, 4
+        """
+        res = self.do_compound([self.putrootfhop], tag="nfs4st.py test tag")
+        self.assert_OK(res)
+
+    #
+    # Testcases covering invalid equivalence classes.
+    #
     def testInvalidMinor(self):
         """Test COMPOUND with invalid minor version
-        """
 
+        Covered invalid equivalence classes: 3
+
+        Comments: Also verifies that the result array after
+        NFS4ERR_MINOR_VERS_MISMATCH is empty. 
+        
+        """
         res = self.do_compound([self.putrootfhop], minorversion=0xFFFF)
         self.failIf(res.status != NFS4ERR_MINOR_VERS_MISMATCH,
                     "expected NFS4ERR_MINOR_VERS_MISMATCH")
@@ -129,20 +176,15 @@ class CompoundTestCase(NFSTestCase):
         self.failIf(res.resarray, "expected empty result array after"\
                     "NFS4ERR_MINOR_VERS_MISMATCH")
 
-    def testZeroOps(self):
-        """Test COMPOUND without operations
-        """
-
-        res = self.do_compound([])
-        self.assert_OK(res)
-
     def testOperation0_1_2(self):
         """Test COMPOUND with (undefined) operation 0, 1 and 2
 
-        The server should return NFS4ERR_NOTSUPP for the undefined
-        operations 0, 1 and 2. Although operation 2 may be introduced
-        in later minor versions, the server should always return
-        NFS4ERR_NOTSUPP if the minorversion is 0. 
+        Covered invalid equivalence classes: 5
+
+        Comments: The server should return NFS4ERR_NOTSUPP for the
+        undefined operations 0, 1 and 2. Although operation 2 may be
+        introduced in later minor versions, the server should always
+        return NFS4ERR_NOTSUPP if the minorversion is 0.
         """
 
         # nfs4types.nfs_argop4 does not allow packing invalid operations. 
