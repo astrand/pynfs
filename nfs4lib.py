@@ -296,9 +296,9 @@ class PartialNFS4Client:
         # FIXME
         raise NotImplementedError()
 
-    def remove(self):
-        # FIXME
-        raise NotImplementedError()
+    def remove_op(self, target):
+        args = REMOVE4args(self, target)
+        return nfs_argop4(self, argop=OP_REMOVE, opremove=args)
 
     def rename(self):
         # FIXME
