@@ -59,7 +59,7 @@ class NFSSuite(unittest.TestCase):
         # Filename constants. Same order as in nfs_ftype4 enum. 
         self.regfile = nfs4lib.unixpath2comps("/doc/README") # NF4REG
         self.dirfile = nfs4lib.unixpath2comps("/doc") # NF4DIR
-        self.blockfile = nfs4lib.unixpath2comps("/dev/fd0") # NF4DIR
+        self.blockfile = nfs4lib.unixpath2comps("/dev/fd0") # NF4BLK
         self.charfile = nfs4lib.unixpath2comps("/dev/ttyS0") # NF4CHR
         self.linkfile = nfs4lib.unixpath2comps("/dev/floppy") # NF4LNK
         self.socketfile = nfs4lib.unixpath2comps("/dev/log") # NF4SOCK
