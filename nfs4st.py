@@ -22,8 +22,6 @@
 #
 # Print out testcase names?
 #
-# use assert_status instead of failIf. 
-#
 # Extend unittest with warnings.
 #
 # Handle errors such as NFS4ERR_RESOURCE and NFS4ERR_DELAY.
@@ -213,8 +211,7 @@ class CompoundTestSuite(NFSTestSuite):
         
         """
         res = self.do_compound([self.putrootfhop], minorversion=0xFFFF)
-        self.failIf(res.status != NFS4ERR_MINOR_VERS_MISMATCH,
-                    "expected NFS4ERR_MINOR_VERS_MISMATCH")
+        self.assert_status(res, [NFS4ERR_MINOR_VERS_MISMATCH])
                     
         self.failIf(res.resarray, "expected empty result array after"\
                     "NFS4ERR_MINOR_VERS_MISMATCH")
