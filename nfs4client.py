@@ -215,10 +215,40 @@ class ClientApp(cmd.Cmd):
             
         getfhresult = res.resarray[-1].arm
         fh = getfhresult.arm.object
-        
-        entries = self.ncl.do_readdir(fh)
+
+        attr_request = nfs4lib.list2attrmask([FATTR4_TYPE, FATTR4_SIZE, FATTR4_TIME_MODIFY])
+        entries = self.ncl.do_readdir(fh, attr_request)
         for entry in entries:
-            print entry.name
+            attrdict = nfs4lib.fattr2dict(entry.attrs)
+            # Name
+            name = entry.name
+
+            # Size
+            if attrdict.has_key("size"):
+                size = str(attrdict["size"])
+            else:
+                size = "?"
+
+            # File type
+            if attrdict.has_key("type"):
+                ftype = nfs_ftype4_id[attrdict["type"]]
+                if ftype == "NF4REG":
+                    ftype = ""
+                else:
+                    # Skip NF4
+                    ftype = ftype[3:]
+            else:
+                ftype = "?"
+            
+            # Time
+            if attrdict.has_key("time_modify"):
+                time_tupel = time.localtime(attrdict["time_modify"].seconds)
+                # ISO 8601 format without timezone. 
+                time_mod = time.strftime("%Y-%m-%dT%H:%M:%S", time_tupel)
+            else:
+                time_mod = "?"
+                
+            print "%(name)-16s %(size)12s %(ftype)9s %(time_mod)34s" % vars()
 
     do_ls = do_dir
 
