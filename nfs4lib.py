@@ -395,8 +395,8 @@ class PartialNFS4Client:
 
         check_result(res)
         
-        self.clientid = res.resarray[0].arm.resok4.clientid
-        setclientid_confirm = res.resarray[0].arm.resok4.setclientid_confirm
+        self.clientid = res.resarray[0].arm.arm.clientid
+        setclientid_confirm = res.resarray[0].arm.arm.setclientid_confirm
 
         # SETCLIENTID_CONFIRM
         setclientid_confirmop = self.setclientid_confirm_op(setclientid_confirm)
@@ -887,7 +887,7 @@ if __name__ == "__main__":
     putrootfhoperation = nfs_argop4(ncl, argop=OP_PUTROOTFH)
     getfhoperation = nfs_argop4(ncl, argop=OP_GETFH)
     res =  ncl.compound([putrootfhoperation, getfhoperation])
-    fh = res.resarray[1].opgetfh.resok4.object
+    fh = res.resarray[1].arm.arm.object
     print "Root filehandles is", repr(fh)
 
 
