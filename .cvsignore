@@ -1,6 +1,7 @@
 *.pyc
 *.pyo
-nfs4constants.py*
-nfs4types.py*
+*constants.py*
+*types.py*
+*packer.py*	
 parser.out
 parsetab.py
