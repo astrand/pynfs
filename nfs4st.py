@@ -54,9 +54,6 @@ port = None
 transport = "udp"
 
 
-
-
-
 class NFSTestCase(unittest.TestCase):
     def __init__(self, methodName='runTest'):
         unittest.TestCase.__init__(self, methodName)
@@ -1684,6 +1681,86 @@ class NverifyTestCase(NFSTestCase):
         res = self.do_compound([self.putrootfhop, lookupop, nverifyop])
         self.assert_status(res, [NFS4ERR_INVAL])
 
+
+class OpenTestCase(NFSTestCase):
+    # FIXME
+    pass
+
+class OpenattrTestCase(NFSTestCase):
+    # FIXME
+    pass
+
+class OpenconfirmTestCase(NFSTestCase):
+    # FIXME
+    pass
+
+class OpendowngradeTestCase(NFSTestCase):
+    # FIXME
+    pass
+
+class PutfhTestCase(NFSTestCase):
+    # FIXME
+    pass
+
+class PutrootfhTestCase(NFSTestCase):
+    # FIXME
+    pass
+
+class ReadTestCase(NFSTestCase):
+    # FIXME
+    pass
+
+class ReaddirTestCase(NFSTestCase):
+    # FIXME
+    pass
+
+class ReadlinkTestCase(NFSTestCase):
+    # FIXME
+    pass
+
+class RemoveTestCase(NFSTestCase):
+    # FIXME
+    pass
+
+class RenameTestCase(NFSTestCase):
+    # FIXME
+    pass
+
+class RenewTestCase(NFSTestCase):
+    # FIXME
+    pass
+
+class RestorefhTestCase(NFSTestCase):
+    # FIXME
+    pass
+
+class SavefhTestCase(NFSTestCase):
+    # FIXME
+    pass
+
+class SecinfoTestCase(NFSTestCase):
+    # FIXME
+    pass
+
+class SetattrTestCase(NFSTestCase):
+    # FIXME
+    pass
+
+class SetclientidTestCase(NFSTestCase):
+    # FIXME
+    pass
+
+class SetclientidconfirmTestCase(NFSTestCase):
+    # FIXME
+    pass
+
+class VerifyTestCase(NFSTestCase):
+    # FIXME
+    pass
+
+class WriteTestCase(NFSTestCase):
+    # FIXME
+    pass
 
 
 class QuietTextTestRunner(unittest.TextTestRunner):
