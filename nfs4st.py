@@ -140,9 +140,12 @@ class NFSTestSuite(unittest.TestCase):
         return obj_sizes
 
     def setUp(self):
+        # Note: no network communication should be done in this method. 
         self.connect()
-        self.ncl.init_connection()
         self.putrootfhop = self.ncl.putrootfh_op()
+
+    def setclientid(self):
+        self.failIfRaises(rpc.RPCException, self.ncl.init_connection)
 
     def get_invalid_fh(self):
         """Return a (guessed) invalid filehandle"""
@@ -224,7 +227,6 @@ class CompoundTestSuite(NFSTestSuite):
         introduced in later minor versions, the server should always
         return NFS4ERR_NOTSUPP if the minorversion is 0.
         """
-
         # nfs4types.nfs_argop4 does not allow packing invalid operations. 
         class custom_nfs_argop4:
             def __init__(self, ncl, argop):
