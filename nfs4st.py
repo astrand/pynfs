@@ -3095,18 +3095,23 @@ class SetattrSuite(NFSSuite):
         self.assert_status(res, [NFS4ERR_NOFILEHANDLE])
 
     def testInvalidStateid(self):
-        """SETATTR with invalid stateid should return FIXME
+        """SETATTR with invalid stateid should return NFS4ERR_BADHANDLE
 
         Covered equivalence classes: 23
         """
+        # FIXME: Implement.
+        self.info_message("(TEST NOT IMPLEMENTED)")
         # FIXME: Move to common method. Check correctness. 
-        stateval = nfs4lib.long2opaque(0x123456)
-        self._valid_setattr(self.regfile, stateval)
+        #stateval = nfs4lib.long2opaque(0x123456)
+        #self._valid_setattr(self.regfile, stateval)
 
     def testNonWriteable(self):
         """SETATTR(FATTR4_LINK_SUPPORT) should return NFS4ERR_INVAL
 
         Covered equivalence classes: 32
+
+        Comments: FATTR4_LINK_SUPPORT is a read-only attribute and cannot be
+        changed via SETATTR. 
         """
         lookupops = self.ncl.lookup_path(self.regfile)
         operations = [self.putrootfhop] + lookupops
@@ -3124,10 +3129,25 @@ class SetattrSuite(NFSSuite):
         self.assert_status(res, [NFS4ERR_INVAL])
 
     def testInvalidAttr(self):
-        """SETATTR with invalid attribute data should return NFS4ERR_INVAL
+        """SETATTR with invalid attribute data should return NFS4ERR_BADXDR
 
         Covered equivalence classes: 41
+
+        Comments: This testcase try to set FATTR4_MODE but does not send any
+        mode data. The server should return NFS4ERR_BADXDR. 
         """
+        lookupops = self.ncl.lookup_path(self.regfile)
+        operations = [self.putrootfhop] + lookupops
+
+        stateid = stateid4(self.ncl, 0, "")
+        attrmask = nfs4lib.list2attrmask([FATTR4_MODE])
+        attr_vals = ""
+        obj_attributes = fattr4(self.ncl, attrmask, attr_vals)
+        operations.append(self.ncl.setattr_op(stateid, obj_attributes))
+
+        res = self.do_compound(operations)
+
+        self.assert_status(res, [NFS4ERR_BADXDR])
 
 
 class SetclientidSuite(NFSSuite):
