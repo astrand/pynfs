@@ -642,8 +642,21 @@ class PartialNFS4Client:
 	res = self.compound([putfhop, writeop])
 	check_result(res)
 
+    #
+    # Misc. convenience methods. 
+    #
+    def get_ftype(self, pathcomps):
+        """Get file type attribute"""
+        lookupops = self.lookup_path(pathcomps)
+        operations = [self.putrootfh_op()] + lookupops
+        getattrop = self.getattr([FATTR4_TYPE])
+        operations.append(getattrop)
 
-	
+        res = self.compound(operations)
+        check_result(res)
+        obj_type = opaque2long(res.resarray[-1].arm.arm.obj_attributes.attr_vals)
+
+        return obj_type
         
 #
 # Misc. helper functions. 
