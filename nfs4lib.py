@@ -483,7 +483,16 @@ class PartialNFS4Client:
     # def do_delegpurge
     # def do_delegreturn
     # def do_getattr
-    # def do_getfh
+    
+    def do_getfh(self, pathcomps):
+        """Get filehandle"""
+        lookupops = self.lookup_path(pathcomps)
+        operations = [self.putrootfh_op()] + lookupops
+        operations.append(self.getfh_op())
+        res = self.compound(operations)
+        check_result(res)
+        return res.resarray[-1].arm.arm.object
+    
     # def do_link
     # def do_lock
     # def do_lockt
