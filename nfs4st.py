@@ -282,6 +282,29 @@ class NFSSuite(unittest.TestCase):
             return self.remove_object(name, directory)
         else:
             return 1
+
+    def creatable_filename(self, filename):
+        """Returns true if file name could be created via OPEN
+        (in /tmp directory)
+        """
+        lookup_dir_ops = self.ncl.lookup_path(self.tmp_dir)
+        operations = [self.putrootfhop] + lookup_dir_ops
+        openop = self.ncl.open(file=filename, share_access=OPEN4_SHARE_ACCESS_WRITE,
+                               opentype=OPEN4_CREATE)
+        operations.append(openop)
+        
+        res = self.do_compound(operations)
+        creatable = not res.status
+        if creatable:
+            # Ok, the file could be created. 
+            # Be nice and remove created object
+            operations = [self.putrootfhop] + lookup_dir_ops
+            operations.append(self.ncl.remove_op(filename))
+            res = self.do_compound(operations)
+            # Don't care about return status
+
+        return creatable
+
     
 
 class CompoundSuite(NFSSuite):
@@ -1034,6 +1057,20 @@ class CreateSuite(NFSSuite):
         # Try to create "gazonk/foo.c"
         self._do_create(testname)
 
+        # FIXME
+##     def testValidNames(self):
+##         """VALID NAMES
+##         """
+##         self.init_connection()
+
+##         rejected_chars = []
+##         for i in range(0, 256):
+##             ustr = "aa" + unichr(i) + "bb"
+##             filename = ustr.encode("utf8")
+##             if not self.creatable_filename(filename):
+##                 rejected_chars.append(i)
+
+##         print "rejected characters:", repr(rejected_chars)
 
 
 ## class DelegpurgeSuite(NFSSuite):
