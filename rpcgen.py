@@ -21,8 +21,9 @@
 #
 # Note <something>_list means zero or more of <something>.
 #
-# TODO: Code generation for programs and procedures. 
-#
+# TODO:
+# Code generation for programs and procedures. 
+# __repr__ with discriminants should print symbolic values. 
 
 import sys
 import keyword
