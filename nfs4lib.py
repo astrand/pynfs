@@ -181,8 +181,8 @@ class PartialNFS4Client:
         args = COMMIT4args(self, offset, count)
         return nfs_argop4(self, argop=OP_COMMIT, opcommit=args)
 
-    def create_op(self, objname, objtype):
-        args = CREATE4args(self, objname, objtype)
+    def create_op(self, objtype, objname, createattrs):
+        args = CREATE4args(self, objtype, objname, createattrs)
         return nfs_argop4(self, argop=OP_CREATE, opcreate=args)
 
     def delegpurge(self):
@@ -238,8 +238,8 @@ class PartialNFS4Client:
         args = NVERIFY4args(self, obj_attributes)
 	return nfs_argop4(self, argop=OP_NVERIFY, opnverify=args)
 
-    def open_op(self, claim, openhow, owner, seqid, share_access, share_deny):
-	args = OPEN4args(self, claim, openhow, owner, seqid, share_access, share_deny)
+    def open_op(self, seqid, share_access, share_deny, owner, openhow, claim):
+	args = OPEN4args(self, seqid, share_access, share_deny, owner, openhow, claim):
         return nfs_argop4(self, argop=OP_OPEN, opopen=args)
 
     # Convenience method for open. Only handles claim type CLAIM_NULL. If you want
@@ -271,7 +271,7 @@ class PartialNFS4Client:
         # seqid
         seqid = self.get_seqid()
         
-        return self.open_op(claim, openhow, owner, seqid, share_access, share_deny)
+        return self.open_op(seqid, share_access, share_deny, owner, openhow, claim)
 
         
     def openattr_op(self):
