@@ -820,7 +820,6 @@ class GetattrTestCase(NFSTestCase):
         """GETATTR(FATTR4_SIZE) on all type of objects
 
         Covered valid equivalence classes: 1, 2, 3, 4, 5, 6, 7, 9
-        
         """
         for lookupop in self.lookup_all_objects():
             getattrop = self.ncl.getattr_op([FATTR4_SIZE])
@@ -967,6 +966,50 @@ class GetattrTestCase(NFSTestCase):
 
         sys.stdout.flush()
 
+
+class GetFhTestCase(NFSTestCase):
+    """Test GETH operation
+
+    Equivalence partitioning:
+
+    Input Condition: currrent filehandle
+        Valid equivalence classes:
+            file(1)
+            link(2)
+            block(3)
+            char(4)
+            socket(5)
+            FIFO(6)
+            dir(7)
+        Invalid equivalence classes:
+            invalid filehandle(8)
+    """
+
+    def setUp(self):
+        self.connect()
+        self.putrootfhop = self.ncl.putrootfh_op()
+
+    def testAllObjects(self):
+        """GETFH on all type of objects
+
+        Covered valid equivalence classes: 1, 2, 3, 4, 5, 6, 7
+        """
+        for lookupop in self.lookup_all_objects():
+            getfhop = self.ncl.getfh_op()
+            res = self.do_compound([self.putrootfhop, lookupop, getfhop])
+            self.assert_OK(res)
+
+    def testNoFh(self):
+        """GETFH should fail with NFS4ERR_NOFILEHANDLE if no (cfh)
+
+        Covered invalid equivalence classes: 8
+
+        Comments: GETFH should fail with NFS4ERR_NOFILEHANDLE if no
+        (cfh)
+        """
+        getfhop = self.ncl.getfh_op()
+        res = self.do_compound([getfhop])
+        self.assert_status(res, [NFS4ERR_NOFILEHANDLE])
 
 
 class QuietTextTestRunner(unittest.TextTestRunner):
