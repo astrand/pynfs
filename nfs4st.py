@@ -44,7 +44,7 @@ import rpc
 from nfs4constants import *
 from nfs4types import *
 import nfs4lib
-
+from test_tree import UID, GID
 
 # Global variables
 host = None
@@ -86,7 +86,7 @@ class NFSSuite(unittest.TestCase):
         if transport == "tcp":
             self.ncl = nfs4lib.TCPNFS4Client(host, port)
         elif transport == "udp":
-            self.ncl = nfs4lib.UDPNFS4Client(host, port)
+            self.ncl = nfs4lib.UDPNFS4Client(host, port, UID, GID)
         else:
             raise RuntimeError, "Invalid protocol"
     
@@ -893,6 +893,7 @@ class CreateSuite(NFSSuite):
         attrmask = nfs4lib.list2attrmask([FATTR4_ARCHIVE])
         dummy_ncl = nfs4lib.DummyNcl()
         dummy_ncl.packer.pack_bool(TRUE)
+        # FIXME: attr_vals is not used!
         attr_vals = dummy_ncl.packer.get_buf()
         createattrs = fattr4(self.ncl, attrmask, "")
         
@@ -952,7 +953,7 @@ class GetattrSuite(NFSSuite):
         """
         for lookupops in self.lookup_all_objects():
             operations = [self.putrootfhop] + lookupops
-            operations.append(self.ncl.getattr_op([FATTR4_SIZE]))
+            operations.append(self.ncl.getattr([FATTR4_SIZE]))
             res = self.do_compound(operations)
             self.assert_OK(res)
 
@@ -965,7 +966,7 @@ class GetattrSuite(NFSSuite):
         Covered invalid equivalence classes: 8
         """
         
-        getattrop = self.ncl.getattr_op([FATTR4_SIZE])
+        getattrop = self.ncl.getattr([FATTR4_SIZE])
         res = self.do_compound([getattrop])
         self.assert_status(res, [NFS4ERR_NOFILEHANDLE])
 
@@ -1598,12 +1599,12 @@ class NverifySuite(NFSSuite):
             file(7)
         Invalid equivalence classes:
             invalid filehandle(8)
-    Input Condition: fattr.attrmask
+    Input Condition: obj_attributes.attrmask
         Valid equivalence classes:
             valid attribute(9)
         Invalid equivalence classes:
             invalid attrmask(10) (FATTR4_*_SET)
-    Input Condition: fattr.attr_vals
+    Input Condition: obj_attributes.attr_vals
         Valid equivalence classes:
             changed attribute(11)
             same attribute(12)
@@ -2917,9 +2918,171 @@ class SecinfoSuite(NFSSuite):
         
 class SetattrSuite(NFSSuite):
     """Test operation 34: SETATTR
+
+    FIXME: Test invalid filehandle. 
+
+    Equivalence partitioning:
+
+    Input Condition: current filehandle
+        Valid equivalence classes:
+            file(10)
+            dir(11)
+            block(12)
+            char(13)
+            link(14)
+            socket(15)
+            FIFO(16)
+            attribute directory(17)
+            named attribute(18)
+        Invalid equivalence classes:
+            no filehandle(19)
+    Input Condition: stateid
+        Valid equivalence classes:
+            all bits zero(20)
+            all bits one(21)
+            valid stateid from open(22)
+        Invalid equivalence classes:
+            invalid stateid(23)
+    Input Condition: obj_attributes.attrmask
+        Valid equivalence classes:
+            writeable attributes without object_size(30)
+            writeable attributes with object_size(31)
+        Invalid equivalence classes:
+            non-writeable attributes(32)
+    Input Condition: obj_attributes.attr_vals
+        Valid equivalence classes:
+            valid attributes(40)
+        Invalid equivalence classes:
+            invalid attributes(41)
     """
-    # FIXME
-    pass
+    def setUp(self):
+        NFSSuite.setUp(self)
+        self.new_mode = 0775
+
+    #
+    # Testcases covering valid equivalence classes.
+    #
+    def testStateidOnes(self):
+        """SETATTR(FATTR4_MODE) on regular file with stateid=ones
+        
+        Covered equivalence classes: 10, 21, 30, 40
+        """
+        lookupops = self.ncl.lookup_path(self.regfile)
+        operations = [self.putrootfhop] + lookupops
+
+        stateid = stateid4(self.ncl, 0, nfs4lib.long2opaque(0xffffffffffffffffffffffffL))
+
+        attrmask = nfs4lib.list2attrmask([FATTR4_MODE])
+        dummy_ncl = nfs4lib.DummyNcl()
+        dummy_ncl.packer.pack_uint(self.new_mode)
+        attr_vals = dummy_ncl.packer.get_buf()
+        obj_attributes = fattr4(self.ncl, attrmask, attr_vals)
+
+        operations.append(self.ncl.setattr_op(stateid, obj_attributes))
+
+        res = self.do_compound(operations)
+
+        if res.status == NFS4ERR_ATTRNOTSUPP:
+            self.info_message("SETATTR(FATTR4_MODE) not supported on %s" \
+                              % self.regfile)
+            return
+
+        self.assert_status(res, [NFS4_OK, NFS4ERR_ATTRNOTSUPP])
+
+        # Ok, SETATTR succeeded. Check that GETATTR matches.
+        operations = [self.putrootfhop] + lookupops
+        operations.append(self.ncl.getattr([FATTR4_MODE]))
+        res = self.do_compound(operations)
+        if res.status != NFS4_OK:
+            self.info_message("GETATTR failed, cannot verify if SETATTR was done right")
+            return
+
+        obj = res.resarray[-1].arm.arm.obj_attributes
+        d =  nfs4lib.fattr2dict(obj)
+        mode = d.get("mode") 
+        self.failIf(mode != self.new_mode,
+                    "GETATTR after SETATTR(FATTR4_MODE) returned different mode")
+        
+        
+
+    def testDir(self):
+        """SETATTR on directory
+
+        Covered equivalence classes: 11, 20, 30, 40
+        """
+
+    def testBlock(self):
+        """SETATTR on block device
+
+        Covered equivalence classes: 12, 20, 30, 40
+        """
+
+    def testChar(self):
+        """SETATTR on char device
+
+        Covered equivalence classes: 13, 20, 30, 40
+        """
+
+    def testLink(self):
+        """SETATTR on symbolic linke
+
+        Covered equivalence classes: 14, 20, 30, 40
+        """
+    def testSocket(self):
+        """SETATTR on socket
+
+        Covered equivalence classes: 15, 20, 30, 40
+        """
+    def testFIFO(self):
+        """SETATTR on FIFO
+
+        Covered equivalence classes: 16, 20, 30, 40
+        """
+    def testNamedattrdir(self):
+        """SETATTR on named attribute directory
+
+        Covered equivalence classes: 17, 20, 30, 40
+        """
+
+    def testNamedattrdir(self):
+        """SETATTR on named attribute 
+
+        Covered equivalence classes: 18, 20, 30, 40
+        """
+
+    def testChangeSize(self):
+        """SETATTR with changes to file size and valid stateid
+
+        Covered equivalence classes: 10, 22, 31, 40
+        """
+
+    #
+    # Testcases covering invalid equivalence classes.
+    #
+    def testNoFh(self):
+        """SETATTR without (cfh) should return NFS4ERR_NOFILEHANDLE
+
+        Covered equivalence classes: 19
+        """
+        # Use 20, 30, 40
+
+    def testInvalidStateid(self):
+        """SETATTR with invalid stateid should return FIXME
+
+        Covered equivalence classes: 23
+        """
+
+    def testNonWriteable(self):
+        """SETATTR on non-writeable attribute should return NFS4ERR_INVAL
+
+        Covered equivalence classes: 32
+        """
+
+    def testInvalidAttr(self):
+        """SETATTR with invalid attribute data should return NFS4ERR_INVAL
+
+        Covered equivalence classes: 41
+        """
 
 
 class SetclientidSuite(NFSSuite):
