@@ -39,11 +39,13 @@ Usage: %s [nfs://]host[:[port]]<directory> [-u|-t] [-d debuglevel]
        [-c string] 
 options:
 -h, --help                   display this help and exit
--u, --udp                    use UDP as transport (default)
+-u, --udp                    use UDP as transport
 -t, --tcp                    use TCP as transport
 -d level, --debuglevel level set debuglevel
 -p, --pythonmode             enable Python interpreter mode
 -c, --commandstring string   execute semicolon separated commands
+
+Default transport is to try TCP first, then UDP.
 """
 
 VERSION = "0.0"
@@ -139,12 +141,7 @@ class ClientApp(cmd.Cmd):
         self.do_cd(directory)
 
     def _connect(self):
-        if transport == "tcp":
-            self.ncl = nfs4lib.TCPNFS4Client(self.host, self.port)
-        elif transport == "udp":
-            self.ncl = nfs4lib.UDPNFS4Client(self.host, self.port)
-        else:
-            raise RuntimeError, "Invalid protocol"
+        self.ncl = nfs4lib.create_client(self.host, self.port, self.transport)
         # Use debugtags?
         self.ncl.debugtags = (self.debuglevel and 1)
         self.ncl.init_connection()
@@ -588,7 +585,7 @@ if __name__ == "__main__":
         usage()
         sys.exit(2)
 
-    transport = "udp"
+    transport = "auto"
     debuglevel = 0
     pythonmode = 0
     commandstring = None
@@ -618,14 +615,11 @@ if __name__ == "__main__":
         print >> sys.stderr, "the number of non-option arguments is not one"
         usage()
     else:
-        # Parse host/port/directory part. 
-        match = re.search(r'^(?:nfs://)?(?P<host>([a-zA-Z][\w\.]*|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}))'
-                          r'(?::(?P<port>\d*))?(?P<dir>/[\w/]*)?$', args[0])
-        if not match:
+        parse_result = nfs4lib.parse_nfs_url(args[0])
+        if not parse_result:
             usage()
-        host = match.group("host")
-        portstring = match.group("port")
-        directory = match.group("dir")
+
+        (host, portstring, directory) = parse_result
 
         if portstring:
             port = int(portstring)
