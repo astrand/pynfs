@@ -372,7 +372,7 @@ class AccessSuite(NFSSuite):
         """
         accessop = self.ncl.access_op(ACCESS4_READ)
         res = self.do_compound([accessop])
-        self.failUnlessEqual(res.status, NFS4ERR_NOFILEHANDLE)
+        self.assert_status(res, [NFS4ERR_NOFILEHANDLE])
 
 
     def testInvalids(self):
@@ -386,9 +386,7 @@ class AccessSuite(NFSSuite):
         """
         for accessop in self.invalid_access_ops():
             res = self.do_compound([self.putrootfhop, accessop])
-            self.failUnlessEqual(res.status, NFS4ERR_INVAL,
-                                 "server accepts invalid ACCESS request with NFS4_OK, "
-                                 "should be NFS4ERR_INVAL")
+            self.assert_status(res, [NFS4ERR_INVAL])
     #
     # Misc. tests.
     #
@@ -549,7 +547,7 @@ class CommitSuite(NFSSuite):
         """
         commitop = self.ncl.commit_op(0, 0)
         res = self.do_compound([commitop])
-        self.failUnlessEqual(res.status, NFS4ERR_NOFILEHANDLE)
+        self.assert_status(res, [NFS4ERR_NOFILEHANDLE])
 
     #
     # Misc. tests.
