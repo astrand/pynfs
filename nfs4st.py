@@ -3195,6 +3195,55 @@ class SetattrSuite(NFSSuite):
 
         self.assert_status(res, [NFS4ERR_BADXDR])
 
+    #
+    # Extra tests. 
+    #
+    def _settime(self, dummy_ncl, time):
+        lookupops = self.ncl.lookup_path(self.regfile)
+        operations = [self.putrootfhop] + lookupops
+
+        stateid = stateid4(self.ncl, 0, "")
+        
+        attrmask = nfs4lib.list2attrmask([FATTR4_TIME_MODIFY_SET])
+        settime = settime4(dummy_ncl, set_it=SET_TO_CLIENT_TIME4, time=time)
+        settime.pack()
+        attr_vals = dummy_ncl.packer.get_buf()
+        obj_attributes = fattr4(self.ncl, attrmask, attr_vals)
+        operations.append(self.ncl.setattr_op(stateid, obj_attributes))
+
+        res = self.do_compound(operations)
+        return res
+    
+    def testInvalidTime(self):
+        """SETATTR(FATTR4_TIME_MODIFY_SET) with invalid nseconds
+
+        Extra test
+
+        nseconds larger than 999999999 are considered invalid.
+        SETATTR(FATTR4_TIME_MODIFY_SET) should return NFS4ERR_INVAL on
+        such values. 
+        """
+        dummy_ncl = nfs4lib.DummyNcl()
+
+        # First, try to set the date to 900 000 000 = 1998-07-09
+        # to check if setting time_modify is possible at all. 
+        time = nfstime4(dummy_ncl, seconds=500000000, nseconds=0)
+        res = self._settime(dummy_ncl, time)
+        if res.status == NFS4ERR_NOTSUPP:
+            self.info_message("Attribute time_modify_set is not supported, "
+                              "skipping test")
+            return
+
+        # If servers supports the attribute but does not accept the 
+        # date 1998-07-09, consider it broken. 
+        self.assert_OK(res)
+
+        # Ok, lets try nseconds = 1 000 000 000
+        dummy_ncl = nfs4lib.DummyNcl()
+        time = nfstime4(dummy_ncl, seconds=500000000, nseconds=int(1E9))
+        res = self._settime(dummy_ncl, time)
+        self.assert_status(res, [NFS4ERR_INVAL])
+        
 
 class SetclientidSuite(NFSSuite):
     """Test operation 35: SETCLIENTID
