@@ -99,6 +99,15 @@ int main()
     os.mkdir("tmp")
     os.chmod("tmp", 0777)
 
+    print "Creating tmp/gazonk"
+    os.mkdir("tmp/gazonk")
+    os.chmod("tmp/gazonk", 0777)
+
+    print "Creating tmp/gazonk/foo.c"
+    f = open("tmp/gazonk/foo.c", "w")
+    f.write(s)
+    f.close()
+
     print "Creating private directory with info.txt"
     os.mkdir("private")
     os.chmod("private", 0700)
