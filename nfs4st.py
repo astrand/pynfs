@@ -102,7 +102,7 @@ class NFSTestCase(unittest.TestCase):
             self.fail(nfs4lib.EmptyCompoundRes())
 
     def info_message(self, msg):
-        print >> sys.stderr, msg + ", ",
+        print >> sys.stderr, "\n  " + msg + ", ",
 
     def do_compound(self, *args, **kwargs):
         """Call ncl.compound. Handle all rpc.RPCExceptions as failures."""
@@ -1508,7 +1508,7 @@ class LookuppTestCase(NFSTestCase):
     def testInvalidFh(self):
         """LOOKUPP with non-dir (cfh)
 
-        Covering invalid equivalence classes: 3
+        Covered invalid equivalence classes: 3
         """
         lookupop = self.ncl.lookup_op(["doc", "README"])
         lookuppop = self.ncl.lookupp_op()
@@ -1571,7 +1571,7 @@ class NverifyTestCase(NFSTestCase):
     def testChanged(self):
         """NVERIFY with CHANGED attribute should execute remaining ops
 
-        Covering valid equivalence classes: 1, 2, 3, 4, 5, 6, 7, 9, 11
+        Covered valid equivalence classes: 1, 2, 3, 4, 5, 6, 7, 9, 11
         """
 
         # Fetch sizes for all objects
@@ -1615,7 +1615,7 @@ class NverifyTestCase(NFSTestCase):
     def testSame(self):
         """NVERIFY with unchanged attribute should return NFS4ERR_SAME
 
-        Covering valid equivalence classes: 1, 2, 3, 4, 5, 6, 7, 9, 12
+        Covered valid equivalence classes: 1, 2, 3, 4, 5, 6, 7, 9, 12
         """
 
         # Fetch sizes for all objects
@@ -1688,8 +1688,92 @@ class OpenTestCase(NFSTestCase):
     pass
 
 class OpenattrTestCase(NFSTestCase):
-    # FIXME
-    pass
+    """Test OPENATTR operation
+
+    FIXME: Verify that these tests works, as soon as I have access to a server
+    that supports named attributes. 
+
+    Equivalence partitioning:
+
+    Input Condition: current filehandle
+        Valid equivalence classes:
+            file(1)
+            dir(2)
+            block(3)
+            char(4)
+            link(5)
+            socket(6)
+            FIFO(7)
+        Invalid equivalence classes:
+            attribute directory(8)
+            named attribute(9)
+    """
+    def setUp(self):
+        self.connect()
+        self.putrootfhop = self.ncl.putrootfh_op()
+
+    #
+    # Testcases covering valid equivalence classes.
+    #
+    def testValid(self):
+        """OPENATTR on all non-attribute objects
+
+        Covered valid equivalence classes: 1, 2, 3, 4, 5, 6, 7
+        """
+        for lookupop in self.lookup_all_objects():
+            openattrop = self.ncl.openattr_op()
+            res = self.do_compound([self.putrootfhop, lookupop, openattrop])
+
+            if res.status == NFS4ERR_NOTSUPP:
+                op = lookupop.arm.path
+                self.info_message("OPENATTR not supported on " + str(op))
+
+            self.assert_status(res, [NFS4_OK, NFS4ERR_NOTSUPP])
+
+    #
+    # Testcases covering invalid equivalence classes.
+    #
+    def testOnAttrDir(self):
+        """OPENATTR on attribute directory should fail with NFS4ERR_INVAL
+
+        Covered invalid equivalence classes: 8
+        """
+        # Open attribute dir for root dir
+        openattrop = self.ncl.openattr_op()
+        res = self.do_compound([self.putrootfhop, openattrop])
+        if res.status == NFS4ERR_NOTSUPP:
+            self.info_message("OPENATTR not supported on /, cannot try this test")
+            return
+
+        openattrop1 = self.ncl.openattr_op()
+        openattrop2 = self.ncl.openattr_op()
+        res = self.do_compound([self.putrootfhop, openattrop1, openattrop2])
+        self.assert_status(res, [NFS4ERR_INVAL])
+
+    def testOnAttr(self):
+        """OPENATTR on attribute should fail with NFS4ERR_INVAL
+
+        Covered invalid equivalence classes: 9
+
+        Comments: Not yet implemented. 
+        """
+        # Open attribute dir for doc/README
+        path = nfs4lib.str2pathname(self.normfile)
+        lookupop = self.ncl.lookup_op(path)
+        openattrop = self.ncl.openattr_op()
+        res = self.do_compound([self.putrootfhop, lookupop, openattrop])
+
+        if res.status == NFS4ERR_NOTSUPP:
+            self.info_message("OPENATTR not supported on %s, cannot try this test" \
+                              % self.normfile)
+            return
+
+
+        # FIXME: Implement rest of testcase.
+        self.info_message("(TEST NOT IMPLEMENTED)")
+
+                              
+
 
 class OpenconfirmTestCase(NFSTestCase):
     # FIXME
