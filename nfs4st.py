@@ -936,21 +936,29 @@ class CreateSuite(NFSSuite):
     #
     # Extra tests.
     #
+    def _do_create(self, name):
+        operations = [self.putrootfhop] + self.lookup_dir_ops
+        objtype = createtype4(self.ncl, type=NF4DIR)
+        createop = self.ncl.create(objtype, name)
+        operations.append(createop)
+
+        res = self.do_compound(operations)
+        self.assert_status(res, [NFS4_OK, NFS4ERR_INVAL]) 
+    
     def testDots(self):
         """CREATE with . or .. should succeed or return NFS4ERR_INVAL
 
         Extra test
 
         Servers supporting . and .. in file names should return NFS4_OK. Others
-        should return NFS4ERR_INVAL. 
+        should return NFS4ERR_INVAL. NFS4ERR_EXIST should not be returned.
         """
-        operations = [self.putrootfhop] + self.lookup_dir_ops
-        objtype = createtype4(self.ncl, type=NF4DIR)
-        createop = self.ncl.create(objtype, ".")
-        operations.append(createop)
+        # name = .
+        self._do_create(".")
 
-        res = self.do_compound(operations)
-        self.assert_status(res, [NFS4_OK, NFS4ERR_INVAL]) 
+        # name = ..
+        self._do_create("..")
+        
         
 
 
