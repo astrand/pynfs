@@ -187,7 +187,7 @@ class PartialNFS4Client:
 
     def create(self, objtype, objname):
         """CREATE with no attributes"""
-        createattrs = fattr4(self.ncl, [], "")
+        createattrs = fattr4(self, [], "")
         return self.create_op(objtype, objname, createattrs)
 
     def delegpurge(self):
