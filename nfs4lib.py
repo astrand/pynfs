@@ -126,7 +126,7 @@ class PartialNFS4Client:
         return self.seqid
 
     def get_pathname(self, filename):
-	if filename[0] == os.sep:
+	if filename[0] == "/":
             # Absolute path
             # Remove slash, begin from root. 
             filename = filename[1:]
@@ -163,13 +163,13 @@ class PartialNFS4Client:
         args = CLOSE4args(self, seqid, stateid)
         return nfs_argop4(self, argop=OP_CLOSE, opclose=args)
 
-    def commit(self):
-        # FIXME
-        raise NotImplementedError()
+    def commit_op(self, offset, count):
+        args = COMMIT4args(self, offset, count)
+        return nfs_argop4(self, argop=OP_COMMIT, opcommit=args)
 
-    def create(self):
-        # FIXME
-        raise NotImplementedError()
+    def create_op(self, objname, objtype):
+        args = CREATE4args(self, objname, objtype)
+        return nfs_argop4(self, argop=OP_CREATE, opcreate=args)
 
     def delegpurge(self):
         # FIXME
