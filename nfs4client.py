@@ -109,33 +109,23 @@ if __name__ == "__main__":
         host = match.group("host")
         port = match.group("port")
         dir = match.group("dir")
-        print "host is", host
-        print "port is", port
-        print "dir is", dir
+    
+    if transport == "tcp":
+        ncl = nfs4lib.TCPNFS4Client(host)
+    elif transport == "udp":
+        ncl = nfs4lib.UDPNFS4Client(host)
+    else:
+        raise RuntimeError, "Internal error: wrong protocol"
 
     
-##     import sys
-##     if len(sys.argv) < 3:
-##         print "Usage: %s <protocol> <host>" % sys.argv[0]
-##         sys.exit(1)
+    # PUTROOT & GETFH
+    putrootfhoperation = nfs_argop4(ncl, argop=OP_PUTROOTFH)
+    getfhoperation = nfs_argop4(ncl, argop=OP_GETFH)
     
-##     proto = sys.argv[1]
-##     host = sys.argv[2]
-##     if proto == "tcp":
-##         ncl = nfs4lib.TCPNFS4Client(host)
-##     elif proto == "udp":
-##         ncl = nfs4lib.UDPNFS4Client(host)
-##     else:
-##         raise RuntimeError, "Wrong protocol"
+    res =  ncl.compound([putrootfhoperation, getfhoperation])
 
-##     # PUTROOT & GETFH
-##     putrootfhoperation = nfs_argop4(ncl, argop=OP_PUTROOTFH)
-##     getfhoperation = nfs_argop4(ncl, argop=OP_GETFH)
-    
-##     res =  ncl.compound([putrootfhoperation, getfhoperation])
-
-##     fh = res.resarray[1].opgetfh.resok4.object
-##     print "fh is", repr(fh)
+    fh = res.resarray[1].opgetfh.resok4.object
+    print "fh is", repr(fh)
 
 
 
