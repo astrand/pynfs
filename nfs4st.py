@@ -2157,11 +2157,13 @@ class ReadlinkSuite(NFSSuite):
 
         Covered valid equivalence classes: 10
         """
-        lookupop = self.ncl.lookup_op(["dev", "floppy"])
-        readlinkop = self.ncl.readlink_op()
-        res = self.do_compound([self.putrootfhop, lookupop, readlinkop])
+        lookupops = self.ncl.lookup_path(["dev", "floppy"])
+        operations = [self.putrootfhop] + lookupops
+        operations.append(self.ncl.readlink_op())
+        
+        res = self.do_compound(operations)
         self.assert_OK(res)
-        linkdata = res.resarray[2].arm.arm.link
+        linkdata = res.resarray[-1].arm.arm.link
         self.failIf(linkdata != "fd0",
                     "link data was %s, should be fd0" % linkdata)
     #
@@ -2177,10 +2179,11 @@ class ReadlinkSuite(NFSSuite):
                           self.charfile,
                           self.socketfile,
                           self.fifofile]:
-            lookupop = self.ncl.lookup_op(pathcomps)
-            readlinkop = self.ncl.readlink_op()
+            lookupops = self.ncl.lookup_path(pathcomps)
+            operations = [self.putrootfhop] + lookupops
+            operations.append(self.ncl.readlink_op())
 
-            res = self.do_compound([self.putrootfhop, lookupop, readlinkop])
+            res = self.do_compound(operations)
 
             if res.status != NFS4ERR_INVAL:
                 self.info_message("READLINK on %s dit not return NFS4ERR_INVAL" % name)
@@ -2192,10 +2195,11 @@ class ReadlinkSuite(NFSSuite):
 
         Covered valid equivalence classes: 12
         """
-        lookupop = self.ncl.lookup_op(self.dirfile)
-        readlinkop = self.ncl.readlink_op()
+        lookupops = self.ncl.lookup_path(self.dirfile)
+        operations = [self.putrootfhop] + lookupops
+        operations.append(self.ncl.readlink_op())
 
-        res = self.do_compound([self.putrootfhop, lookupop, readlinkop])
+        res = self.do_compound(operations)
         self.assert_status(res, [NFS4ERR_ISDIR])
         
 
