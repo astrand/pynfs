@@ -108,6 +108,18 @@ class PartialNFS4Client:
         self.seqid = self.seqid % 2**32L
         return self.seqid
 
+    def get_pathname(self, filename):
+	if filename[0] == os.sep:
+            # Absolute path
+            # Remove slash, begin from root. 
+            filename = filename[1:]
+            pathname = []
+        else:
+            # Relative path. Begin with cwd.
+            pathname = str2pathname(self.cwd)
+
+	return str2pathname(filename, pathname)
+
     # 
     # Operations. These come in two flawors: <operation>_op and <operation>.
     #
@@ -592,16 +604,7 @@ class NFS4OpenFile:
         self.__dict__[name] = val
 
     def open(self, filename, mode="r", bufsize=BUFSIZE):
-        if filename[0] == os.sep:
-            # Absolute path
-            # Remove slash, begin from root. 
-            filename = filename[1:]
-            pathname = []
-        else:
-            # Relative path. Begin with cwd.
-            pathname = str2pathname(self.ncl.cwd)
-
-        pathname = str2pathname(filename, pathname)
+	pathname = self.ncl.get_pathname(filename)
 
         putrootfhop = self.ncl.putrootfh_op()
 
