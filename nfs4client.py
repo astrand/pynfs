@@ -255,5 +255,3 @@ if __name__ == "__main__":
 
     c = CLI(ncl)
     c.cmdloop()
-    #f = nfs4lib.NFS4OpenFile(ncl)
-    #f.open("doc/todo")
