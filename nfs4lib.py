@@ -35,6 +35,7 @@ import random
 import array
 import socket
 import os
+import re
 try:
     import pwd
 except ImportError:
@@ -971,6 +972,42 @@ def get_callstack():
     l = get_callstack_full()
     without_stmt = [(x[0], x[1], x[2]) for x in l]
     return without_stmt[:-1]
+
+def parse_nfs_url(s):
+    """Parse NFS URL
+
+    Returns a tuple of (host, port, directory) on success, None otherwise. 
+    """
+    # FIXME: _ should not be allowed. Should confirm to RFC2224 or
+    # similiar.
+    match = re.search(r'^(?:nfs://)?(?P<host>([a-zA-Z][\w\.^-]*|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}))'
+                      r'(?::(?P<port>\d*))?(?P<dir>/[\w/]*)?$', s)
+
+    if match:
+        return (match.group("host"), match.group("port"), match.group("dir"))
+    else:
+        return None
+
+def create_client(host, port, transport):
+    """Create instance of TCPNFS4Client or UDPNFS4Client, depending on
+    given transport. transport should be tcp, udp or auto. When auto, TCP is
+    tried first, then UDP. 
+    """
+    if transport == "auto":
+        # Try TCP first, then UDP, according to RFC2224
+        try:
+            ncl = TCPNFS4Client(host, port)
+        except socket.error:
+            print "TCP Connection refused, trying UDP"
+            ncl = UDPNFS4Client(host, port)
+    elif transport == "tcp":
+        ncl = TCPNFS4Client(host, port)
+    elif transport == "udp":
+        ncl = UDPNFS4Client(host, port)
+    else:
+        raise RuntimeError, "Invalid protocol"
+
+    return ncl
 
 
 class UDPNFS4Client(PartialNFS4Client, rpc.RawUDPClient):
