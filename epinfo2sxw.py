@@ -69,7 +69,8 @@ def parse_method(meth):
             data = line[line.find(":") + 1:]
             data = data.strip()
             # Use everything after comment
-            for line in lines:
+            while lines:
+                line = lines[0]
                 data = data + " " + line.strip()
                 del lines[0]
 
