@@ -3445,7 +3445,7 @@ class RenameSuite(NFSSuite):
             res = self.do_compound(operations)
             self.assert_OK(res)
             # Remove file. 
-            self.ncl.do_remove(self.tmp_dir + [self.newname])
+            self.ncl.do_rpc(self.ncl.do_remove, self.tmp_dir + [self.newname])
 
     def testInvalidNames(self):
         """RENAME should fail with NFS4ERR_NOENT on all unexisting, invalid file names
