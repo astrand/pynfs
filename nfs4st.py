@@ -52,6 +52,66 @@ port = None
 transport = "udp"
 
 
+class PartialTestClient:
+    def lookup_all_objects(self):
+        """Generate a list of lists with lookup operations for all types of objects"""
+        return self.lookup_objects(self.nfssuite.all_objects)
+
+    def lookup_objects(self, objects):
+        """Generate a list of lists with lookup operations for objects"""
+        result = []
+
+        for object in objects:
+            result.append(self.lookup_path(object))
+
+        return result
+
+    def lookup_all_objects_and_sizes(self):
+        return self.lookup_objects_and_sizes(self.nfssuite.all_objects)
+
+    def lookup_objects_and_sizes(self, objects):
+        """Generate a list of lists of lookup operations and object sizes"""
+        obj_sizes = []
+        for object in objects:
+            lookupops = self.lookup_path(object)
+            getattrop = self.getattr([FATTR4_SIZE])
+            operations = [self.nfssuite.putrootfhop] + lookupops
+            operations.append(getattrop)
+            res = self.nfssuite.do_compound(operations)
+            self.nfssuite.assert_OK(res)
+            obj = res.resarray[-1].arm.arm.obj_attributes
+            d =  nfs4lib.fattr2dict(obj)
+            obj_sizes.append((lookupops, d["size"]))
+
+        return obj_sizes
+
+    def lookuplist2comps(self, list):
+        result = []
+        for op in list:
+            result.append(op.arm.objname)
+        return result
+
+
+class UDPTestClient(PartialTestClient, nfs4lib.UDPNFS4Client):
+    def __init__(self, nfssuite, host, port=None, uid=None, gid=None):
+        self.nfssuite = nfssuite
+        kwargs = {}
+        if port: kwargs["port"] = port
+        if uid: kwargs["uid"] = uid
+        if gid: kwargs["gid"] = gid
+        nfs4lib.UDPNFS4Client.__init__(self, host, **kwargs)
+
+
+class TCPTestClient(PartialTestClient, nfs4lib.TCPNFS4Client):
+    def __init__(self, nfssuite, host, port=None, uid=None, gid=None):
+        self.nfssuite = nfssuite
+        kwargs = {}
+        if port: kwargs["port"] = port
+        if uid: kwargs["uid"] = uid
+        if gid: kwargs["gid"] = gid
+        nfs4lib.TCPNFS4Client.__init__(self, host, **kwargs)
+
+
 class NFSSuite(unittest.TestCase):
     def __init__(self, methodName='runTest'):
         unittest.TestCase.__init__(self, methodName)
@@ -81,14 +141,18 @@ class NFSSuite(unittest.TestCase):
         self.vaporfile = nfs4lib.unixpath2comps(self.vaporfilename)
         # Not accessable
         self.notaccessablefile = nfs4lib.unixpath2comps("/private/info.txt")
-    
-    def connect(self):
+
+    def create_client(self):
         if transport == "tcp":
-            self.ncl = nfs4lib.TCPNFS4Client(host, port)
+            ncl = TCPTestClient(self, host, port, UID, GID)
         elif transport == "udp":
-            self.ncl = nfs4lib.UDPNFS4Client(host, port, UID, GID)
+            ncl = UDPTestClient(self, host, port, UID, GID)
         else:
             raise RuntimeError, "Invalid protocol"
+        return ncl
+    
+    def connect(self):
+        self.ncl = self.create_client()
     
     def failIfRaises(self, excClass, callableObj, *args, **kwargs):
         """Fail if exception of excClass or EOFError is raised"""
@@ -126,53 +190,21 @@ class NFSSuite(unittest.TestCase):
 
     def do_compound(self, *args, **kwargs):
         """Call ncl.compound. Handle all rpc.RPCExceptions as failures"""
-        return self.failIfRaises(rpc.RPCException, self.ncl.compound, *args, **kwargs)
-
-    def lookup_all_objects(self):
-        """Generate a list of lists with lookup operations for all types of objects"""
-        return self.lookup_objects(self.all_objects)
-
-    def lookup_objects(self, objects):
-        """Generate a list of lists with lookup operations for objects"""
-        result = []
-
-        for object in objects:
-            result.append(self.ncl.lookup_path(object))
-
-        return result
-
-    def lookup_all_objects_and_sizes(self):
-        return self.lookup_objects_and_sizes(self.all_objects)
-
-    def lookup_objects_and_sizes(self, objects):
-        """Generate a list of lists of lookup operations and object sizes"""
-        obj_sizes = []
-        for object in objects:
-            lookupops = self.ncl.lookup_path(object)
-            getattrop = self.ncl.getattr([FATTR4_SIZE])
-            operations = [self.putrootfhop] + lookupops
-            operations.append(getattrop)
-            res = self.do_compound(operations)
-            self.assert_OK(res)
-            obj = res.resarray[-1].arm.arm.obj_attributes
-            d =  nfs4lib.fattr2dict(obj)
-            obj_sizes.append((lookupops, d["size"]))
-
-        return obj_sizes
-
-    def lookuplist2comps(self, list):
-        result = []
-        for op in list:
-            result.append(op.arm.objname)
-        return result
+        ncl = kwargs.get("ncl")
+        if ncl:
+            del kwargs["ncl"]
+        else:
+            ncl = self.ncl
+        return self.failIfRaises(rpc.RPCException, ncl.compound, *args, **kwargs)
 
     def setUp(self):
         # Note: no network communication should be done in this method. 
         self.connect()
         self.putrootfhop = self.ncl.putrootfh_op()
 
-    def setclientid(self):
-        self.failIfRaises(rpc.RPCException, self.ncl.init_connection)
+    def init_connection(self, ncl=None):
+        if not ncl: ncl=self.ncl
+        self.failIfRaises(rpc.RPCException, ncl.init_connection)
 
     def get_invalid_fh(self):
         """Return a (guessed) invalid filehandle"""
@@ -372,7 +404,7 @@ class AccessSuite(NFSSuite):
         Covered valid equivalence classes: 1, 2, 3, 4, 5, 6, 7, 9
         
         """
-        for lookupops in self.lookup_all_objects():
+        for lookupops in self.ncl.lookup_all_objects():
             operations = [self.putrootfhop] + lookupops
             operations.append(self.ncl.access_op(ACCESS4_READ))
             res = self.do_compound(operations)
@@ -950,7 +982,7 @@ class GetattrSuite(NFSSuite):
 
         Covered valid equivalence classes: 1, 2, 3, 4, 5, 6, 7, 9
         """
-        for lookupops in self.lookup_all_objects():
+        for lookupops in self.ncl.lookup_all_objects():
             operations = [self.putrootfhop] + lookupops
             operations.append(self.ncl.getattr([FATTR4_SIZE]))
             res = self.do_compound(operations)
@@ -1123,7 +1155,7 @@ class GetfhSuite(NFSSuite):
 
         Covered valid equivalence classes: 1, 2, 3, 4, 5, 6, 7
         """
-        for lookupops in self.lookup_all_objects():
+        for lookupops in self.ncl.lookup_all_objects():
             operations = [self.putrootfhop] + lookupops
             operations.append(self.ncl.getfh_op())
             res = self.do_compound(operations)
@@ -1619,7 +1651,7 @@ class NverifySuite(NFSSuite):
         Covered valid equivalence classes: 1, 2, 3, 4, 5, 6, 7, 9, 11
         """
         # Fetch sizes for all objects
-        obj_sizes = self.lookup_all_objects_and_sizes()
+        obj_sizes = self.ncl.lookup_all_objects_and_sizes()
         
         # For each type of object, do nverify with wrong filesize,
         # get new filesize and check if it match previous size. 
@@ -1656,7 +1688,7 @@ class NverifySuite(NFSSuite):
         """
 
         # Fetch sizes for all objects
-        obj_sizes = self.lookup_all_objects_and_sizes()
+        obj_sizes = self.ncl.lookup_all_objects_and_sizes()
         
         # For each type of object, do nverify with wrong filesize. 
         for (lookupops, objsize) in obj_sizes:
@@ -1836,13 +1868,13 @@ class OpenattrSuite(NFSSuite):
     # Testcases covering valid equivalence classes.
     #
     def _openattr(self, createdir):
-        for lookupops in self.lookup_all_objects():
+        for lookupops in self.ncl.lookup_all_objects():
             operations = [self.putrootfhop] + lookupops
             operations.append(self.ncl.openattr_op(TRUE))
             res = self.do_compound(operations)
 
             if res.status == NFS4ERR_NOTSUPP:
-                path = self.lookuplist2comps(lookupops)
+                path = self.ncl.lookuplist2comps(lookupops)
                 self.info_message("OPENATTR not supported on " + str(path))
 
             self.assert_status(res, [NFS4_OK, NFS4ERR_NOTSUPP])
@@ -1947,14 +1979,14 @@ class PutfhSuite(NFSSuite):
         # Fetch filehandles of all types
         # List with (objpath, fh)
         filehandles = []
-        for lookupops in self.lookup_all_objects():
+        for lookupops in self.ncl.lookup_all_objects():
             operations = [self.putrootfhop] + lookupops
             
             operations.append(self.ncl.getfh_op())
             res = self.do_compound(operations)
             self.assert_OK(res)
 
-            objpath = self.lookuplist2comps(lookupops)
+            objpath = self.ncl.lookuplist2comps(lookupops)
             fh = res.resarray[-1].arm.arm.object
             filehandles.append((objpath, fh))
 
@@ -2101,7 +2133,7 @@ class PutrootfhSuite(NFSSuite):
 
 ##         Covered valid equivalence classes: 1, 13, 16, 19
 ##         """
-##         self.setclientid()
+##         self.init_connection()
 
         
 ##         lookupops = self.ncl.lookup_path(self.regfile[:-1])
@@ -3181,10 +3213,6 @@ class SetclientidSuite(NFSSuite):
     allowed as input, but failing to provide the correct addres means
     callbacks will not be used. 
     """
-    # Override setUp. Just connect, don't do SETCLIENTID etc. 
-    def setUp(self):
-        self.connect()
-    
     #
     # Testcases covering valid equivalence classes.
     #
@@ -3210,6 +3238,43 @@ class SetclientidSuite(NFSSuite):
         setclientidop = self.ncl.setclientid_op(client, callback)
         res = self.do_compound([setclientidop])
 
+    #
+    # Misc. tests.
+    #
+    def _set(self, ncl, id):
+        setclientidop = ncl.setclientid(id=id)
+        res = self.do_compound([setclientidop], ncl=ncl)
+        return res
+
+    def _confirm(self, ncl, clientid):
+        setclientid_confirmop = ncl.setclientid_confirm_op(clientid)
+        res = self.do_compound([setclientid_confirmop], ncl=ncl)
+        return res
+    
+    def testInUse(self):
+        """SETCLIENTID with same nfs_client_id.id should return NFS4ERR_CLID_INUSE
+        """
+        id = self.ncl.gen_uniq_id()
+
+        # 1st SETCLIENTID + SETCLIENTID_CONFIRM
+        #self._set_and_confirm(self.ncl, id)
+        res = self._set(self.ncl, id)
+        self.assert_OK(res)
+        clientid = res.resarray[0].arm.arm.clientid
+        res = self._confirm(self.ncl, clientid)
+        self.assert_OK(res)
+        
+
+        # 2nd SETCLIENTID 
+        ncl2 = nfs4lib.UDPNFS4Client(host, port, UID+1, GID+1)
+        res = self._set(ncl2, id)
+        self.assert_status(res, [NFS4ERR_CLID_INUSE])
+        # FIXME: Should NFS4ERR_CLID_INUSE be returned on SETCLIENTID
+        # or SETCLIENTID_CONFIRM?
+        #clientid = res.resarray[0].arm.arm.clientid
+        #res = self._confirm(self.ncl, clientid)
+        #self.assert_OK(res)
+        
     
 class SetclientidconfirmSuite(NFSSuite):
     """Test operation 36: SETCLIENTID_CONFIRM
@@ -3297,7 +3362,7 @@ class VerifySuite(NFSSuite):
         Covered valid equivalence classes: 1, 2, 3, 4, 5, 6, 7, 9, 11
         """
         # Fetch sizes for all objects
-        obj_sizes = self.lookup_all_objects_and_sizes()
+        obj_sizes = self.ncl.lookup_all_objects_and_sizes()
         
         # For each type of object, do verify with same filesize
         # get filesize again, and check if it match previous size.
@@ -3332,7 +3397,7 @@ class VerifySuite(NFSSuite):
         Covered valid equivalence classes: 1, 2, 3, 4, 5, 6, 7, 9, 12
         """
         # Fetch sizes for all objects
-        obj_sizes = self.lookup_all_objects_and_sizes()
+        obj_sizes = self.ncl.lookup_all_objects_and_sizes()
         
         # For each type of object, do verify with wrong filesize. 
         for (lookupops, objsize) in obj_sizes:
