@@ -53,24 +53,33 @@ def clean_dir(directory):
     if entries:
         raise "Cannot clean directory %s" % directory
 
-def create_dir(ncl, curdir, create_dir):
+def create_dir(ncl, curdir, newdir):
     operations = [ncl.putrootfh_op()] + ncl.lookup_path(curdir)
     objtype = createtype4(ncl, type=NF4DIR)
-    createop = ncl.create(objtype, create_dir)
+    createop = ncl.create(objtype, newdir)
     operations.append(createop)
     res = ncl.compound(operations)
     nfs4lib.check_result(res)
 
 def create_leading_paths(ncl, prefix):
-    for x in range(len(prefix)):
-        leading_comps = prefix[0:x+1]
-        curdir = leading_comps[:-1]
-        lastcomp = leading_comps[-1]
-        fh = ncl.do_getfh(curdir)
-        entries = ncl.do_readdir(fh)
-        names = [entry.name for entry in entries]
-        if not lastcomp in names:
-            create_dir(ncl, curdir, lastcomp)
+    # Get root fh
+    fh = ncl.do_getfh([])
+    for thisdir in prefix:
+        try:
+            fh = ncl.do_lookup(fh, thisdir)
+        except nfs4lib.BadCompoundRes, e:
+            if e.errcode == NFS4ERR_NOENT:
+                # Create dir
+                print "Creating directory", thisdir
+                objtype = createtype4(ncl, type=NF4DIR)
+                createop = ncl.create(objtype, thisdir)
+                res = ncl.compound([ncl.putfh_op(fh), createop, ncl.getfh_op()])
+                nfs4lib.check_result(res)
+                fh = res.resarray[-1].arm.arm.object
+            else:
+                raise
+        else:
+            print "Directory", thisdir, "exists"
 
 def main(ncl, unix_prefix):
     ncl.init_connection()
