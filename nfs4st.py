@@ -2035,6 +2035,13 @@ class PutrootfhSuite(NFSSuite):
 ##             dir(3)
 ##             special device files(4)
 ##             invalid filehandle(10)
+##     Input Condition: stateid
+##         Valid equivalence classes:
+##             all bits zero(17)
+##             all bits one(18)
+##             valid stateid from open(19)
+##         Invalid equivalence classes:
+##             invalid stateid(20)
 ##     Input Condition: offset
 ##         Valid equivalence classes:2
 ##             zero(11)
@@ -2049,14 +2056,6 @@ class PutrootfhSuite(NFSSuite):
 ##             greater than one(16)
 ##         Invalid equivalence classes:
 ##             -
-##     Input Condition: stateid
-##         Valid equivalence classes:
-##             all bits zero(17)
-##             all bits one(18)
-##             valid stateid from open(19)
-##         Invalid equivalence classes:
-##             invalid stateid(20)
-    
 ##     """
 ##     #
 ##     # Testcases covering valid equivalence classes.
@@ -2068,8 +2067,9 @@ class PutrootfhSuite(NFSSuite):
 ##         """
 ##         lookupops = self.ncl.lookup_path(self.regfile)
 ##         operations = [self.putrootfhop] + lookupops
-        
-##         operations.append(self.ncl.read(offset=0, count=0, stateid=0))
+
+##         stateid = stateid4(self.ncl, 0, "")
+##         operations.append(self.ncl.read(offset=0, count=0, stateid=stateid))
 ##         res = self.do_compound(operations)
 ##         self.assert_OK(res)
 
@@ -2086,10 +2086,14 @@ class PutrootfhSuite(NFSSuite):
 
 ##         Covered valid equivalence classes: 1, 12, 15, 18
 ##         """
-##         lookupop = self.ncl.lookup_op(self.regfile)
+##         lookupops = self.ncl.lookup_path(self.regfile)
+##         operations = [self.putrootfhop] + lookupops
+
+##         stateid = stateid4(self.ncl, 0, nfs4lib.long2opaque(0xffffffffffffffffffffffffL))
+##         readop = self.ncl.read(offset=2, count=1, stateid=stateid)
+##         operations.append(readop)
         
-##         readop = self.ncl.read(offset=2, count=1, stateid=0xffffffffffffffffL)
-##         res = self.do_compound([self.putrootfhop, lookupop, readop])
+##         res = self.do_compound(operations)
 ##         self.assert_OK(res)
 
 ##     def testWithOpen(self):
@@ -2097,14 +2101,22 @@ class PutrootfhSuite(NFSSuite):
 
 ##         Covered valid equivalence classes: 1, 13, 16, 19
 ##         """
-##         # OPEN
-##         openop = self.ncl.open(file=self.regfile)
-##         getfhop = self.ncl.getfh_op()
-##         res = self.do_compound([self.putrootfhop, openop, getfhop])
-##         self.assert_OK(res)
-##         stateid = res.resarray[1].arm.arm.stateid
-##         fh = res.resarray[2].arm.arm.object
+##         self.setclientid()
+
         
+##         lookupops = self.ncl.lookup_path(self.regfile[:-1])
+##         operations = [self.putrootfhop] + lookupops
+
+##         # OPEN
+##         operations.append(self.ncl.open(file=self.regfile[-1]))
+##         operations.append(self.ncl.getfh_op())
+##         res = self.do_compound(operations)
+##         self.assert_OK(res)
+##         # [-2] is the OPEN operation
+##         stateid = res.resarray[-2].arm.arm.stateid
+##         # [-1] is the GETFH operation
+##         fh = res.resarray[-1].arm.arm.object
+
 ##         # README is 36 bytes. Lets use 1000 as offset.
 ##         putfhop = self.ncl.putfh_op(fh)
 ##         readop = self.ncl.read(offset=1000, count=5, stateid=stateid)
@@ -2163,6 +2175,8 @@ class PutrootfhSuite(NFSSuite):
 
 ##         Covered invalid equivalence classes: 20
 ##         """
+##         # FIXME
+##         stateid = stateid4(self.ncl, 0, "")
 ##         readop = self.ncl.read(stateid=0x123456789L)
 ##         res = self.do_compound([readop])
 ##         self.assert_status(res, [NFS4ERR_STALE_STATEID])
