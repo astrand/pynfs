@@ -21,9 +21,6 @@
 # TODO: 
 # Implement buffering in NFS4OpenFile.
 
-
-NFS_PROGRAM = 100003
-NFS_VERSION = 4
 NFS_PORT = 2049
 
 BUFSIZE = 4096
@@ -113,14 +110,14 @@ class PartialNFS4Client:
     #
 
     def null(self):
-	return self.make_call(0, None, None, None)
+	return self.make_call(NFSPROC4_NULL, None, None, None)
 
     def compound(self, argarray, tag="", minorversion=0):
         """A Compound call"""
         compoundargs = COMPOUND4args(self, argarray=argarray, tag=tag, minorversion=minorversion)
         res = COMPOUND4res(self)
         
-        self.make_call(1, None, compoundargs.pack, res.unpack)
+        self.make_call(NFSPROC4_COMPOUND, None, compoundargs.pack, res.unpack)
         verify_compound_result(res)
         
         return res
@@ -820,7 +817,7 @@ def create_dummy_unpacker(data):
 
 class UDPNFS4Client(PartialNFS4Client, rpc.RawUDPClient):
     def __init__(self, host, port=NFS_PORT):
-        rpc.RawUDPClient.__init__(self, host, NFS_PROGRAM, NFS_VERSION, port)
+        rpc.RawUDPClient.__init__(self, host, NFS4_PROGRAM, NFS_V4, port)
         PartialNFS4Client.__init__(self)
 
     def mkcred(self):
