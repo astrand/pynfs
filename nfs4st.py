@@ -58,14 +58,15 @@ class NFSTestCase(unittest.TestCase):
     def __init__(self, methodName='runTest'):
         unittest.TestCase.__init__(self, methodName)
     
-        # Filename constants
-        self.linkfile = "/dev/floppy"
-        self.blockfile = "/dev/fd0"
-        self.charfile = "/dev/ttyS0"
-        self.socketfile = "/dev/log"
-        self.fifofile = "/dev/initctl"
-        self.dirfile = "/doc"
-        self.normfile = "/doc/README"
+        # Filename constants. Same order as in nfs_ftype4 enum. 
+        self.normfile = "/doc/README" # NF4REG
+        self.dirfile = "/doc" # NF4DIR
+        self.blockfile = "/dev/fd0" # NF4DIR
+        self.charfile = "/dev/ttyS0" # NF4CHR
+        self.linkfile = "/dev/floppy" # NF4LNK
+        self.socketfile = "/dev/log" # NF4SOCK
+        self.fifofile = "/dev/initctl" # NF4FIFO
+
         # FIXME: Add sample named attribute. 
     
     def connect(self):
@@ -1470,10 +1471,12 @@ class LookuppTestCase(NFSTestCase):
         
     Input Condition: current filehandle
         Valid equivalence classes:
-            dir(1)
-            named attribute dir(2)
+            symlink(10)
         Invalid equivalence classes:
-            not dir or named attribute dir(3)
+            not symlink(2)
+            invalid filehandle(3)
+            symlink(12)
+
 
     """
     def setUp(self):
@@ -2203,8 +2206,84 @@ class ReaddirTestCase(NFSTestCase):
     # FIXME: Misc. test: testa fattr4_rdattr_error kontra globalt fel. 
 
 class ReadlinkTestCase(NFSTestCase):
-    # FIXME
-    pass
+    """Test READLINK operation
+
+    Equivalence partitioning:
+
+    Input Condition: current filehandle
+        Valid equivalence classes:
+            symlink(10)
+        Invalid equivalence classes:
+            not symlink or directory(11)
+            directory(12)
+            no filehandle(13)
+    """
+    def setUp(self):
+        self.connect()
+        self.putrootfhop = self.ncl.putrootfh_op()
+
+    #
+    # Testcases covering valid equivalence classes.
+    #
+    def testReadlink(self):
+        """READLINK on link
+
+        Covered valid equivalence classes: 10
+        """
+        lookupop = self.ncl.lookup_op(["dev", "floppy"])
+        readlinkop = self.ncl.readlink_op()
+        res = self.do_compound([self.putrootfhop, lookupop, readlinkop])
+        self.assert_OK(res)
+        linkdata = res.resarray[2].arm.arm.link
+        self.failIf(linkdata != "fd0",
+                    "link data was %s, should be fd0" % linkdata)
+    #
+    # Testcases covering invalid equivalence classes.
+    #
+    def testFhNotSymlink(self):
+        """READLINK on non-symlink objects should return NFS4ERR_INVAL
+
+        Covered valid equivalence classes: 11
+        """
+        for name in [self.normfile,
+                     self.blockfile,
+                     self.charfile,
+                     self.socketfile,
+                     self.fifofile]:
+            path = nfs4lib.str2pathname(name)
+            lookupop = self.ncl.lookup_op(path)
+            readlinkop = self.ncl.readlink_op()
+
+            res = self.do_compound([self.putrootfhop, lookupop, readlinkop])
+
+            if res.status != NFS4ERR_INVAL:
+                self.info_message("READLINK on %s dit not return NFS4ERR_INVAL" % name)
+            
+            self.assert_status(res, [NFS4ERR_INVAL])
+            
+    def testDirFh(self):
+        """READLINK on a directory should return NFS4ERR_ISDIR
+
+        Covered valid equivalence classes: 12
+        """
+        path = nfs4lib.str2pathname(self.dirfile)
+        lookupop = self.ncl.lookup_op(path)
+        readlinkop = self.ncl.readlink_op()
+
+        res = self.do_compound([self.putrootfhop, lookupop, readlinkop])
+        self.assert_status(res, [NFS4ERR_ISDIR])
+        
+
+    def testNoFh(self):
+        """READLINK without (cfh) should return NFS4ERR_NOFILEHANDLE
+
+        Covered invalid equivalence classes: 13
+        """
+        readlinkop = self.ncl.readlink_op()
+        res = self.do_compound([readlinkop])
+        self.assert_status(res, [NFS4ERR_NOFILEHANDLE])
+        
+    
 
 class RemoveTestCase(NFSTestCase):
     # FIXME
