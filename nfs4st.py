@@ -1580,8 +1580,7 @@ class NverifyTestCase(NFSTestCase):
         # Fetch sizes for all objects
         obj_sizes = self.lookup_all_objects_and_sizes()
         
-        # For each type of object, do nverify with wrong filesize,
-        # get new filesize and check if it match previous size. 
+        # For each type of object, do nverify with wrong filesize. 
         for (lookupop, objsize) in obj_sizes:
             # Nverify op
             attrmask = nfs4lib.list2attrmask([FATTR4_SIZE])
@@ -1590,11 +1589,8 @@ class NverifyTestCase(NFSTestCase):
             obj_attributes = nfs4lib.fattr4(self.ncl, attrmask, attr_vals)
             nverifyop = self.ncl.nverify_op(obj_attributes)
 
-            # New getattr
-            getattrop = self.ncl.getattr([FATTR4_SIZE])
-
             res = self.do_compound([self.putrootfhop, lookupop,
-                                    nverifyop, getattrop])
+                                    nverifyop])
 
             self.assert_status(res, [NFS4ERR_SAME])
 
