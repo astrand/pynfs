@@ -3560,7 +3560,7 @@ class MyTextTestRunner(unittest.TextTestRunner):
 
 class TestProgram(unittest.TestProgram):
     USAGE = """\
-Usage: %(progName)s host[:port] [options] [test] [...]
+Usage: %(progName)s [nfs://]host[:port] [options] [test] [...]
 
 Options:
   -u, --udp        use UDP as transport (default)
@@ -3611,7 +3611,7 @@ Examples:
         if len(args) < 1:
             self.usageExit()
 
-        match = re.search(r'^(?P<host>([a-zA-Z][\w\.]*|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}))'
+        match = re.search(r'^(?:nfs://)?(?P<host>([a-zA-Z][\w\.]*|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}))'
                           r'(?::(?P<port>\d*))?$', args[0])
 
         if not match:
