@@ -131,8 +131,7 @@ class NFSTestSuite(unittest.TestCase):
         obj_sizes = []
         for lookupops in self.lookup_all_objects():
             getattrop = self.ncl.getattr([FATTR4_SIZE])
-            operations = [self.putrootfhop]
-            operations.extend(lookupops)
+            operations = [self.putrootfhop] + lookupops
             operations.append(getattrop)
             res = self.do_compound(operations)
             self.assert_OK(res)
@@ -309,8 +308,7 @@ class AccessTestSuite(NFSTestSuite):
         
         """
         for lookupops in self.lookup_all_objects():
-            operations = [self.putrootfhop]
-            operations.extend(lookupops)
+            operations = [self.putrootfhop] + lookupops
             operations.append(self.ncl.access_op(ACCESS4_READ))
             res = self.do_compound(operations)
             self.assert_OK(res)
@@ -348,8 +346,7 @@ class AccessTestSuite(NFSTestSuite):
         lookupops = self.ncl.lookup_path(self.normfile)
         
         for accessop in self.valid_access_ops():
-            operations = [self.putrootfhop]
-            operations.extend(lookupops)
+            operations = [self.putrootfhop] + lookupops
             operations.append(accessop)
             res = self.do_compound(operations)
             self.assert_OK(res)
@@ -467,22 +464,25 @@ class CommitTestSuite(NFSTestSuite):
         parameter in the COMMIT operation. All values are
         legal. Tested values are 0, 1 and 2**64 - 1 (selected by BVA)
         """
-        lookupop = self.ncl.lookup_op(self.normfile)
+        lookupops = self.ncl.lookup_path(self.normfile)
 
         # Offset = 0
-        commitop = self.ncl.commit_op(0, 0)
-        res = self.do_compound([self.putrootfhop, lookupop, commitop])
+        operations = [self.putrootfhop] + lookupops
+        operations.append(self.ncl.commit_op(0, 0))
+        res = self.do_compound(operations)
         self.assert_OK(res)
 
         # offset = 1
-        commitop = self.ncl.commit_op(1, 0)
-        res = self.do_compound([self.putrootfhop, lookupop, commitop])
+        operations = [self.putrootfhop] + lookupops
+        operations.append(self.ncl.commit_op(1, 0))
+        res = self.do_compound(operations)
         self.assert_OK(res)
-
+        
         # offset = 2**64 - 1
-        commitop = self.ncl.commit_op(-1, 0)
-        res = self.do_compound([self.putrootfhop, lookupop, commitop])
-        self.assert_OK(res)
+        operations = [self.putrootfhop] + lookupops
+        operations.append(self.ncl.commit_op(0xffffffffffffffffL, 0))
+        res = self.do_compound(operations)
+        self.assert_OK(res)        
 
     def testCounts(self):
         """COMMIT on file with count 0, 1 and 2**64 - 1
