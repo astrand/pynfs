@@ -169,8 +169,7 @@ class ClientApp(cmd.Cmd):
         print "not implemented"
 
     def do_dir(self, line):
-        # FIXME
-        print "not implemented"
+        pass
 
     do_ls = do_dir
 
@@ -187,7 +186,7 @@ class ClientApp(cmd.Cmd):
         
         for file in filenames:
             basename = os.path.basename(file)
-            remote = nfs4lib.NFS4OpenFile(ncl)
+            remote = nfs4lib.NFS4OpenFile(self.ncl)
             try:
                 remote.open(file)
                 local = open(basename, "w")
