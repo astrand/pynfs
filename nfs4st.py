@@ -222,13 +222,15 @@ class NFSSuite(unittest.TestCase):
         """Return an invalid UTF-8 string"""
         return "\xc0\xc1"
 
-    def _remove_object(self, name=None):
+    def _remove_object(self, name=None, directory=None):
         """Remove object in /tmp, if it exists. Return false on failure.
         object defaults to self.obj_name
         """
         if not name:
             name = self.obj_name
-        lookup_dir_ops = self.ncl.lookup_path(self.tmp_dir)
+        if not directory:
+            directory = self.tmp_dir
+        lookup_dir_ops = self.ncl.lookup_path(directory)
         operations = [self.ncl.putrootfh_op()] + lookup_dir_ops
         operations.append(self.ncl.remove_op(name))
 
@@ -238,14 +240,16 @@ class NFSSuite(unittest.TestCase):
             self.info_message("Cannot prepare by removing object, skipping test")
         return status
 
-    def _create_object(self, name=None):
+    def _create_object(self, name=None, directory=None):
         """Create (dir) object in /tmp, if it does not exist. Return false on failure.
         object defaults to self.obj_name
         """
         # We create a directory, because it's simple.
         if not name:
             name = self.obj_name
-        lookup_dir_ops = self.ncl.lookup_path(self.tmp_dir)
+        if not directory:
+            directory = self.tmp_dir
+        lookup_dir_ops = self.ncl.lookup_path(directory)
         operations = [self.putrootfhop] + lookup_dir_ops
         objtype = createtype4(self.ncl, type=NF4DIR)
         operations.append(self.ncl.create(objtype, name))
@@ -983,6 +987,39 @@ class CreateSuite(NFSSuite):
         # name = ..
         if not self._remove_object(".."): return
         self._do_create("..")
+
+    def testSlash(self):
+        """CREATE WITH "/" in filename should succeed or return NFS4ERR_INVAL
+
+        Extra test
+
+        Make sure / in file names are not treated as directory
+        separator. Servers supporting "/" in file names should return
+        NFS4_OK. Others should return NFS4ERR_INVAL. NFS4ERR_EXIST
+        should not be returned.
+        """
+        # Great idea. Try this:
+        # tmp
+        # |-- "gazonk/foo.c"
+        # `-- gazonk
+        #     `--foo.c
+        testname = "gazonk/foo.c"
+
+        # Lookup fh for /tmp
+        fh = self.ncl.do_getfh(self.tmp_dir)
+        
+        # Get entries
+        entries = self.ncl.do_readdir(fh)
+        names = [entry.name for entry in entries]
+
+        if testname in names:
+            # Strange, a file called "gazonk/foo.c" already exists.
+            # Try to remove it. 
+            if not self._remove_object(testname): return
+
+        # Try to create "gazonk/foo.c"
+        self._do_create(testname)
+
 
 
 
@@ -2477,12 +2514,7 @@ class ReaddirSuite(NFSSuite):
         
         """
         # Lookup fh for /doc
-        lookupops = self.ncl.lookup_path(self.dirfile)
-        operations = [self.putrootfhop] + lookupops
-        operations.append(self.ncl.getfh_op())
-        res = self.do_compound(operations)
-        self.assert_OK(res)
-        fh = res.resarray[-1].arm.arm.object
+        fh = self.ncl.do_getfh(self.dirfile)
 
         # Get entries
         entries = self.ncl.do_readdir(fh)
