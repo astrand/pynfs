@@ -1786,8 +1786,73 @@ class OpendowngradeTestCase(NFSTestCase):
     pass
 
 class PutfhTestCase(NFSTestCase):
-    # FIXME
-    pass
+    """Test PUTFH operation
+
+    FIXME: Add attribute directory and named attribute testing. 
+
+    Equivalence partitioning:
+
+    Input Condition: supplied filehandle
+        Valid equivalence classes:
+            file(1)
+            dir(2)
+            block(3)
+            char(4)
+            link(5)
+            socket(6)
+            FIFO(7)
+            attribute directory(8)
+            named attribute(9)
+        Invalid equivalence classes:
+            invalid filehandle(10)
+    """
+    def setUp(self):
+        self.connect()
+        self.putrootfhop = self.ncl.putrootfh_op()
+
+    #
+    # Testcases covering valid equivalence classes.
+    #
+    def testAllObjects(self):
+        """PUTFH followed by GETFH on all type of objects
+
+        Covered valid equivalence classes: 1, 2, 3, 4, 5, 6, 7
+        """
+        # Fetch filehandles of all types
+        # List with (objpath, fh)
+        filehandles = []
+        for lookupop in self.lookup_all_objects():
+            getfhop = self.ncl.getfh_op()
+            res = self.do_compound([self.putrootfhop, lookupop, getfhop])
+            self.assert_OK(res)
+
+            objpath = str(lookupop.arm.path)
+            fh = res.resarray[-1].arm.arm.object
+            filehandles.append((objpath, fh))
+
+        # Try PUTFH & GETFH on all these filehandles. 
+        for (objpath, fh) in filehandles:
+            putfhop = self.ncl.putfh_op(fh)
+            getfhop = self.ncl.getfh_op()
+            res = self.do_compound([putfhop, getfhop])
+            self.assert_OK(res)
+
+            new_fh = res.resarray[-1].arm.arm.object
+            self.failIf(new_fh != fh, "GETFH after PUTFH returned different fh")
+
+    #
+    # Testcases covering invalid equivalence classes.
+    #
+    def testInvalidFh(self):
+        """PUTFH on (guessed) invalid filehandle should return NFS4ERR_STALE
+
+        Covered invalid equivalence classes: 10
+        """
+        object = nfs4lib.long2opaque(123456780, NFS4_FHSIZE/8)
+        putfhop = self.ncl.putfh_op(object)
+        res = self.do_compound([putfhop])
+        self.assert_status(res, [NFS4ERR_STALE])
+        
 
 class PutrootfhTestCase(NFSTestCase):
     # FIXME
