@@ -21,16 +21,14 @@
 # Remove self.rootfh?
 # Implement buffering in NFS4OpenFile.
 # Translation of error- and operation codes to enums.
-# FIXME: Constitent use of "op", "operation" and "somethinglongoperation". 
+# FIXME: Constitent use of "op", "operation" and "somethinglongoperation".
+# FIXME: Error when transferring large files?
 
 NFS_PROGRAM = 100003
 NFS_VERSION = 4
 NFS_PORT = 2049
 
-# FIXME
-#BUFSIZE = 4096
-BUFSIZE = 10
-
+BUFSIZE = 4096
 
 import rpc
 from nfs4constants import *
