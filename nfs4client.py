@@ -334,7 +334,7 @@ class ClientApp(cmd.Cmd):
             operations.extend(self.ncl.lookup_path(pathcomps))
 
         # CREATE
-        createop = self.ncl.create_op(objname, objtype)
+        createop = self.ncl.create(objtype, objname)
         operations.append(createop)
 
         try:
