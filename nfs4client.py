@@ -288,14 +288,20 @@ class ClientApp(cmd.Cmd):
         print "ACCESS4_EXECUTE is", is_allowed(access, ACCESS4_EXECUTE)
 
     def do_create(self, line):
-        # FIXME: Should be able to create objects in other dirs than cwd. 
-        if len(line.split()) < 2:
+        # FIXME: Should be able to create objects in other dirs than cwd.
+        args = line.split()
+        if len(args) < 2:
             print "create <type> <name> <arguments>"
             return
 
         (type, objname) = line.split(None, 3)[:2]
         if type == "link":
-            pass
+            if len(args) < 3:
+                print "create link <name> <target>"
+                return
+            else:
+                linkdata = args[2]
+            objtype = createtype4(self.ncl, type=NF4LNK, linkdata=linkdata)
         elif type == "block":
             pass
         elif type == "char":
