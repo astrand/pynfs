@@ -512,8 +512,6 @@ class GetattrTestCase(NFSTestCase):
     """
 
     # FIXME: Test:
-    # GETATTR med tom attr-sträng. 
-    # GETATTR utan filhandtag. 
     # GETATTR både för filer, kataloger och andra objekt.
     # Testa "supported attributes". 
 
@@ -606,6 +604,16 @@ class GetattrTestCase(NFSTestCase):
         getattrop = self.ncl.getattr([])
         res = self.do_compound([self.putrootfhop, lookupop, getattrop])
         self.assert_OK(res)
+
+    def testWithoutFh(self):
+        """GETATTR should fail without (cfh)
+
+        GETATTR should return NFS4ERR_NOFILEHANDLE if called without filehandle.
+        """
+        getattrop = self.ncl.getattr([])
+        res = self.do_compound([getattrop])
+        self.failUnlessEqual(res.status, NFS4ERR_NOFILEHANDLE)
+
 
 
 class QuietTextTestRunner(unittest.TextTestRunner):
