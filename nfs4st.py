@@ -31,9 +31,11 @@ import unittest
 import time
 import sys
 
+import rpc
 from nfs4constants import *
 from nfs4types import *
 import nfs4lib
+
 
 # Global variables
 host = None
@@ -53,13 +55,11 @@ class NFSTestCase(unittest.TestCase):
         self.ncl.init_connection()
     
     def failIfRaises(self, excClass, callableObj, *args, **kwargs):
+        """Fail if exception of excClass is raised"""
         try:
-            apply(callableObj, args, kwargs)
+            return apply(callableObj, args, kwargs)
         except excClass, e:
             self.fail(e)
-        else:
-            return
-
 
     def assert_OK(self, res):
         """Assert result from compound call is NFS4_OK"""
@@ -80,6 +80,10 @@ class NFSTestCase(unittest.TestCase):
     def info_message(self, msg):
         print >> sys.stderr, msg + ", ",
 
+    def do_compound(self, arg):
+        """Call ncl.compound. Handle all rpc.RPCExceptions as failures."""
+        return self.failIfRaises(rpc.RPCException, self.ncl.compound, arg)
+
 
 class CompoundTestCase(NFSTestCase):
     """Test COMPOUND procedure"""
@@ -90,7 +94,8 @@ class CompoundTestCase(NFSTestCase):
         self.putrootfhop = self.ncl.putrootfh_op()
 
     def testInvalidMinor(self):
-        """Test COMPOUND with invalid minor version"""
+        """Test COMPOUND with invalid minor version
+        """
         
         res = self.ncl.compound([self.putrootfhop], minorversion=0xFFFF)
         self.failIf(res.status != NFS4ERR_MINOR_VERS_MISMATCH,
@@ -100,10 +105,30 @@ class CompoundTestCase(NFSTestCase):
                     "NFS4ERR_MINOR_VERS_MISMATCH")
 
     def testZeroOps(self):
-        """Test COMPOUND without operations"""
+        """Test COMPOUND without operations
+        """
 
         res = self.ncl.compound([])
         self.assert_OK(res)
+
+    def testOperation1(self):
+        """Test COMPOUND with (undefined) operation 1
+        """
+
+        # nfs4types.nfs_argop4 does not allow packing invalid operations. 
+        class custom_nfs_argop4:
+            def __init__(self, ncl, argop):
+                self.ncl = ncl
+                self.packer = ncl.packer
+                self.unpacker = ncl.unpacker
+                self.argop = argop
+            
+            def pack(self, dummy=None):
+                self.packer.pack_nfs_opnum4(self.argop)
+                
+        op = custom_nfs_argop4(self.ncl, argop=1)
+        res = self.do_compound([op])
+        self.assert_status(res, [NFS4ERR_NOTSUPP])
 
 
 class AccessTestCase(NFSTestCase):
@@ -197,7 +222,7 @@ class AccessTestCase(NFSTestCase):
         any ACCESS4* constant).
         """
         for accessop in self.invalid_access_ops():
-            res = self.ncl.compound([self.putrootfhop, accessop])
+            res = self.do_compound([self.putrootfhop, accessop])
             self.failUnlessEqual(res.status, NFS4ERR_INVAL,
                                  "server accepts invalid ACCESS request with NFS4_OK, "
                                  "should be NFS4ERR_INVAL")
