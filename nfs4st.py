@@ -2880,19 +2880,20 @@ class VerifySuite(NFSSuite):
         
         # For each type of object, do verify with same filesize
         # get filesize again, and check if it match previous size.
-        for (lookupop, objsize) in obj_sizes:
+        for (lookupops, objsize) in obj_sizes:
+            operations = [self.putrootfhop] + lookupops
+            
             # Verify op
             attrmask = nfs4lib.list2attrmask([FATTR4_SIZE])
             # Size attribute is 8 bytes. 
             attr_vals = nfs4lib.long2opaque(objsize, 8)
             obj_attributes = nfs4lib.fattr4(self.ncl, attrmask, attr_vals)
-            verifyop = self.ncl.verify_op(obj_attributes)
+            operations.append(self.ncl.verify_op(obj_attributes))
 
             # New getattr
-            getattrop = self.ncl.getattr([FATTR4_SIZE])
+            operations.append(self.ncl.getattr([FATTR4_SIZE]))
 
-            res = self.do_compound([self.putrootfhop, lookupop,
-                                    verifyop, getattrop])
+            res = self.do_compound(operations)
 
             self.assert_OK(res)
 
@@ -2913,16 +2914,17 @@ class VerifySuite(NFSSuite):
         obj_sizes = self.lookup_all_objects_and_sizes()
         
         # For each type of object, do verify with wrong filesize. 
-        for (lookupop, objsize) in obj_sizes:
+        for (lookupops, objsize) in obj_sizes:
+            operations = [self.putrootfhop] + lookupops
+            
             # Verify op
             attrmask = nfs4lib.list2attrmask([FATTR4_SIZE])
             # Size attribute is 8 bytes. 
             attr_vals = nfs4lib.long2opaque(objsize + 17, 8)
             obj_attributes = nfs4lib.fattr4(self.ncl, attrmask, attr_vals)
-            verifyop = self.ncl.verify_op(obj_attributes)
+            operations.append(self.ncl.verify_op(obj_attributes))
 
-            res = self.do_compound([self.putrootfhop, lookupop,
-                                    verifyop])
+            res = self.do_compound(operations)
 
             self.assert_status(res, [NFS4ERR_NOT_SAME])
 
@@ -2949,16 +2951,17 @@ class VerifySuite(NFSSuite):
 
         Comments: See GetattrSuite.testWriteOnlyAttributes. 
         """
-        lookupop = self.ncl.lookup_op(self.regfile)
+        lookupops = self.ncl.lookup_path(self.regfile)
+        operations = [self.putrootfhop] + lookupops
 
         # Verify
         attrmask = nfs4lib.list2attrmask([FATTR4_TIME_ACCESS_SET])
         # Size attribute is 8 bytes. 
         attr_vals = nfs4lib.long2opaque(17, 8)
         obj_attributes = nfs4lib.fattr4(self.ncl, attrmask, attr_vals)
-        verifyop = self.ncl.verify_op(obj_attributes)
+        operations.append(self.ncl.verify_op(obj_attributes))
         
-        res = self.do_compound([self.putrootfhop, lookupop, verifyop])
+        res = self.do_compound(operations)
         self.assert_status(res, [NFS4ERR_INVAL])
 
 
