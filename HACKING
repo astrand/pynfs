@@ -6,3 +6,8 @@ unixpath: Example: "/dev/fd0"
 pathcomps: A list of components. Example: ["doc", "README"]
 
 The function nfs4lib.unixpath2comps translates a unixpath to pathcomps. 
+
+Misc
+====
+"object" is preferred over "file", when talking about nfs_ftype4's. 
+
