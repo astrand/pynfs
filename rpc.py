@@ -347,7 +347,10 @@ class Client:
 	self.makesocket() # Assigns to self.sock
 	self.bindsocket()
 	self.connsocket()
-	self.lastxid = 0 # XXX should be more random?
+        # Servers may do XID caching, so try to come up with something
+        # unique to start with. XIDs are 32 bits. Python integers are always
+        # at least 32 bits. 
+	self.lastxid = int(long(time.time() * 1E6) & 0xfffffff)
 	self.addpackers()
 	self.cred = None
 	self.verf = None
