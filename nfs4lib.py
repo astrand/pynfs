@@ -227,9 +227,9 @@ class PartialNFS4Client:
     def lookupp_op(self):
 	return nfs_argop4(self, argop=OP_LOOKUPP)
 
-    def nverify(self):
-        # FIXME
-        raise NotImplementedError()
+    def nverify_op(self, obj_attributes):
+        args = NVERIFY4args(self, obj_attributes)
+	return nfs_argop4(self, argop=OP_NVERIFY, opnverify=args)
 
     def open_op(self, claim, openhow, owner, seqid, share_access, share_deny):
 	args = OPEN4args(self, claim, openhow, owner, seqid, share_access, share_deny)
