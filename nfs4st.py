@@ -203,23 +203,84 @@ class AccessTestCase(NFSTestCase):
         self.connect()
         self.putrootfhop = self.ncl.putrootfh_op()
 
+    #
+    # Tests for valid equivalence classes.
+    #
+
     def testLink(self):
         """
-        Valid ACCESS on link
+        ACCESS on link
         
         Covered valid equivalence classes: 1, 8
-        Covered invalid equivalence classes: -
         """
 
-    def testSanityOnDir(self):
+        path = nfs4lib.str2pathname(self.linkfile)
+        lookupop = self.ncl.lookup_op(path)
+        accessop = self.ncl.access_op(ACCESS4_READ)
+        res = self.do_compound([self.putrootfhop, lookupop, accessop])
+        self.assert_OK(res)
+
+    def testBlock(self):
+        """
+        ACCESS on block device
+
+        Covered valid equivalence classes: 2, 8
+        """
+        path = nfs4lib.str2pathname(self.blockfile)
+        lookupop = self.ncl.lookup_op(path)
+        accessop = self.ncl.access_op(ACCESS4_READ)
+        res = self.do_compound([self.putrootfhop, lookupop, accessop])
+        self.assert_OK(res)
+
+    def testChar(self):
+        """
+        ACCESS on char device
+
+        Covered valid equivalence classes: 3, 8
+        """
+        path = nfs4lib.str2pathname(self.charfile)
+        lookupop = self.ncl.lookup_op(path)
+        accessop = self.ncl.access_op(ACCESS4_READ)
+        res = self.do_compound([self.putrootfhop, lookupop, accessop])
+        self.assert_OK(res)
+
+    def testSocket(self):
+        """
+        ACCESS on socket device
+
+        Covered valid equivalence classes: 4, 8
+        """
+        path = nfs4lib.str2pathname(self.socketfile)
+        lookupop = self.ncl.lookup_op(path)
+        accessop = self.ncl.access_op(ACCESS4_READ)
+        res = self.do_compound([self.putrootfhop, lookupop, accessop])
+        self.assert_OK(res)
+
+    def testFIFO(self):
+        """
+        ACCESS on FIFO device
+
+        Covered valid equivalence classes: 5, 8
+        """
+        path = nfs4lib.str2pathname(self.fifofile)
+        lookupop = self.ncl.lookup_op(path)
+        accessop = self.ncl.access_op(ACCESS4_READ)
+        res = self.do_compound([self.putrootfhop, lookupop, accessop])
+        self.assert_OK(res)
+
+    def testDir(self):
         """All valid combinations of ACCESS arguments on directory
 
-        The ACCESS operation takes an uint32_t as an argument, which is
-        bitwised-or'd with zero or more of all ACCESS4* constants. This
-        component tests all valid combinations of these constants. It also
-        verifies that the server does not respond with an right in "access"
-        but not in "supported". 
+        Covered valid equivalence classes: 6, 8
+
+        Comments: The ACCESS operation takes an uint32_t as an
+        argument, which is bitwised-or'd with zero or more of all
+        ACCESS4* constants. This component tests all valid
+        combinations of these constants. It also verifies that the
+        server does not respond with an right in "access" but not in
+        "supported".
         """
+        
         for accessop in self.valid_access_ops():
             res = self.do_compound([self.putrootfhop, accessop])
             self.assert_OK(res)
@@ -231,10 +292,12 @@ class AccessTestCase(NFSTestCase):
             self.failIf(access > supported, "access is %d, but supported is %d" % (access, supported))
 
 
-    def testSanityOnFile(self):
+    def testFile(self):
         """All valid combinations of ACCESS arguments on file
 
-        Se testSanityOnDir.
+        Covered valid equivalence classes: 8, 10
+
+        Comments: See testDir. 
         """
         path = nfs4lib.str2pathname(self.normfile)
         lookupop = self.ncl.lookup_op(path)
@@ -248,11 +311,42 @@ class AccessTestCase(NFSTestCase):
             # Server should not return an access bit if this bit is not in supported. 
             self.failIf(access > supported, "access is %d, but supported is %d" % (access, supported))
 
+    #
+    # Tests for invalid equivalence classes.
+    #
+    def testWithoutFh(self):
+        """ACCESS should return NFS4ERR_NOFILEHANDLE if called without filehandle.
+
+        Covered invalid equivalence classes: 7
+        
+        """
+        accessop = self.ncl.access_op(ACCESS4_READ)
+        res = self.do_compound([accessop])
+        self.failUnlessEqual(res.status, NFS4ERR_NOFILEHANDLE)
+
+
+    def testInvalids(self):
+        """ACCESS should fail on invalid arguments
+
+        Covered invalid equivalence classes: 9
+
+        Comments: ACCESS should return with NFS4ERR_INVAL if called
+        with an illegal access request (eg. an integer with bits set
+        that does not correspond to any ACCESS4* constant).
+        """
+        for accessop in self.invalid_access_ops():
+            res = self.do_compound([self.putrootfhop, accessop])
+            self.failUnlessEqual(res.status, NFS4ERR_INVAL,
+                                 "server accepts invalid ACCESS request with NFS4_OK, "
+                                 "should be NFS4ERR_INVAL")
+    #
+    # Misc. tests.
+    #
     def testNoExecOnDir(self):
         """ACCESS4_EXECUTE should never be returned for directory
 
-        ACCESS4_EXECUTE has no meaning for directories and should not be
-        returned in "access" or "supported". 
+        Comments: ACCESS4_EXECUTE has no meaning for directories and
+        should not be returned in "access" or "supported".
         """
         for accessop in self.valid_access_ops():
             res = self.do_compound([self.putrootfhop, accessop])
@@ -267,28 +361,7 @@ class AccessTestCase(NFSTestCase):
             self.failIf(access & ACCESS4_EXECUTE,
                         "server returned ACCESS4_EXECUTE for root dir (access=%d)" % access)
 
-    def testInvalids(self):
-        """ACCESS should fail on invalid arguments
-
-        ACCESS should return with NFS4ERR_INVAL if called with an illegal
-        access request (eg. an integer with bits set that does not correspond to
-        any ACCESS4* constant).
-        """
-        for accessop in self.invalid_access_ops():
-            res = self.do_compound([self.putrootfhop, accessop])
-            self.failUnlessEqual(res.status, NFS4ERR_INVAL,
-                                 "server accepts invalid ACCESS request with NFS4_OK, "
-                                 "should be NFS4ERR_INVAL")
-
-    def testWithoutFh(self):
-        """ACCESS should fail without (cfh)
-
-        ACCESS should return NFS4ERR_NOFILEHANDLE if called without filehandle.
-        """
-        accessop = self.ncl.access_op(ACCESS4_READ)
-        res = self.do_compound([accessop])
-        self.failUnlessEqual(res.status, NFS4ERR_NOFILEHANDLE)
-
+    
 
 class CommitTestCase(NFSTestCase):
     """Test COMMIT operation.
