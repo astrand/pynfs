@@ -184,6 +184,7 @@ class ClientApp(cmd.Cmd):
         operations.append(getfhop)
 
         res = self.ncl.compound(operations)
+        nfs4lib.check_result(res)
         getfhresult = res.resarray[-1].arm
         fh = getfhresult.arm.object
         
