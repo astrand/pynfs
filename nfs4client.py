@@ -21,7 +21,8 @@
 # TODO:
 # completion: should not complete commands as arguments.
 # Handle errors such as NFS4ERR_RESOURCE and NFS4ERR_DELAY.
-# Move LOOKUP handling to common function. 
+# Move LOOKUP handling to common function.
+# State handling is broken. 
 
 from nfs4constants import *
 from nfs4types import *
