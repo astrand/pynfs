@@ -19,3 +19,10 @@ additional objects, but should use the tmp directory. Test cases need
 not to delete created objects; failed test cases are unable to do so
 anyway. Instead, test cases creating objects should remove the object
 in question before trying the creation. 
+
+
+Test case preparation failure
+=============================
+If the preparation for a test case (such as creating a directory in
+preparation for testing REMOVE) fails, the test case should be skipped
+with a warning. 
