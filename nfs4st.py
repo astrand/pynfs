@@ -3572,9 +3572,7 @@ Options:
 Examples:
   %(progName)s                               - run default set of tests
   %(progName)s MyTestSuite                   - run suite 'MyTestSuite'
-  %(progName)s MyTestCase.testSomething      - run MyTestCase.testSomething
-  %(progName)s MyTestCase                    - run all 'test*' test methods
-                                               in MyTestCase
+  %(progName)s MyTestSuite.testSomething     - run MyTestCase.testSomething
 """
     def parseArgs(self, argv):
         import getopt
