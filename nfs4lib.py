@@ -527,6 +527,25 @@ def opaque2long(data):
 
     return result
 
+def long2opaque(integer, pad_to=None):
+    import struct
+    # Make sure we are dealing with longs.
+    l = long(integer)
+    result = ""
+    # Encode 4 bytes at a time.
+    while l:
+        mask = 0xffffffff
+        lowest_bits = l & mask
+        l = l >> 32
+        result = struct.pack(">L", lowest_bits) + result
+
+    if pad_to:
+        if len(result) < pad_to:
+            pad_bytes = "\x00" * (pad_to - len(result))
+            result = pad_bytes + result
+
+    return result
+
 def intlist2long(intlist):
     # Make sure we are dealing with longs.
     # (unpack_uint in xdrlib returns an integer if possible, a long otherwise.)
