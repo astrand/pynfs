@@ -301,6 +301,6 @@ if __name__ == "__main__":
 
     directory = os.path.join(directory, "nfs4st")
         
-    ncl = nfs4lib.create_client(host, 2049, "udp", uid=0, gid=0)
+    ncl = nfs4lib.create_client(host, port, "auto", uid=0, gid=0)
     main(ncl, directory)
 
