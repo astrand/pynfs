@@ -3118,6 +3118,27 @@ class SecinfoSuite(NFSSuite):
 
         self.failIf(not found_rpcsec_gss,
                     "SECINFO did not return (mandatory) flavor RPCSEC_GSS")
+
+
+    def _assert_noent(self, name):
+        lookupops = self.ncl.lookup_path(self.dirfile)
+        operations = [self.putrootfhop] + lookupops
+        operations.append(self.ncl.secinfo_op(name))
+        
+        res = self.do_compound(operations)
+        self.assert_status(res, [NFS4ERR_NOENT])
+
+    def testDots(self):
+        """SECINFO on . and .. should return NFS4ERR_ENOENT in /doc
+
+        Extra test
+        """
+        # . should not exist in doc dir
+        self._assert_noent(".")
+
+        # .. should not exist in doc dir 
+        self._assert_noent("..")
+
         
 class SetattrSuite(NFSSuite):
     """Test operation 34: SETATTR
