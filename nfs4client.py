@@ -44,8 +44,11 @@ options:
 -d level, --debuglevel level set debuglevel
 -p, --pythonmode             enable Python interpreter mode
 -c, --commandstring string   execute semicolon separated commands
+    --uid=<uid>              Use custom <uid> with AUTH_UNIX security
+    --gid=<gid>              Use custom <gid> with AUTH_UNIX security
 
 Default transport is to try TCP first, then UDP.
+nfs4client uses the RPC security flavor AUTH_UNIX. 
 """
 
 VERSION = "0.0"
@@ -121,13 +124,11 @@ else:
     Completer = RealCompleter
 
 class ClientApp(cmd.Cmd):
-    def __init__(self, transport, host, port, directory, pythonmode,
+    def __init__(self, ncl, directory, pythonmode,
                  debuglevel):
         cmd.Cmd.__init__(self)
-        self.transport = transport
-        self.host = host
-        self.port = port
-
+        self.ncl = ncl
+        
         self.completer = Completer()
         self.completer.pythonmode = pythonmode
 
@@ -141,7 +142,6 @@ class ClientApp(cmd.Cmd):
         self.do_cd(directory)
 
     def _connect(self):
-        self.ncl = nfs4lib.create_client(self.host, self.port, self.transport)
         # Use debugtags?
         self.ncl.debugtags = (self.debuglevel and 1)
         self.ncl.init_connection()
@@ -579,7 +579,8 @@ if __name__ == "__main__":
     try:
         opts, args = my_getopt(sys.argv[1:], "hutd:pc:",
                                ["help", "udp", "tcp", "debuglevel=",
-                                "pythonmode", "commandstring="])
+                                "pythonmode", "commandstring=",
+                                "uid=", "gid="])
     except getopt.GetoptError, e:
         print >> sys.stderr, e
         usage()
@@ -589,6 +590,7 @@ if __name__ == "__main__":
     debuglevel = 0
     pythonmode = 0
     commandstring = None
+    kwargs = {}
 
     for o, a in opts:
         if o in ("-h", "--help"):
@@ -608,7 +610,10 @@ if __name__ == "__main__":
             pythonmode = 1
         if o in ("-c", "--commandstring"):
             commandstring = a
-
+        if o == "--uid":
+            kwargs["uid"] = int(a)
+        if o == "--gid":
+            kwargs["gid"] = int(a)
 
     # By now, there should only be one argument left.
     if len(args) != 1:
@@ -629,7 +634,8 @@ if __name__ == "__main__":
         if not directory:
             directory = "/"
 
-    c = ClientApp(transport, host, port, directory, pythonmode, debuglevel)
+    ncl = nfs4lib.create_client(host, port, transport, **kwargs)
+    c = ClientApp(ncl, directory, pythonmode, debuglevel)
 
     commands = []
     if commandstring:
