@@ -141,6 +141,10 @@ known_basics = {"int" : "pack_int",
 
 known_types = {}
 
+constheader = """
+FALSE = 0
+TRUE = 1
+"""
 
 typesheader = """
 from %s import *
@@ -1013,6 +1017,7 @@ if __name__ == "__main__":
 
     # Write beginning of const file
     const_out.write(comment_string)
+    const_out.write(constheader)
 
     # Write beginning of types file.
     types_out.write(comment_string)
