@@ -1282,6 +1282,7 @@ class LinkTestCase(NFSTestCase):
         """
         # CITI crashes on zero length names.
         # FIXME: remove return
+        self.info_message("(DISABLED)")
         return
         
         self._remove_object()
