@@ -125,6 +125,10 @@ class NFSTestCase(unittest.TestCase):
 
         return result
 
+    def setUp(self):
+        self.connect()
+        self.putrootfhop = self.ncl.putrootfh_op()
+
 
 class CompoundTestCase(NFSTestCase):
     """Test COMPOUND procedure
@@ -149,10 +153,6 @@ class CompoundTestCase(NFSTestCase):
             invalid operations array(5)
 
     """
-
-    def setUp(self):
-        self.connect()
-        self.putrootfhop = self.ncl.putrootfh_op()
 
     #
     # Testcases covering valid equivalence classes.
@@ -272,10 +272,6 @@ class AccessTestCase(NFSTestCase):
             result.append(self.ncl.access_op(i))
         return result
     
-    def setUp(self):
-        self.connect()
-        self.putrootfhop = self.ncl.putrootfh_op()
-
     #
     # Testcases covering valid equivalence classes.
     #
@@ -424,10 +420,6 @@ class CommitTestCase(NFSTestCase):
     Note: We do not examine the writeverifier in any way. It's hard
     since it can change at any time.
     """
-
-    def setUp(self):
-        self.connect()
-        self.putrootfhop = self.ncl.putrootfh_op()
 
     #
     # Testcases covering valid equivalence classes.
@@ -625,8 +617,7 @@ class CreateTestCase(NFSTestCase):
     """
     
     def setUp(self):
-        self.connect()
-        self.putrootfhop = self.ncl.putrootfh_op()
+        NFSTestCase.setUp(self)
         self.obj_dir = "/tmp"
         self.obj_name = "object1"
 
@@ -850,11 +841,6 @@ class GetattrTestCase(NFSTestCase):
             requests with FATTR4_*_SET (10)
     
     """
-
-    def setUp(self):
-        self.connect()
-        self.putrootfhop = self.ncl.putrootfh_op()
-
     #
     # Testcases covering valid equivalence classes.
     #
@@ -1028,11 +1014,6 @@ class GetFhTestCase(NFSTestCase):
         Invalid equivalence classes:
             invalid filehandle(8)
     """
-
-    def setUp(self):
-        self.connect()
-        self.putrootfhop = self.ncl.putrootfh_op()
-
     #
     # Testcases covering valid equivalence classes.
     #
@@ -1095,8 +1076,7 @@ class LinkTestCase(NFSTestCase):
     """
 
     def setUp(self):
-        self.connect()
-        self.putrootfhop = self.ncl.putrootfh_op()
+        NFSTestCase.setUp(self)
         self.obj_dir = "/tmp"
         self.obj_name = "link1"
 
@@ -1334,10 +1314,6 @@ class LookupTestCase(NFSTestCase):
             array with non-utf8 components(10)
             array with non-dir components not last(11)
     """
-    def setUp(self):
-        self.connect()
-        self.putrootfhop = self.ncl.putrootfh_op()
-
     #
     # Testcases covering valid equivalence classes.
     #
@@ -1479,10 +1455,6 @@ class LookuppTestCase(NFSTestCase):
 
 
     """
-    def setUp(self):
-        self.connect()
-        self.putrootfhop = self.ncl.putrootfh_op()
-
     #
     # Testcases covering valid equivalence classes.
     #
@@ -1568,10 +1540,6 @@ class NverifyTestCase(NFSTestCase):
         Invalid equivalence classes:
             -
     """
-    def setUp(self):
-        self.connect()
-        self.putrootfhop = self.ncl.putrootfh_op()
-
     #
     # Testcases covering valid equivalence classes.
     #
@@ -1715,10 +1683,6 @@ class OpenattrTestCase(NFSTestCase):
             attribute directory(8)
             named attribute(9)
     """
-    def setUp(self):
-        self.connect()
-        self.putrootfhop = self.ncl.putrootfh_op()
-
     #
     # Testcases covering valid equivalence classes.
     #
@@ -1809,10 +1773,6 @@ class PutfhTestCase(NFSTestCase):
         Invalid equivalence classes:
             invalid filehandle(10)
     """
-    def setUp(self):
-        self.connect()
-        self.putrootfhop = self.ncl.putrootfh_op()
-
     #
     # Testcases covering valid equivalence classes.
     #
@@ -1865,9 +1825,6 @@ class PutpubfhTestCase(NFSTestCase):
     Input Condition: -
     
     """
-    def setUp(self):
-        self.connect()
-
     def testOp(self):
         """Testing PUTPUBFH
 
@@ -1885,9 +1842,6 @@ class PutrootfhTestCase(NFSTestCase):
 
     Input Condition: -
     """
-    def setUp(self):
-        self.connect()
-
     def testOp(self):
         """Testing PUTROOTFH
 
@@ -1936,10 +1890,6 @@ class ReadTestCase(NFSTestCase):
             invalid stateid(20)
     
     """
-    def setUp(self):
-        self.connect()
-        self.putrootfhop = self.ncl.putrootfh_op()
-
     #
     # Testcases covering valid equivalence classes.
     #
@@ -2096,11 +2046,6 @@ class ReaddirTestCase(NFSTestCase):
             requests with FATTR4_*_SET (61)
             
     """
-
-    def setUp(self):
-        self.connect()
-        self.putrootfhop = self.ncl.putrootfh_op()
-
     #
     # Testcases covering valid equivalence classes.
     #
@@ -2218,10 +2163,6 @@ class ReadlinkTestCase(NFSTestCase):
             directory(12)
             no filehandle(13)
     """
-    def setUp(self):
-        self.connect()
-        self.putrootfhop = self.ncl.putrootfh_op()
-
     #
     # Testcases covering valid equivalence classes.
     #
