@@ -222,7 +222,7 @@ class NFSSuite(unittest.TestCase):
         """Return an invalid UTF-8 string"""
         return "\xc0\xc1"
 
-    def _remove_object(self, name=None, directory=None):
+    def remove_object(self, name=None, directory=None):
         """Remove object in /tmp, if it exists. Return false on failure.
         object defaults to self.obj_name
         """
@@ -281,7 +281,7 @@ class NFSSuite(unittest.TestCase):
         if name in names:
             # Strange, this file already exists
             # Try to remove it.
-            return self._remove_object(name, directory)
+            return self.remove_object(name, directory)
         else:
             return 1
     
@@ -779,7 +779,7 @@ class CreateSuite(NFSSuite):
 
         Covered valid equivalence classes: 10, 20, 30, 40, 50
         """
-        if not self._remove_object(): return
+        if not self.remove_object(): return
         operations = [self.putrootfhop] +  self.lookup_dir_ops
         objtype = createtype4(self.ncl, type=NF4LNK, linkdata="/etc/X11")
 
@@ -796,7 +796,7 @@ class CreateSuite(NFSSuite):
 
         Covered valid equivalence classes: 10, 21, 30, 40, 50
         """
-        if not self._remove_object(): return
+        if not self.remove_object(): return
         operations = [self.putrootfhop] + self.lookup_dir_ops
         
         devdata = specdata4(self.ncl, 1, 2)
@@ -814,7 +814,7 @@ class CreateSuite(NFSSuite):
 
         Covered valid equivalence classes: 10, 22, 30, 40, 50
         """
-        if not self._remove_object(): return
+        if not self.remove_object(): return
         operations = [self.putrootfhop] +  self.lookup_dir_ops
         devdata = specdata4(self.ncl, 1, 2)
         objtype = createtype4(self.ncl, type=NF4CHR, devdata=devdata)
@@ -831,7 +831,7 @@ class CreateSuite(NFSSuite):
 
         Covered valid equivalence classes: 10, 23, 30, 40, 50
         """
-        if not self._remove_object(): return
+        if not self.remove_object(): return
         operations = [self.putrootfhop] +  self.lookup_dir_ops
         objtype = createtype4(self.ncl, type=NF4SOCK)
         createop = self.ncl.create(objtype, self.obj_name)
@@ -847,7 +847,7 @@ class CreateSuite(NFSSuite):
 
         Covered valid equivalence classes: 10, 24, 30, 40, 50
         """
-        if not self._remove_object(): return
+        if not self.remove_object(): return
         operations = [self.putrootfhop] + self.lookup_dir_ops
         objtype = createtype4(self.ncl, type=NF4FIFO)
         createop = self.ncl.create(objtype, self.obj_name)
@@ -863,7 +863,7 @@ class CreateSuite(NFSSuite):
 
         Covered valid equivalence classes: 10, 25, 30, 40, 50
         """
-        if not self._remove_object(): return
+        if not self.remove_object(): return
         operations = [self.putrootfhop] + self.lookup_dir_ops
         objtype = createtype4(self.ncl, type=NF4DIR)
         createop = self.ncl.create(objtype, self.obj_name)
@@ -882,7 +882,7 @@ class CreateSuite(NFSSuite):
 
         Covered invalid equivalence classes: 11
         """
-        if not self._remove_object(): return
+        if not self.remove_object(): return
         lookupops = self.ncl.lookup_path(self.regfile)
         
         operations = [self.putrootfhop] + lookupops
@@ -898,7 +898,7 @@ class CreateSuite(NFSSuite):
 
         Covered invalid equivalence classes: 12
         """
-        if not self._remove_object(): return
+        if not self.remove_object(): return
         objtype = createtype4(self.ncl, type=NF4DIR)
         createop = self.ncl.create(objtype, self.obj_name)
 
@@ -910,7 +910,7 @@ class CreateSuite(NFSSuite):
 
         Covered invalid equivalence classes: 31
         """
-        if not self._remove_object(): return
+        if not self.remove_object(): return
         operations = [self.putrootfhop] + self.lookup_dir_ops
         objtype = createtype4(self.ncl, type=NF4DIR)
         createop = self.ncl.create(objtype, "")
@@ -924,7 +924,7 @@ class CreateSuite(NFSSuite):
 
         Covered invalid equivalence classes: 26
         """
-        if not self._remove_object(): return
+        if not self.remove_object(): return
         operations = [self.putrootfhop] + self.lookup_dir_ops
 
         # nfs4types.createtype4 does not allow packing invalid types
@@ -945,7 +945,7 @@ class CreateSuite(NFSSuite):
 
         Covered invalid equivalence classes: 41
         """
-        if not self._remove_object(): return
+        if not self.remove_object(): return
         operations = [self.putrootfhop] + self.lookup_dir_ops
 
         objtype = createtype4(self.ncl, type=NF4DIR)
@@ -968,7 +968,7 @@ class CreateSuite(NFSSuite):
 
         Covered invalid equivalence classes: 51
         """
-        if not self._remove_object(): return
+        if not self.remove_object(): return
         operations = [self.putrootfhop] + self.lookup_dir_ops
 
         objtype = createtype4(self.ncl, type=NF4DIR)
@@ -1342,7 +1342,7 @@ class LinkSuite(NFSSuite):
 
         Covered valid equivalence classes: 1, 9, 12
         """
-        if not self._remove_object(): return
+        if not self.remove_object(): return
         operations = self._prepare_operation(self.regfile)
 
         # Link operation
@@ -1356,7 +1356,7 @@ class LinkSuite(NFSSuite):
 
         Covered valid equivalence classes: 2, 9, 12
         """
-        if not self._remove_object(): return
+        if not self.remove_object(): return
         operations = self._prepare_operation(self.linkfile)
 
         # Link operation
@@ -1374,7 +1374,7 @@ class LinkSuite(NFSSuite):
 
         Covered valid equivalence classes: 3, 9, 12
         """
-        if not self._remove_object(): return
+        if not self.remove_object(): return
         operations = self._prepare_operation(self.blockfile)
 
         # Link operation
@@ -1388,7 +1388,7 @@ class LinkSuite(NFSSuite):
 
         Covered valid equivalence classes: 4, 9, 12
         """
-        if not self._remove_object(): return
+        if not self.remove_object(): return
         operations = self._prepare_operation(self.charfile)
         
         # Link operation
@@ -1402,7 +1402,7 @@ class LinkSuite(NFSSuite):
 
         Covered valid equivalence classes: 5, 9, 12
         """
-        if not self._remove_object(): return
+        if not self.remove_object(): return
         operations = self._prepare_operation(self.socketfile)
         
         # Link operation
@@ -1417,7 +1417,7 @@ class LinkSuite(NFSSuite):
 
         Covered valid equivalence classes: 6, 9, 12
         """
-        if not self._remove_object(): return
+        if not self.remove_object(): return
         operations = self._prepare_operation(self.fifofile)
         
         # Link operation
@@ -1435,7 +1435,7 @@ class LinkSuite(NFSSuite):
 
         Covered invalid equivalence classes: 7
         """
-        if not self._remove_object(): return
+        if not self.remove_object(): return
         operations = self._prepare_operation(self.dirfile)
         
         # Link operation
@@ -1461,7 +1461,7 @@ class LinkSuite(NFSSuite):
 
         Covered invalid equivalence classes: 10
         """
-        if not self._remove_object(): return
+        if not self.remove_object(): return
 
         # Put root FH
         operations = [self.putrootfhop]
@@ -1485,7 +1485,7 @@ class LinkSuite(NFSSuite):
 
         Covered invalid equivalence classes: 13
         """
-        if not self._remove_object(): return
+        if not self.remove_object(): return
         operations = self._prepare_operation(self.regfile)
 
         # Link operation
@@ -1498,7 +1498,7 @@ class LinkSuite(NFSSuite):
     # Extra tests.
     #
     def _do_link(self, newname):
-        if not self._remove_object(): return
+        if not self.remove_object(): return
         operations = self._prepare_operation(self.regfile)
 
         linkop = self.ncl.link_op(newname)
