@@ -80,6 +80,13 @@ class EmptyCompoundRes(NFSException):
     def __str__(self):
         return "empty COMPOUND result"
 
+class ChDirError(NFSException):
+    def __init__(self, dir):
+        self.dir = dir
+    
+    def __str__(self):
+        return "Cannot change directory to %s" % self.dir
+
 class DummyNcl:
     def __init__(self, packer=None, unpacker=None):
 	self.packer = packer
@@ -90,9 +97,8 @@ class PartialNFS4Client:
         # Client state variables
         self.clientid = None
         self.verifier = None
-        # Current directory. A string, like /doc/foo.
-	# FIXME: Consider using a list of components instead. 
-        self.cwd = "/"
+        # Current directory. A list of components, like ["doc", "porting"]
+        self.cwd = []
         # Last seqid
         self.seqid = 0
 
@@ -137,17 +143,39 @@ class PartialNFS4Client:
         self.seqid = self.seqid % 2**32L
         return self.seqid
 
-    def get_pathcomps(self, filename):
-	if filename[0] == "/":
+    def get_pathcomps_rel(self, filename):
+        """Transform a unix-like pathname, relative to self.ncl,
+        to a list of components"""
+        if filename[0] == "/":
             # Absolute path
-            # Remove slash, begin from root. 
-            filename = filename[1:]
             pathcomps = []
         else:
-            # Relative path. Begin with cwd.
-            pathcomps = unixpath2comps(self.cwd)
+            pathcomps = self.cwd
 
-	return unixpath2comps(filename, pathcomps)
+        return unixpath2comps(filename, pathcomps)
+
+    def cd_dotdot(self):
+        self.cwd = self.cwd[:-1]
+
+    def try_cd(self, dir_component):
+        # FIXME: Better error messages. 
+        candidate_cwd = self.cwd + [dir_component]
+        lookupops = self.lookup_path(candidate_cwd)
+        operations = [self.putrootfh_op()] + lookupops
+        getattrop = self.getattr([FATTR4_TYPE])
+        operations.append(getattrop)
+
+        try:
+            res = self.compound(operations)
+            check_result(res)
+            obj_type = opaque2long(res.resarray[-1].arm.arm.obj_attributes.attr_vals)
+            if not obj_type == NF4DIR:
+                raise ChDirError(dir_component)
+            
+        except rpc.RPCException:
+            raise ChDirError(dir_component)
+
+        self.cwd = candidate_cwd
 
     # 
     # Operations. These come in two flawors: <operation>_op and <operation>.
@@ -613,6 +641,12 @@ def unixpath2comps(str, pathcomps=[]):
             pathcomps.append(component)
     return pathcomps
 
+def comps2unixpath(comps):
+    result = ""
+    for component in comps:
+        result += "/" + component
+    return result
+
 def opaque2long(data):
     import struct
     result = 0L
@@ -835,8 +869,9 @@ class NFS4OpenFile:
         self.__dict__[name] = val
 
     def open(self, filename, mode="r", bufsize=BUFSIZE):
+        # filename is a normal unix-path, relative to self.ncl.cwd.
         operations = [self.ncl.putrootfh_op()]
-	pathcomps = self.ncl.get_pathcomps(filename)
+	pathcomps = self.ncl.get_pathcomps_rel(filename)
         operations.extend(self.ncl.lookup_path(pathcomps[:-1]))
         filename = pathcomps[-1]
 
