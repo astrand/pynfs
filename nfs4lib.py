@@ -908,7 +908,7 @@ class UDPNFS4Client(PartialNFS4Client, rpc.RawUDPClient):
 
 class TCPNFS4Client(PartialNFS4Client, rpc.RawTCPClient):
     def __init__(self, host, port=NFS_PORT):
-        rpc.RawTCPClient.__init__(self, host, NFS_PROGRAM, NFS_VERSION, port)
+        rpc.RawTCPClient.__init__(self, host, NFS4_PROGRAM, NFS_V4, port)
         PartialNFS4Client.__init__(self)
 
     # FIXME: As UDPNFS4Client. 
