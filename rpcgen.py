@@ -967,11 +967,17 @@ def p_declaration_4(t):
 # program-def
 def p_program_def(t):
     '''program_def : PROGRAM ID LBRACE version_def version_def_list RBRACE EQUALS NUMBER SEMI'''
+    id = t[2]
+    prog_num = t[8]
+    print >> const_out, "%s = %s" % (id, prog_num)
 
 
 # version-def
 def p_version_def(t):
     '''version_def : VERSION ID LBRACE procedure_def procedure_def_list RBRACE EQUALS NUMBER SEMI'''
+    id = t[2]
+    version = t[8]
+    print >> const_out, "%s = %s" % (id, version)
 
 def p_version_def_list(t):
     '''version_def_list : version_def_list version_def
@@ -981,6 +987,9 @@ def p_version_def_list(t):
 # procedure-def
 def p_procedure_def(t):
     '''procedure_def : rpc_type_specifier ID LPAREN rpc_type_specifier type_specifier_list RPAREN EQUALS NUMBER SEMI'''
+    id = t[2]
+    proc_num = t[8];
+    print >> const_out, "%s = %s" % (id, proc_num)
 
 def p_procedure_def_list(t):
     '''procedure_def_list : procedure_def_list procedure_def 
