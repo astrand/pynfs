@@ -20,7 +20,15 @@
 
 # TODO:
 # Extend unittest with warnings.
-# Handle errors such as NFS4ERR_RESOURCE and NFS4ERR_DELAY. 
+#
+# Handle errors such as NFS4ERR_RESOURCE and NFS4ERR_DELAY.
+#
+# More tests on strings not obeying UTF-8.
+#
+# filehandles are split into eq. classes "valid filehandle" and
+# "invalid filehandle". There should probably be a class "no filehandle" as
+# well. Currently, "invalid filehandle" are tested by doing operations without
+# filehandles. 
 
 # Note on docstrings: Each class inheriting NFSTestCase is referred to as a
 # "test case". Each test* method is a "invocable component", sometimes called
@@ -607,16 +615,18 @@ class CreateTestCase(NFSTestCase):
         pathname = nfs4lib.str2pathname(self.obj_dir)
         self.lookup_dir_op = self.ncl.lookup_op(pathname)
 
+    def _remove_object(self):
         # Make sure the object to create does not exist.
+        # This cannot be done in setUp(), since assertion errors
+        # are treated like errors (not failures). 
         # This tests at the same time the REMOVE operation. Not much
-        # we can do about it. 
+        # we can do about it.
         operations = [self.ncl.putrootfh_op()]
         operations.append(self.lookup_dir_op)
         operations.append(self.ncl.remove_op(self.obj_name))
 
         res = self.do_compound(operations)
         self.assert_status(res, [NFS4_OK, NFS4ERR_NOENT])
-
 
     #
     # Testcases covering valid equivalence classes.
@@ -626,7 +636,7 @@ class CreateTestCase(NFSTestCase):
 
         Covered valid equivalence classes: 1, 4, 6
         """
-
+        self._remove_object()
         operations = [self.putrootfhop, self.lookup_dir_op]
         objtype = createtype4(self.ncl, type=NF4LNK, linkdata="/etc/X11")
         createop = self.ncl.create_op(self.obj_name, objtype)
@@ -642,7 +652,7 @@ class CreateTestCase(NFSTestCase):
 
         Covered valid equivalence classes: 1, 4, 7
         """
-
+        self._remove_object()
         operations = [self.putrootfhop, self.lookup_dir_op]
         devdata = specdata4(self.ncl, 1, 2)
         objtype = createtype4(self.ncl, type=NF4BLK, devdata=devdata)
@@ -659,7 +669,7 @@ class CreateTestCase(NFSTestCase):
 
         Covered valid equivalence classes: 1, 4, 8
         """
-
+        self._remove_object()
         operations = [self.putrootfhop, self.lookup_dir_op]
         devdata = specdata4(self.ncl, 1, 2)
         objtype = createtype4(self.ncl, type=NF4CHR, devdata=devdata)
@@ -676,7 +686,7 @@ class CreateTestCase(NFSTestCase):
 
         Covered valid equivalence classes: 1, 4, 9
         """
-
+        self._remove_object()
         operations = [self.putrootfhop, self.lookup_dir_op]
         objtype = createtype4(self.ncl, type=NF4SOCK)
         createop = self.ncl.create_op(self.obj_name, objtype)
@@ -692,7 +702,7 @@ class CreateTestCase(NFSTestCase):
 
         Covered valid equivalence classes: 1, 4, 10
         """
-        
+        self._remove_object()
         operations = [self.putrootfhop, self.lookup_dir_op]
         objtype = createtype4(self.ncl, type=NF4FIFO)
         createop = self.ncl.create_op(self.obj_name, objtype)
@@ -708,7 +718,7 @@ class CreateTestCase(NFSTestCase):
 
         Covered valid equivalence classes: 1, 4, 11
         """
-
+        self._remove_object()
         operations = [self.putrootfhop, self.lookup_dir_op]
         objtype = createtype4(self.ncl, type=NF4DIR)
         createop = self.ncl.create_op(self.obj_name, objtype)
@@ -727,7 +737,7 @@ class CreateTestCase(NFSTestCase):
 
         Covered invalid equivalence classes: 2
         """
-        
+        self._remove_object()
         pathname = nfs4lib.str2pathname(self.normfile)
         lookupop = self.ncl.lookup_op(pathname)
         
@@ -744,7 +754,7 @@ class CreateTestCase(NFSTestCase):
 
         Covered invalid equivalence classes: 3
         """
-        
+        self._remove_object()
         objtype = createtype4(self.ncl, type=NF4DIR)
         createop = self.ncl.create_op(self.obj_name, objtype)
 
@@ -756,6 +766,7 @@ class CreateTestCase(NFSTestCase):
 
         Covered invalid equivalence classes: 5
         """
+        self._remove_object()
         operations = [self.putrootfhop, self.lookup_dir_op]
         objtype = createtype4(self.ncl, type=NF4DIR)
         createop = self.ncl.create_op("", objtype)
@@ -769,6 +780,7 @@ class CreateTestCase(NFSTestCase):
 
         Covered invalid equivalence classes: 12
         """
+        self._remove_object()
         operations = [self.putrootfhop, self.lookup_dir_op]
 
         # nfs4types.createtype4 does not allow packing invalid types
@@ -989,6 +1001,9 @@ class GetFhTestCase(NFSTestCase):
         self.connect()
         self.putrootfhop = self.ncl.putrootfh_op()
 
+    #
+    # Testcases covering valid equivalence classes.
+    #
     def testAllObjects(self):
         """GETFH on all type of objects
 
@@ -997,8 +1012,10 @@ class GetFhTestCase(NFSTestCase):
         for lookupop in self.lookup_all_objects():
             getfhop = self.ncl.getfh_op()
             res = self.do_compound([self.putrootfhop, lookupop, getfhop])
-            self.assert_OK(res)
-
+            self.assert_OK(res)            
+    #
+    # Testcases covering invalid equivalence classes.
+    #
     def testNoFh(self):
         """GETFH should fail with NFS4ERR_NOFILEHANDLE if no (cfh)
 
@@ -1010,6 +1027,239 @@ class GetFhTestCase(NFSTestCase):
         getfhop = self.ncl.getfh_op()
         res = self.do_compound([getfhop])
         self.assert_status(res, [NFS4ERR_NOFILEHANDLE])
+
+class LinkTestCase(NFSTestCase):
+    """Test LINK operation
+
+    Equivalence partitioning:
+
+    Input Condition: saved filehandle
+        Valid equivalence classes:
+            file(1)
+            link(2)
+            block(3)
+            char(4)
+            socket(5)
+            FIFO(6)
+        Invalid equivalence classes:
+            dir(7)
+            invalid filehandle(8)
+    Input Condition: currrent filehandle
+        Valid equivalence classes:
+            dir(9)
+        Invalid equivalence classes:
+            not dir(10)
+            invalid filehandle(11)
+    Input Condition: newname
+        Valid equivalence classes:
+            valid name(12)
+        Invalid equivalence classes:
+            zerolength(13)
+
+    Comments: It's not possible to cover eq. class 12, since saving a filehandle
+    gives a current filehandle as well. 
+    """
+
+    def setUp(self):
+        self.connect()
+        self.putrootfhop = self.ncl.putrootfh_op()
+        self.obj_dir = "/tmp"
+        self.obj_name = "link1"
+
+        pathname = nfs4lib.str2pathname(self.obj_dir)
+        self.lookup_dir_op = self.ncl.lookup_op(pathname)
+
+    def _remove_object(self):
+        # Make sure the object to create does not exist.
+        # This cannot be done in setUp(), since assertion errors
+        # are treated like errors (not failures). 
+        # This tests at the same time the REMOVE operation. Not much
+        # we can do about it.
+        operations = [self.ncl.putrootfh_op()]
+        operations.append(self.lookup_dir_op)
+        operations.append(self.ncl.remove_op(self.obj_name))
+
+        res = self.do_compound(operations)
+        self.assert_status(res, [NFS4_OK, NFS4ERR_NOENT])
+
+    def _prepare_operation(self, sourcefile):
+        # Put root FH
+        operations = [self.putrootfhop]
+
+        # Lookup source and save FH
+        path = nfs4lib.str2pathname(sourcefile)
+        operations.append(self.ncl.lookup_op(path))
+        operations.append(self.ncl.savefh_op())
+
+        # Lookup target directory
+        operations.append(self.putrootfhop)
+        operations.append(self.lookup_dir_op)
+
+        return operations
+    
+    #
+    # Testcases covering valid equivalence classes.
+    #
+    def testFile(self):
+        """LINK a regular file
+
+        Covered valid equivalence classes: 1, 9, 12
+        """
+        self._remove_object()
+        operations = self._prepare_operation(self.normfile)
+
+        # Link operation
+        linkop = self.ncl.link_op(self.obj_name)
+        operations.append(linkop)
+        res = self.do_compound(operations)
+        self.assert_OK(res)
+
+    def testLink(self):
+        # FIXME: Is this allowed? See issue 118. Should the new link
+        # be a link for the symlink itself, or the symlink target?
+        """LINK a symbolic link
+
+        Covered valid equivalence classes: 2, 9, 12
+        """
+        self._remove_object()
+        operations = self._prepare_operation(self.linkfile)
+
+        # Link operation
+        linkop = self.ncl.link_op(self.obj_name)
+        operations.append(linkop)
+        res = self.do_compound(operations)
+        self.assert_OK(res)
+
+    def testBlock(self):
+        """LINK a block device
+
+        Covered valid equivalence classes: 3, 9, 12
+        """
+        self._remove_object()
+        operations = self._prepare_operation(self.blockfile)
+
+        # Link operation
+        linkop = self.ncl.link_op(self.obj_name)
+        operations.append(linkop)
+        res = self.do_compound(operations)
+        self.assert_OK(res)
+
+    def testChar(self):
+        """LINK a character device
+
+        Covered valid equivalence classes: 4, 9, 12
+        """
+        self._remove_object()
+        operations = self._prepare_operation(self.charfile)
+        
+        # Link operation
+        linkop = self.ncl.link_op(self.obj_name)
+        operations.append(linkop)
+        res = self.do_compound(operations)
+        self.assert_OK(res)
+
+    def testSocket(self):
+        """LINK a socket
+
+        Covered valid equivalence classes: 5, 9, 12
+        """
+        self._remove_object()
+        operations = self._prepare_operation(self.socketfile)
+        
+        # Link operation
+        linkop = self.ncl.link_op(self.obj_name)
+        operations.append(linkop)
+        res = self.do_compound(operations)
+        self.assert_OK(res)
+
+    
+    def testFIFO(self):
+        """LINK a FIFO
+
+        Covered valid equivalence classes: 6, 9, 12
+        """
+        self._remove_object()
+        operations = self._prepare_operation(self.fifofile)
+        
+        # Link operation
+        linkop = self.ncl.link_op(self.obj_name)
+        operations.append(linkop)
+        res = self.do_compound(operations)
+        self.assert_OK(res)
+
+    #
+    # Testcases covering invalid equivalence classes.
+    #
+
+    def testDir(self):
+        """LINK a directory should fail with NFS4ERR_ISDIR
+
+        Covered invalid equivalence classes: 7
+        """
+        self._remove_object()
+        operations = self._prepare_operation(self.dirfile)
+        
+        # Link operation
+        linkop = self.ncl.link_op(self.obj_name)
+        operations.append(linkop)
+        res = self.do_compound(operations)
+        self.assert_status(res, [NFS4ERR_ISDIR])
+
+    def testNoSfh(self):
+        """LINK should fail with NFS4ERR_NOFILEHANDLE if no (sfh)
+
+        Covered invalid equivalence classes: 8
+
+        Comments: LINK should fail with NFS4ERR_NOFILEHANDLE if no
+        saved filehandle exists. 
+        """
+        linkop = self.ncl.link_op(self.obj_name)
+        res = self.do_compound([self.putrootfhop, linkop])
+        self.assert_status(res, [NFS4ERR_NOFILEHANDLE])
+
+    def testCfhNotDir(self):
+        """LINK should fail with NFS4ERR_NOTDIR if cfh is not dir
+
+        Covered invalid equivalence classes: 10
+        """
+        self._remove_object()
+
+        # Put root FH
+        operations = [self.putrootfhop]
+
+        # Lookup source and save FH
+        path = nfs4lib.str2pathname(self.normfile)
+        operations.append(self.ncl.lookup_op(path))
+        operations.append(self.ncl.savefh_op())
+
+        # Lookup target directory (a file, this time)
+        operations.append(self.putrootfhop)
+        operations.append(self.ncl.lookup_op(path))
+
+        # Link operation
+        linkop = self.ncl.link_op(self.obj_name)
+        operations.append(linkop)
+        res = self.do_compound(operations)
+        self.assert_status(res, [NFS4ERR_NOTDIR])
+
+    def testZeroLengthName(self):
+        """LINK with zero length new name should fail
+
+        Covered invalid equivalence classes: 13
+        """
+        # CITI crashes on zero length names.
+        # FIXME: remove return
+        return
+        
+        self._remove_object()
+        operations = self._prepare_operation(self.normfile)
+
+        # Link operation
+        linkop = self.ncl.link_op("")
+        operations.append(linkop)
+        res = self.do_compound(operations)
+        self.assert_OK(res)
+
 
 
 class QuietTextTestRunner(unittest.TextTestRunner):
