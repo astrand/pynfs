@@ -402,7 +402,7 @@ class PartialNFS4Client:
 	args = READDIR4args(self, cookie, cookieverf, dircount, maxcount, attr_request)
 	return nfs_argop4(self, argop=OP_READDIR, opreaddir=args)
 
-    def readdir(self, cookie=0, cookieverf="", dircount=2, maxcount=4096, attr_request=[]):
+    def readdir(self, cookie=0, cookieverf="", dircount=4096, maxcount=4096, attr_request=[]):
 	return self.readdir_op(cookie, cookieverf, dircount, maxcount, attr_request)
 
     def readlink_op(self):
