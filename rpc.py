@@ -1,4 +1,6 @@
 
+# Original source from Python 2.2a2. 
+
 # Sun RPC version 2 -- RFC1057.
 
 # XXX The UDP version of the protocol resends requests when it does
