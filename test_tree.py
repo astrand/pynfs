@@ -94,6 +94,9 @@ int main()
     f = open("private/info.txt", "w")
     f.write("Personal data.\n")
     f.close()
+
+    print "Creating symlink src/doc -> ../doc"
+    os.symlink("../doc", "src/doc")
     
 
 if __name__ == "__main__":
