@@ -71,7 +71,9 @@ class PartialNFS4Client:
 
     def setclientid(self, verifier=None, id=None, cb_program=None, r_netid=None, r_addr=None, ):
         if not verifier:
-            verifier = self.gen_random_64()
+            self.verifier = self.gen_random_64()
+        else:
+            self.verifier = verifier
 
         if not id:
             id = self.gen_uniq_id()
@@ -88,12 +90,16 @@ class PartialNFS4Client:
             # FIXME
             r_addr = socket.gethostname()
         
-        client_id = nfs_client_id4(self, verifier=verifier, id=id)
+        client_id = nfs_client_id4(self, verifier=self.verifier, id=id)
         cb_location = clientaddr4(self, r_netid=r_netid, r_addr=r_addr)
         callback = cb_client4(self, cb_program=cb_program, cb_location=cb_location)
-        opsetclientid = SETCLIENTID4args(self, client=client_id, callback=callback)
+        args = SETCLIENTID4args(self, client=client_id, callback=callback)
 
-        return nfs_argop4(self, argop=OP_SETCLIENTID, opsetclientid=opsetclientid)
+        return nfs_argop4(self, argop=OP_SETCLIENTID, opsetclientid=args)
+
+    def setclientid_confirm(self, setclientid_confirm):
+        args = SETCLIENTID_CONFIRM4args(self, setclientid_confirm=setclientid_confirm)
+        return nfs_argop4(self, argop=OP_SETCLIENTID_CONFIRM, opsetclientid_confirm=args)
     
 
 class UDPNFS4Client(PartialNFS4Client, rpc.RawUDPClient):
