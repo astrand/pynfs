@@ -512,7 +512,6 @@ class GetattrTestCase(NFSTestCase):
     """
 
     # FIXME: Test:
-    # Att servern ej ger fel för requests för okända attribut. 
     # GETATTR med tom attr-sträng. 
     # GETATTR utan filhandtag. 
     # GETATTR både för filer, kataloger och andra objekt.
@@ -578,6 +577,16 @@ class GetattrTestCase(NFSTestCase):
 
         if unsupported:
             self.fail("mandatory attributes not supported: %s" % str(unsupported))
+
+    def testUnknown(self):
+        """GETATTR should not fail on unknown attributes
+        """
+        path = nfs4lib.str2pathname(self.normfile)
+        lookupop = self.ncl.lookup_op(path)
+
+        getattrop = self.ncl.getattr([1000])
+        res = self.do_compound([self.putrootfhop, lookupop, getattrop])
+        self.assert_OK(res)
 
 
 
