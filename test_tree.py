@@ -27,11 +27,12 @@ import glob
 UID = 4711
 GID = 4711
 
-def main(treeroot):
+def main(treeroot, force):
     if treeroot == "/":
         print "Refusing to use / as treeroot"
         sys.exit(1)
         
+    if treeroot[-1] == os.sep: treeroot = treeroot[:-1]
     print "Changing current directory to", treeroot
     os.chdir(treeroot)
     # Sanity check
@@ -39,12 +40,12 @@ def main(treeroot):
         print "Couldn't change to %s, aborting." % treeroot
         sys.exit(1)
 
-    if glob.glob("*"):
+    if not force and glob.glob("*"):
         if not glob.glob("src/hello.c"):
             print "Files exists, but src/hello.c does not."
             print "Cowardly refusing to clear directory."
             print "Are you sure you want to use this directory as treeroot?"
-            print "Clear it manually, then."
+            print "Clear it manually, then, or use --force"
             sys.exit(1)
 
     print "Clearing tree"
@@ -132,9 +133,10 @@ def set_owner(unused, dirname, names):
         os.chown(abs_name, UID, GID)
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print "Usage: %s <treeroot>" % sys.argv[0]
+    if len(sys.argv) < 2:
+        print "Usage: %s <treeroot> [--force]" % sys.argv[0]
         print "Creates tree contents for nfs4st testing"
         sys.exit(1)
-    
-    main(sys.argv[1])
+
+    main(sys.argv[1], (sys.argv[2:3] == ["--force"]))
+
