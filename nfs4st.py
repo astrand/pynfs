@@ -256,16 +256,18 @@ class NFSSuite(unittest.TestCase):
         fh = self.ncl.do_getfh(directory)
         entries = self.ncl.do_readdir(fh)
         names = [entry.name for entry in entries]
-        
-        # Remove all files at the same time
-        lookup_dir_ops = self.ncl.lookup_path(directory)
-        operations = [self.ncl.putrootfh_op()] + lookup_dir_ops
-        for name in names:
-            operations.append(self.ncl.remove_op(name))
 
-        res = self.do_compound(operations)
-        if not res.status == NFS4_OK:
-            raise SkipException("Cannot clean directory %s" % directory)
+        for name in names:
+            lookup_dir_ops = self.ncl.lookup_path(directory)
+            operations = [self.ncl.putrootfh_op()] + lookup_dir_ops
+            operations.append(self.ncl.remove_op(name))
+            res = self.do_compound(operations)
+
+            if res.status == NFS4ERR_NOTEMPTY:
+                # Recursive deletion
+                self.clean_dir(directory + [name])
+            elif not res.status == NFS4_OK:
+                raise SkipException("Cannot clean directory %s" % directory)
 
         # Verify that all files were removed
         entries = self.ncl.do_readdir(fh)
