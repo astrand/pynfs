@@ -116,6 +116,8 @@ class PartialNFS4Client:
         self.cwd = []
         # Last seqid
         self.seqid = 0
+        # FIXME
+        self.owner = 0
         # Set in sub-classes
         self.gid = None
         self.uid = None
@@ -191,6 +193,12 @@ class PartialNFS4Client:
         self.seqid += 1
         self.seqid = self.seqid % 2**32L
         return self.seqid
+
+    # FIXME
+    def get_owner(self):
+        self.owner += 1
+        self.owner = self.owner % 2**32L
+        return self.owner
 
     def get_pathcomps_rel(self, filename):
         """Transform a unix-like pathname, relative to self.ncl,
@@ -350,8 +358,9 @@ class PartialNFS4Client:
         openhow = openflag4(self, opentype, how)
 
         # owner
-        ownerstring = pwd.getpwuid(os.getuid())[0]
-        owner = open_owner4(self, self.clientid, ownerstring)
+        #ownerstring = pwd.getpwuid(os.getuid())[0]
+        # FIXME
+        owner = open_owner4(self, self.clientid, long2opaque(self.get_owner()))
 
         # seqid
         seqid = self.get_seqid()
@@ -1038,6 +1047,7 @@ class NFS4OpenFile:
         self.__set_priv("name", os.path.join(os.sep, *pathcomps))
         # Get stateid from OPEN
         self.stateid = res.resarray[-2].arm.arm.stateid
+
         # Get filehandle from GETFH
         self.fh = res.resarray[-1].arm.arm.object
 
