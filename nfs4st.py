@@ -348,6 +348,8 @@ class AccessTestCase(NFSTestCase):
     def testNoExecOnDir(self):
         """ACCESS4_EXECUTE should never be returned for directory
 
+        Covered valid equivalence classes: 6, 9
+
         Comments: ACCESS4_EXECUTE has no meaning for directories and
         should not be returned in "access" or "supported".
         """
@@ -549,6 +551,8 @@ class CommitTestCase(NFSTestCase):
     #
     def testOverflow(self):
         """COMMIT on file with offset+count >= 2**64 should fail
+
+        Covered valid equivalence classes: 1, 10, 12
 
         Comments: If the COMMIT operation is called with an offset
         plus count that is larger than 2**64, the server should return
@@ -856,6 +860,8 @@ class GetattrTestCase(NFSTestCase):
     def testAllMandatory(self):
         """Assure GETATTR can return all mandatory attributes
 
+        Covered valid equivalence classes: 1, 9
+
         Comments: A server should be able to return all mandatory
         attributes.
         """
@@ -900,6 +906,8 @@ class GetattrTestCase(NFSTestCase):
     def testUnknownAttr(self):
         """GETATTR should not fail on unknown attributes
 
+        Covered valid equivalence classes: 1, 9
+
         Comments: This test calls GETATTR with request for attribute
         number 1000.  Servers should not fail on unknown attributes.
         """
@@ -913,6 +921,8 @@ class GetattrTestCase(NFSTestCase):
     def testEmptyCall(self):
         """GETATTR should accept empty request
 
+        Covered valid equivalence classes: 1, 9
+
         Comments: GETATTR should accept empty request
         """
 
@@ -925,6 +935,8 @@ class GetattrTestCase(NFSTestCase):
 
     def testSupported(self):
         """GETATTR(FATTR4_SUPPORTED_ATTRS) should return all mandatory
+
+        Covered valid equivalence classes: 1, 9
         
         Comments: GETATTR(FATTR4_SUPPORTED_ATTRS) should return at
         least all mandatory attributes
