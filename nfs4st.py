@@ -1527,20 +1527,30 @@ class LookupSuite(NFSSuite):
     #
     # Extra tests.
     #
+    def _assert_noent(self, pathcomps):
+        lookupops = self.ncl.lookup_path(pathcomps)
+        operations = [self.putrootfhop] + lookupops
+        res = self.do_compound(operations)
+        self.assert_status(res, [NFS4ERR_NOENT])
+
     def testDots(self):
-        """LOOKUP should not treat "." or ".." special
+        """LOOKUP on . and .. should return NFS4ERR_ENOENT
 
         Extra test
-        """
-        lookupops = self.ncl.lookup_path(["doc", ".", "README"])
-        operations = [self.putrootfhop] + lookupops
-        res = self.do_compound(operations)
-        self.assert_status(res, [NFS4ERR_NOENT])
 
-        lookupops = self.ncl.lookup_path(["doc", "porting", "..", "README"])
-        operations = [self.putrootfhop] + lookupops
-        res = self.do_compound(operations)
-        self.assert_status(res, [NFS4ERR_NOENT])
+        No file named . or .. should exist in the test tree.
+        """
+        # . in root dir should not exist
+        self._assert_noent(["."])
+
+        # .. in root dir should not exist
+        self._assert_noent([".."])
+
+        # . in the middle of path should yield ENOENT
+        self._assert_noent(["doc", ".", "README"])
+        
+        # .. in the middle of path should yield ENOENT
+        self._assert_noent(["doc", "porting", "..", "README"])
 
 
 class LookuppSuite(NFSSuite):
