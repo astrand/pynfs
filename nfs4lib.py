@@ -48,13 +48,13 @@ except ImportError:
 
 
 # Stubs for Win32 systems
-if not "getuid" in dir(os):
+if not hasattr(os, "getuid"):
     os.getuid = lambda: 1
 
-if not "getgid" in dir(os):
+if not hasattr(os, "getgid"):
     os.getgid = lambda: 1
 
-if not "getgroups" in dir(os):
+if not hasattr(os, "getgroups"):
     os.getgroups = lambda: []
 
 
