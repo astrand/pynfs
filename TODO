@@ -7,6 +7,8 @@ General
 
 nfs4st.py
 =========
+* Split nfs4st.py into several files, one for each test suite. 
+
 * Make it possible to use nfs4st with servers not supporting special
 devices, like block devices. Need support in test_tree_net for this as
 well. 
