@@ -31,6 +31,7 @@ import getopt
 import re
 import os
 
+
 SYNTAX = """\
 Syntax:
 nfs4client host[:[port]]<directory> [-u|-t] [-d debuglevel]
@@ -42,12 +43,95 @@ nfs4client host[:[port]]<directory> [-u|-t] [-d debuglevel]
 """
 
 VERSION = "0.0"
-
 BUFSIZE = 4096
 
-class CLI(cmd.Cmd):
-    def __init__(self, ncl):
-        self.ncl = ncl
+# Load readline & completer
+try:
+    import pynfs_completer
+except ImportError:
+    print "Module readline not available."
+else:
+    import __builtin__
+    import __main__
+    class Completer(pynfs_completer.Completer):
+        def __init__(self):
+            self.pythonmode = 0
+        
+        commands = [
+            "help", "cd", "rm", "dir", "ls", "exit", "quit", "get",
+            "put", "mkdir", "md", "rmdir", "rd", "cat", "page",
+            "debug", "ping", "version", "pythonmode"]
+
+        def complete(self, text, state):
+            """Return the next possible completion for 'text'.
+
+            This is called successively with state == 0, 1, 2, ... until it
+            returns None.  The completion should begin with 'text'.
+
+            """
+            if state == 0:
+                if "." in text and self.pythonmode:
+                    self.matches = self.attr_matches(text)
+                else:
+                    self.matches = self.global_matches(text)
+            try:
+                return self.matches[state]
+            except IndexError:
+                return None
+
+            
+        def global_matches(self, text):
+            """Compute matches when text is a simple name.
+
+            Return a list of all keywords, built-in functions and names
+            currently defines in __main__ that match.
+
+            """
+            import keyword
+            matches = []
+            n = len(text)
+
+            searchlist = [Completer.commands]
+            if self.pythonmode:
+                searchlist.append(keyword.kwlist)
+                searchlist.append(__builtin__.__dict__.keys())
+                searchlist.append(__main__.__dict__.keys())
+
+            for list in searchlist:
+                for word in list:
+                    if word[:n] == text and word != "__builtins__":
+                        matches.append(word)
+
+            return matches
+
+
+    readline.parse_and_bind("tab: complete")
+    readline.set_completer_delims(' \t\n`~!@#$%^&*()-=+{}\\|;:\'",<>/?')
+
+# Save history upon exit
+import os
+histfile = os.path.join(os.environ["HOME"], ".nfs4client")
+try:
+    readline.read_history_file(histfile)
+except IOError:
+    pass
+import atexit
+atexit.register(readline.write_history_file, histfile)
+del histfile
+
+
+class ClientApp(cmd.Cmd):
+    def __init__(self, transport, host, port, directory, pythonmode):
+        self.transport = transport
+        self.host = host
+        self.port = port
+        self.directory = directory
+        self.ncl = None
+
+        self.completer = Completer()
+        self.completer.pythonmode = pythonmode
+        readline.set_completer(self.completer.complete)
+
         # FIXME: show current directory. 
         self.prompt = "nfs4: >"
         # FIXME
@@ -55,26 +139,19 @@ class CLI(cmd.Cmd):
         #self.doc_header = ""
         #self.misc_header
         #self.undoc_header
-        self.commands = [
-            # Commands
-            "help", "cd", "rm", "dir", "ls", "exit", "quit", "get",
-            "put", "mkdir", "md", "rmdir", "rd", "cat", "page",
-            "debug", "ping", "version"]
-            
-        readline.parse_and_bind("tab: complete")
-        readline.set_completer(self.completer)
 
-    def completer(self, text, state):
-        if state == 0:
-            self.completions = []
-            for c in self.commands:
-                if c.find(text) != -1:
-                    self.completions.append(c)
-        try:
-            return self.completions[state]
-        except IndexError:
-            return None
+        self._connect()
 
+
+    def _connect(self):
+        if transport == "tcp":
+            self.ncl = nfs4lib.TCPNFS4Client(self.host, self.port)
+        elif transport == "udp":
+            self.ncl = nfs4lib.UDPNFS4Client(self.host, self.port)
+        else:
+            raise RuntimeError, "Invalid protocol"
+        self.ncl.init_connection()
+        
 
     #
     # Commands
@@ -127,7 +204,6 @@ class CLI(cmd.Cmd):
                 print "Error fetching file: operation %d returned %d" % (r.operation, r.errcode)
         print
 
-        
 
     def do_put(self, line):
         # FIXME
@@ -153,7 +229,7 @@ class CLI(cmd.Cmd):
             return
         
         for file in filenames:
-            f = nfs4lib.NFS4OpenFile(ncl)
+            f = nfs4lib.NFS4OpenFile(self.ncl)
             try:
                 f.open(file)
                 print f.read(),
@@ -177,6 +253,14 @@ class CLI(cmd.Cmd):
 
     def do_shell(self, line):
         os.system(line)
+
+    def do_pythonmode(self, line):
+        self.completer.pythonmode = (not self.completer.pythonmode)
+        print "pythonmode is now",
+        if self.completer.pythonmode:
+            print "on"
+        else:
+            print "off"
 
     #
     # Misc. 
@@ -205,6 +289,7 @@ class CLI(cmd.Cmd):
             print '***', exc_type_name + ':', v
 
 
+
 def usage():
     print "Usage: %s host[:[port]]<directory> [-u|-t] [-d debuglevel]" % sys.argv[0]
     print "options:"
@@ -212,6 +297,7 @@ def usage():
     print "-u, --udp                    use UDP as transport (default)"
     print "-t, --tcp                    use TCP as transport"
     print "-d level, --debuglevel level set debuglevel"
+    print "-p, --pythonmode             enable Python interpreter mode"
     sys.exit(2)
 
 
@@ -220,7 +306,7 @@ if __name__ == "__main__":
         usage()
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hutd", ["help", "udp", "tcp", "debuglevel"])
+        opts, args = getopt.getopt(sys.argv[1:], "hutdp", ["help", "udp", "tcp", "debuglevel", "pythonmode"])
     except getopt.GetoptError:
         print "invalid option"
         usage()
@@ -228,6 +314,7 @@ if __name__ == "__main__":
 
     transport = "udp"
     debuglevel = 0
+    pythonmode = 0
 
     for o, a in opts:
         if o in ("-h", "--help"):
@@ -239,6 +326,8 @@ if __name__ == "__main__":
             transport = "tcp"
         if o in ("-d", "--debuglevel"):
             debuglevel = a
+        if o in ("-p", "--pythonmode"):
+            pythonmode = 1
 
 
     # By now, there should only be one argument left.
@@ -250,18 +339,17 @@ if __name__ == "__main__":
         if not match:
             usage()
         host = match.group("host")
-        port = match.group("port")
-        dire = match.group("dir")
-    
-    if transport == "tcp":
-        ncl = nfs4lib.TCPNFS4Client(host)
-    elif transport == "udp":
-        ncl = nfs4lib.UDPNFS4Client(host)
-    else:
-        raise RuntimeError, "Internal error: wrong protocol"
+        portstring = match.group("port")
+        directory = match.group("dir")
 
-    
-    ncl.init_connection()
+        if portstring:
+            port = int(portstring)
+        else:
+            port = nfs4lib.NFS_PORT
 
-    c = CLI(ncl)
+        if not directory:
+            directory = "/"
+
+    c = ClientApp(transport, host, port, directory, pythonmode)
     c.cmdloop()
+    
