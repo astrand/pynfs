@@ -38,7 +38,24 @@ import random
 import array
 import socket
 import os
-import pwd
+try:
+    import pwd
+except ImportError:
+    class pwdStub:
+	def getpwuid(self, uid):
+	    return "winuser"
+    pwd = pwdStub()
+
+
+# Stubs for Win32 systems
+if not "getuid" in dir(os):
+    os.getuid = lambda: 1
+
+if not "getgid" in dir(os):
+    os.getgid = lambda: 1
+
+if not "getgroups" in dir(os):
+    os.getgroups = lambda: []
 
 
 # All NFS errors are subclasses of NFSException
@@ -466,7 +483,7 @@ def check_result(compoundres):
 
 def str2pathname(str, pathname=[]):
     pathname = pathname[:]
-    for component in str.split(os.sep):
+    for component in str.split("/"):
         if (component == "") or (component == "."):
             pass
         elif component == "..":
