@@ -8,7 +8,7 @@ enum auth_flavor {
 
 
 /*
- *  Copyright (C) The Internet Society (1998,1999,2000,2001).
+ *  Copyright (C) The Internet Society (1998,1999,2000,2001,2002).
  *  All Rights Reserved.
  */
 
@@ -17,7 +17,7 @@ enum auth_flavor {
  *
  */
 
-%#pragma ident	"@(#)nfs4_prot.x	1.106"
+%#pragma ident	"@(#)nfs4_prot.x	1.109"
 
 /*
  * Basic typedefs for RFC 1832 data type definitions
@@ -32,6 +32,7 @@ typedef unsigned hyper	uint64_t;
  */
 const NFS4_FHSIZE		= 128;
 const NFS4_VERIFIER_SIZE	= 8;
+const NFS4_OPAQUE_LIMIT		= 1024;
 
 /*
  * File types
@@ -57,7 +58,7 @@ enum nfsstat4 {
 	NFS4ERR_NOENT		= 2,
 	NFS4ERR_IO		= 5,
 	NFS4ERR_NXIO		= 6,
-	NFS4ERR_ACCES		= 13,
+	NFS4ERR_ACCESS		= 13,
 	NFS4ERR_EXIST		= 17,
 	NFS4ERR_XDEV		= 18,
 	NFS4ERR_NODEV		= 19,
@@ -107,7 +108,9 @@ enum nfsstat4 {
 	NFS4ERR_RECLAIM_BAD	= 10034,
 	NFS4ERR_RECLAIM_CONFLICT = 10035,
 	NFS4ERR_BADXDR		= 10036,
-	NFS4ERR_LOCKS_HELD	= 10037
+	NFS4ERR_LOCKS_HELD	= 10037,
+	NFS4ERR_OPENMODE	= 10038,
+	NFS4ERR_BADOWNER	= 10039
 };
 
 /*
@@ -480,25 +483,24 @@ struct stateid4 {
  */
 struct nfs_client_id4 {
 	verifier4	verifier;
-	opaque		id<>;
+	opaque		id<NFS4_OPAQUE_LIMIT>;
 };
 
 struct open_owner4 {
 	clientid4	clientid;
-	opaque		owner<>;
+	opaque		owner<NFS4_OPAQUE_LIMIT>;
 };
 
 struct lock_owner4 {
 	clientid4	clientid;
-	opaque		owner<>;
+	opaque		owner<NFS4_OPAQUE_LIMIT>;
 };
 
 enum nfs_lock_type4 {
 	READ_LT		= 1,
 	WRITE_LT	= 2,
 	READW_LT	= 3,	/* blocking read */
-	WRITEW_LT	= 4,	/* blocking write */
-	RELEASE_STATE	= 5	/* release lock_stateid at server */
+	WRITEW_LT	= 4	/* blocking write */
 };
 
 /*
@@ -616,6 +618,7 @@ struct DELEGPURGE4res {
  * DELEGRETURN: Return a delegation
  */
 struct DELEGRETURN4args {
+	/* CURRENT_FH: delegated file */
 	stateid4	deleg_stateid;
 };
 
@@ -970,6 +973,8 @@ switch (open_delegation_type4 delegation_type) {
 const OPEN4_RESULT_MLOCK	= 0x00000001;
 /* Client must confirm open */
 const OPEN4_RESULT_CONFIRM	= 0x00000002;
+/* Type of file locking behavior at the server */
+const OPEN4_RESULT_LOCKTYPE_POSIX = 0x00000004;
 
 struct OPEN4resok {
 	stateid4	stateid;	/* Stateid for open */
@@ -1274,6 +1279,7 @@ struct SETATTR4res {
 struct SETCLIENTID4args {
 	nfs_client_id4	client;
 	cb_client4	callback;
+	uint32_t	callback_ident;
 };	
 
 struct SETCLIENTID4resok {
@@ -1340,6 +1346,17 @@ union WRITE4res switch (nfsstat4 status) {
 };
 
 /*
+ * RELEASE_LOCKOWNER: Notify server to release lockowner
+ */
+struct RELEASE_LOCKOWNER4args {
+	lock_owner4	lock_owner;
+};
+
+struct RELEASE_LOCKOWNER4res {
+	nfsstat4	status;
+};
+
+/*
  * Operation arrays
  */
 
@@ -1379,7 +1396,8 @@ enum nfs_opnum4 {
 	OP_SETCLIENTID		= 35,
 	OP_SETCLIENTID_CONFIRM	= 36,
 	OP_VERIFY		= 37,
-	OP_WRITE		= 38
+	OP_WRITE		= 38,
+	OP_RELEASE_LOCKOWNER	= 39
 };
 
 union nfs_argop4 switch (nfs_opnum4 argop) {
@@ -1420,6 +1438,8 @@ union nfs_argop4 switch (nfs_opnum4 argop) {
 					opsetclientid_confirm;
  case OP_VERIFY:	VERIFY4args opverify;
  case OP_WRITE:		WRITE4args opwrite;
+ case OP_RELEASE_LOCKOWNER:	RELEASE_LOCKOWNER4args
+				    oprelease_lockowner;
 };
 
 union nfs_resop4 switch (nfs_opnum4 resop){
@@ -1460,6 +1480,8 @@ union nfs_resop4 switch (nfs_opnum4 resop){
 					opsetclientid_confirm;
  case OP_VERIFY:	VERIFY4res opverify;
  case OP_WRITE:		WRITE4res opwrite;
+ case OP_RELEASE_LOCKOWNER:	RELEASE_LOCKOWNER4res
+				    oprelease_lockowner;
 };
 
 struct COMPOUND4args {
@@ -1547,6 +1569,7 @@ union nfs_cb_resop4 switch (unsigned resop){
 struct CB_COMPOUND4args {
 	utf8string	tag;
 	uint32_t	minorversion;
+	uint32_t	callback_ident;
 	nfs_cb_argop4	argarray<>;
 };
 
