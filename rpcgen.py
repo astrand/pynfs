@@ -24,7 +24,8 @@
 # TODO:
 # Replace MemFile with StringIO. 
 # Code generation for programs and procedures. 
-# __repr__ with discriminants should print symbolic values. 
+# __repr__ with discriminants should print symbolic values.
+# Add rpcgen info and date to output files. 
 
 import sys
 import keyword
