@@ -25,7 +25,10 @@ NFS_PORT = 2049
 import rpc
 from nfs4constants import *
 from nfs4types import *
-
+import random
+import array
+import socket
+import os
 
 class PartialNFS4Client:
     def addpackers(self):
@@ -41,9 +44,57 @@ class PartialNFS4Client:
         res = COMPOUND4res(self)
         
         self.make_call(1, None, compoundargs.pack, res.unpack)
-        
         return res
 
+    #
+    # Utility methods
+    #
+    def gen_random_64(self):
+        a = array.array('I')
+        for turn in range(4):
+            a.append(random.randrange(2**16))
+        return a.tostring()
+
+    def gen_uniq_id(self):
+        # Use FQDN and pid as ID.
+        return socket.gethostname() + str(os.getpid())
+
+    #
+    # Operations
+    #
+
+    def getfh(self):
+        return nfs_argop4(self, argop=OP_GETFH)
+
+    def putrootfh(self):
+        return nfs_argop4(self, argop=OP_PUTROOTFH)
+
+    def setclientid(self, verifier=None, id=None, cb_program=None, r_netid=None, r_addr=None, ):
+        if not verifier:
+            verifier = self.gen_random_64()
+
+        if not id:
+            id = self.gen_uniq_id()
+
+        if not cb_program:
+            # FIXME
+            cb_program = 0
+
+        if not r_netid:
+            # FIXME
+            r_netid = "udp"
+
+        if not r_addr:
+            # FIXME
+            r_addr = socket.gethostname()
+        
+        client_id = nfs_client_id4(self, verifier=verifier, id=id)
+        cb_location = clientaddr4(self, r_netid=r_netid, r_addr=r_addr)
+        callback = cb_client4(self, cb_program=cb_program, cb_location=cb_location)
+        opsetclientid = SETCLIENTID4args(self, client=client_id, callback=callback)
+
+        return nfs_argop4(self, argop=OP_SETCLIENTID, opsetclientid=opsetclientid)
+    
 
 class UDPNFS4Client(PartialNFS4Client, rpc.RawUDPClient):
     def __init__(self, host):
