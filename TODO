@@ -30,6 +30,9 @@ for some reason. Use SkipException more.
 
 * More testing of stale filehandles. 
 
+* Checking, all the time, if the returned error code is valid for the
+operation.
+
 Hard to do, but anyway:
 
 * Verify that filehandles are never reused. 
