@@ -108,6 +108,61 @@ class AccessTestCase(NFSTestCase):
         self.failUnlessEqual(res.status, NFS4ERR_NOFILEHANDLE)
 
 
+class CommitTestCase(NFSTestCase):
+    def setUp(self):
+        self.connect()
+        self.putrootfhop = self.ncl.putrootfh_op()
+
+    def testOnDir(self):
+        """COMMIT should fail with NFS4ERR_ISDIR on directories"""
+        global res
+        commitop = self.ncl.commit_op(0, 0)
+        res = self.ncl.compound([self.putrootfhop, commitop])
+        self.failUnlessEqual(res.status, NFS4ERR_ISDIR)
+
+
+    def testOffsets(self):
+        """Simple COMMIT on file with offset 0, 1 and 2**64 - 1"""
+        path = nfs4lib.str2pathname("/README")
+        lookupop = self.ncl.lookup_op(path)
+
+        # offset = 0
+        commitop = self.ncl.commit_op(0, 0)
+        res = self.ncl.compound([self.putrootfhop, lookupop, commitop])
+        self.failUnlessEqual(res.status, NFS4_OK)
+
+        # offset = 1
+        commitop = self.ncl.commit_op(1, 0)
+        res = self.ncl.compound([self.putrootfhop, lookupop, commitop])
+        self.failUnlessEqual(res.status, NFS4_OK)
+
+        # offset = 2**64 - 1
+        commitop = self.ncl.commit_op(-1, 0)
+        res = self.ncl.compound([self.putrootfhop, lookupop, commitop])
+        self.failUnlessEqual(res.status, NFS4_OK)
+
+
+    def testCounts(self):
+        """COMMIT on file with count 0, 1 and 2**64 - 1"""
+        path = nfs4lib.str2pathname("/README")
+        lookupop = self.ncl.lookup_op(path)
+        
+        # count = 0
+        commitop = self.ncl.commit_op(0, 0)
+        res = self.ncl.compound([self.putrootfhop, lookupop, commitop])
+        self.failUnlessEqual(res.status, NFS4_OK)
+
+        # count = 1
+        commitop = self.ncl.commit_op(0, 1)
+        res = self.ncl.compound([self.putrootfhop, lookupop, commitop])
+        self.failUnlessEqual(res.status, NFS4_OK)
+
+        # count = 2**64 - 1
+        commitop = self.ncl.commit_op(0, -1)
+        res = self.ncl.compound([self.putrootfhop, lookupop, commitop])
+        self.failUnlessEqual(res.status, NFS4_OK)
+
+        
 
 class TestProgram(unittest.TestProgram):
     USAGE = """\
