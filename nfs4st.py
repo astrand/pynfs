@@ -20,8 +20,6 @@
 
 # TODO:
 #
-# Print out testcase names?
-#
 # Extend unittest with warnings.
 #
 # Handle errors such as NFS4ERR_RESOURCE and NFS4ERR_DELAY.
