@@ -70,6 +70,9 @@ def parse_method(meth):
                 del lines[0]
             comments = data
 
+    if valid_classes == "-" and invalid_classes == "-":
+        print "ERROR: Method %s does not cover any equivalence classes" % meth.__name__
+
     # Valid equivalence classes. 
     xmlstr = """
     <table:table-cell table:style-name="Table2.B3" table:value-type="string">
