@@ -1,2 +1,10 @@
-It's not possible to test NFS4ERR_BADHANDLE, since there is no way of
-knowing the servers internal representation.
+Various notes for the NFS4 server test suite (nfs4st.py)
+========================================================
+
+* It's not possible to test NFS4ERR_BADHANDLE, since there is no way
+of knowing the servers internal representation.
+
+* With servers supporting files named "." and "..", several additional
+  tests could be made. No such tests are currently done, because I
+  have no such server. Probably no existing server supports "." or
+  ".." as file names. 
