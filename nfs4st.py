@@ -152,17 +152,8 @@ class NFSSuite(unittest.TestCase):
         self.privatedir = nfs4lib.unixpath2comps("/private")
         self.notaccessablefile = nfs4lib.unixpath2comps("/private/info.txt")
 
-    def create_client(self):
-        if transport == "tcp":
-            ncl = TCPTestClient(self, host, port, UID, GID)
-        elif transport == "udp":
-            ncl = UDPTestClient(self, host, port, UID, GID)
-        else:
-            raise RuntimeError, "Invalid protocol"
-        return ncl
-    
     def connect(self):
-        self.ncl = self.create_client()
+        self.ncl = nfs4lib.create_client(host, port, transport)
     
     def failIfRaises(self, excClass, callableObj, *args, **kwargs):
         """Fail if exception of excClass or EOFError is raised"""
@@ -4554,14 +4545,15 @@ Examples:
         if len(args) < 1:
             self.usageExit()
 
-        match = re.search(r'^(?:nfs://)?(?P<host>([a-zA-Z][\w\.]*|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}))'
-                          r'(?::(?P<port>\d*))?$', args[0])
-
-        if not match:
+        parse_result = nfs4lib.parse_nfs_url(args[0])
+        if not parse_result:
             self.usageExit()
 
-        host = match.group("host")
-        portstring = match.group("port")
+        (host, portstring, directory) = parse_result
+
+        if directory:
+            # Directory not allowed
+            self.usageExit()
 
         if portstring:
             port = int(portstring)
