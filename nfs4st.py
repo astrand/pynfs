@@ -1089,6 +1089,9 @@ class CreateSuite(NFSSuite):
         """CREATE should fail with NFS4ERR_INVAL on invalid attrmask
 
         Covered invalid equivalence classes: 41
+
+        Comments: We are using a read-only attribute on CREATE, which
+        should return NFS4ERR_INVAL. 
         """
         if not self.remove_object(): return
         operations = [self.putrootfhop] + self.lookup_dir_ops
