@@ -1887,7 +1887,7 @@ class OpenattrSuite(NFSSuite):
     def testValidCreate(self):
         """OPENATTR on all non-attribute objects, createdir=TRUE
 
-        Covered valid equivalence classes: 1, 2, 3, 4, 5, 6, 7, 20
+        Covered valid equivalence classes: 1, 2, 3, 4, 5, 6, 7, 21
         """
         self._openattr(TRUE)
 
