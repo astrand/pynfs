@@ -67,6 +67,7 @@ class NFSSuite(unittest.TestCase):
 
         # FIXME: Add NF4ATTRDIR and NF4NAMEDATTR types.
         self.special_objects = [self.blockfile, self.charfile, self.socketfile, self.fifofile]
+        # Note named attribute dir or named attributes are not included in all_objects. 
         self.all_objects = self.special_objects + [self.regfile, self.dirfile, self.linkfile]
 
         # FIXME: Add sample named attribute.
@@ -149,7 +150,12 @@ class NFSSuite(unittest.TestCase):
             obj_sizes.append((lookupops, d["size"]))
 
         return obj_sizes
-        
+
+    def lookuplist2comps(self, list):
+        result = []
+        for op in list:
+            result.append(op.arm.objname)
+        return result
 
     def setUp(self):
         # Note: no network communication should be done in this method. 
@@ -1636,24 +1642,41 @@ class OpenattrSuite(NFSSuite):
         Invalid equivalence classes:
             attribute directory(8)
             named attribute(9)
+    Input Condition: createdir
+        Valid equivalence classes:
+            false(20)
+            true(21)
+        Invalid equivalence classes:
+            -
     """
     #
     # Testcases covering valid equivalence classes.
     #
-    def testValid(self):
-        """OPENATTR on all non-attribute objects
-
-        Covered valid equivalence classes: 1, 2, 3, 4, 5, 6, 7
-        """
-        for lookupop in self.lookup_all_objects():
-            openattrop = self.ncl.openattr_op()
-            res = self.do_compound([self.putrootfhop, lookupop, openattrop])
+    def _openattr(self, createdir):
+        for lookupops in self.lookup_all_objects():
+            operations = [self.putrootfhop] + lookupops
+            operations.append(self.ncl.openattr_op(TRUE))
+            res = self.do_compound(operations)
 
             if res.status == NFS4ERR_NOTSUPP:
-                op = lookupop.arm.path
-                self.info_message("OPENATTR not supported on " + str(op))
+                path = self.lookuplist2comps(lookupops)
+                self.info_message("OPENATTR not supported on " + str(path))
 
             self.assert_status(res, [NFS4_OK, NFS4ERR_NOTSUPP])
+
+    def testValidNoCreate(self):
+        """OPENATTR on all non-attribute objects, createdir=FALSE
+
+        Covered valid equivalence classes: 1, 2, 3, 4, 5, 6, 7, 20
+        """
+        self._openattr(FALSE)
+
+    def testValidCreate(self):
+        """OPENATTR on all non-attribute objects, createdir=TRUE
+
+        Covered valid equivalence classes: 1, 2, 3, 4, 5, 6, 7, 20
+        """
+        self._openattr(TRUE)
 
     #
     # Testcases covering invalid equivalence classes.
@@ -1664,14 +1687,14 @@ class OpenattrSuite(NFSSuite):
         Covered invalid equivalence classes: 8
         """
         # Open attribute dir for root dir
-        openattrop = self.ncl.openattr_op()
+        openattrop = self.ncl.openattr_op(FALSE)
         res = self.do_compound([self.putrootfhop, openattrop])
         if res.status == NFS4ERR_NOTSUPP:
             self.info_message("OPENATTR not supported on /, cannot try this test")
             return
 
-        openattrop1 = self.ncl.openattr_op()
-        openattrop2 = self.ncl.openattr_op()
+        openattrop1 = self.ncl.openattr_op(FALSE)
+        openattrop2 = self.ncl.openattr_op(FALSE)
         res = self.do_compound([self.putrootfhop, openattrop1, openattrop2])
         self.assert_status(res, [NFS4ERR_INVAL])
 
@@ -1683,15 +1706,15 @@ class OpenattrSuite(NFSSuite):
         Comments: Not yet implemented. 
         """
         # Open attribute dir for doc/README
-        lookupop = self.ncl.lookup_op(self.regfile)
-        openattrop = self.ncl.openattr_op()
-        res = self.do_compound([self.putrootfhop, lookupop, openattrop])
+        lookupops = self.ncl.lookup_path(self.regfile)
+        operations = [self.putrootfhop] + lookupops
+        operations.append(self.ncl.openattr_op(FALSE))
+        res = self.do_compound(operations)
 
         if res.status == NFS4ERR_NOTSUPP:
             self.info_message("OPENATTR not supported on %s, cannot try this test" \
                               % self.regfile)
             return
-
 
         # FIXME: Implement rest of testcase.
         self.info_message("(TEST NOT IMPLEMENTED)")
