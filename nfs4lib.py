@@ -58,7 +58,8 @@ class PartialNFS4Client:
         # Client state variables
         self.clientid = None
         self.verifier = None
-        # Current directory. A string, like /doc/foo. 
+        # Current directory. A string, like /doc/foo.
+	# FIXME: Consider using a list of components instead. 
         self.cwd = "/"
         # Last seqid
         self.seqid = 0
@@ -165,9 +166,9 @@ class PartialNFS4Client:
         # FIXME
         raise NotImplementedError()
 
-    def lookup(self):
-        # FIXME
-        raise NotImplementedError()
+    def lookup(self, path):
+	args = LOOKUP4args(self, path)
+	return nfs_argop4(self, argop=OP_LOOKUP, oplookup=args)
 
     def lookupp(self):
         # FIXME
