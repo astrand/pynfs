@@ -2,8 +2,6 @@
 
 # nfs4lib.py - NFS4 library for Python. 
 #
-# from XDR/RPC language specification. 
-# 
 # Copyright (C) 2001  Peter Åstrand <peter@cendio.se>
 # 
 # This program is free software; you can redistribute it and/or modify
