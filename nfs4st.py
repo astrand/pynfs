@@ -494,8 +494,41 @@ class CompoundSuite(NFSSuite):
         self.failIf(res.resarray, "expected empty result array after"\
                     "NFS4ERR_MINOR_VERS_MISMATCH")
 
-    def testOperation0_1_2(self):
-        """Test COMPOUND with (undefined) operation 0, 1 and 2
+    def _verify_notsupp(self, opnum, valid_opnum_fn):
+        """Verify COMPOUND result for undefined operations"""
+        
+        # nfs4types.nfs_argop4 does not allow packing invalid operations. 
+        class custom_nfs_argop4:
+            def __init__(self, ncl, argop):
+                self.ncl = ncl
+                self.packer = ncl.packer
+                self.unpacker = ncl.unpacker
+                self.argop = argop
+            
+            def pack(self, dummy=None):
+                self.packer.pack_nfs_opnum4(self.argop)
+
+        op = custom_nfs_argop4(self.ncl, argop=opnum)
+        
+        try:
+            # This *should* raise the BadCompoundRes exception. 
+            res =  self.ncl.compound([op])
+            # Ouch. This should not happen. 
+            opnum = res.resarray[0].resop
+            self.fail("Expected BadCompoundRes exception. INTERNAL ERROR.")
+        except BadDiscriminant, e:
+            # This should happen.
+            self.failIf(not valid_opnum_fn(e.value),
+                        "Expected result array with opnum %d, got %d" % (opnum, e.value))
+            # We have to do things a little by hand here
+            pos = self.ncl.unpacker.get_position()
+            data = self.ncl.unpacker.get_buffer()[pos:]
+            errcode = nfs4lib.opaque2long(data)
+            self.failIf(errcode != NFS4ERR_NOTSUPP,
+                        "Expected NFS4ERR_NOTSUPP, got %d" % errcode)
+
+    def testUndefinedOps(self):
+        """COMPOUND with operations 0, 1, 2 and 1000 should return NFS4ERR_NOTSUPP
 
         Covered invalid equivalence classes: 5
 
@@ -504,62 +537,13 @@ class CompoundSuite(NFSSuite):
         introduced in later minor versions, the server should always
         return NFS4ERR_NOTSUPP if the minorversion is 0.
         """
-        # nfs4types.nfs_argop4 does not allow packing invalid operations. 
-        class custom_nfs_argop4:
-            def __init__(self, ncl, argop):
-                self.ncl = ncl
-                self.packer = ncl.packer
-                self.unpacker = ncl.unpacker
-                self.argop = argop
-            
-            def pack(self, dummy=None):
-                self.packer.pack_nfs_opnum4(self.argop)
+        self._verify_notsupp(0, lambda x: x == 0)
+        self._verify_notsupp(1, lambda x: x == 1)
+        self._verify_notsupp(2, lambda x: x == 2)
+        # For unknown operations beyound OP_WRITE, the server should return
+        # the largest defined operation. It should at least be OP_WRITE!
+        self._verify_notsupp(1000, lambda x: x > OP_WRITE)
 
-        op = custom_nfs_argop4(self.ncl, argop=0)
-        res = self.do_compound([op])
-        self.assert_status(res, [NFS4ERR_NOTSUPP])
-
-        op = custom_nfs_argop4(self.ncl, argop=1)
-        res = self.do_compound([op])
-        self.assert_status(res, [NFS4ERR_NOTSUPP])
-
-        op = custom_nfs_argop4(self.ncl, argop=2)
-        res = self.do_compound([op])
-        self.assert_status(res, [NFS4ERR_NOTSUPP])
-
-    def testUndefinedOp(self):
-        """Test COMPOUND with (undefined) operation 100
-
-        Covered invalid equivalence classes: 5
-        """
-        # nfs4types.nfs_argop4 does not allow packing invalid operations. 
-        class custom_nfs_argop4:
-            def __init__(self, ncl, argop):
-                self.ncl = ncl
-                self.packer = ncl.packer
-                self.unpacker = ncl.unpacker
-                self.argop = argop
-            
-            def pack(self, dummy=None):
-                self.packer.pack_nfs_opnum4(self.argop)
-
-        op = custom_nfs_argop4(self.ncl, argop=100)
-
-        try:
-            self.ncl.compound([op])
-        except BadDiscriminant, e:
-            sys.stdout.flush()
-            # FIXME: We should verify that the return code is NFS4ERR_NOTSUPP,
-            # but this is currently not possible since the compound call failed. 
-            self.failIf(e.value < OP_WRITE + 1,
-                        "Return value for operation 100 less than OP_WRITE + 1")
-        except rpc.RPCException, e:
-            self.fail(e)
-        else:
-            # If we got here, no RPCException was raised. This must mean that
-            # nfs_argop.unpack succeeded. Strange. 
-            self.fail("Return value for operation 100 was >= OP_ACCESS and <= OP_WRITE")
-            
 
 class AccessSuite(NFSSuite):
     """Test operation 3: ACCESS
@@ -1108,7 +1092,7 @@ class CreateSuite(NFSSuite):
         attrmask = nfs4lib.list2attrmask([FATTR4_LINK_SUPPORT])
         dummy_ncl = nfs4lib.DummyNcl()
         dummy_ncl.packer.pack_bool(TRUE)
-        attr_vals = dummy_ncl.packer.get_buf()
+        attr_vals = dummy_ncl.packer.get_buffer()
         createattrs = fattr4(self.ncl, attrmask, attr_vals)
         
         createop = self.ncl.create_op(objtype, self.obj_name, createattrs)
@@ -2168,7 +2152,7 @@ class NverifySuite(NFSSuite):
             attrmask = nfs4lib.list2attrmask([FATTR4_OWNER])
             dummy_ncl = nfs4lib.DummyNcl()
             dummy_ncl.packer.pack_utf8string(name)
-            attr_vals = dummy_ncl.packer.get_buf()
+            attr_vals = dummy_ncl.packer.get_buffer()
             obj_attributes = fattr4(self.ncl, attrmask, attr_vals)
             operations.append(self.ncl.nverify_op(obj_attributes))
 
@@ -3771,7 +3755,7 @@ class SetattrSuite(NFSSuite):
         attrmask = nfs4lib.list2attrmask([FATTR4_MODE])
         dummy_ncl = nfs4lib.DummyNcl()
         dummy_ncl.packer.pack_uint(self.new_mode)
-        attr_vals = dummy_ncl.packer.get_buf()
+        attr_vals = dummy_ncl.packer.get_buffer()
         obj_attributes = fattr4(self.ncl, attrmask, attr_vals)
         return self.ncl.setattr_op(stateid, obj_attributes)
 
@@ -3942,7 +3926,7 @@ class SetattrSuite(NFSSuite):
         attrmask = nfs4lib.list2attrmask([FATTR4_LINK_SUPPORT])
         dummy_ncl = nfs4lib.DummyNcl()
         dummy_ncl.packer.pack_bool(FALSE)
-        attr_vals = dummy_ncl.packer.get_buf()
+        attr_vals = dummy_ncl.packer.get_buffer()
         obj_attributes = fattr4(self.ncl, attrmask, attr_vals)
         operations.append(self.ncl.setattr_op(stateid, obj_attributes))
 
@@ -3985,7 +3969,7 @@ class SetattrSuite(NFSSuite):
             attrmask = nfs4lib.list2attrmask([FATTR4_MIMETYPE])
             dummy_ncl = nfs4lib.DummyNcl()
             dummy_ncl.packer.pack_utf8string(name)
-            attr_vals = dummy_ncl.packer.get_buf()
+            attr_vals = dummy_ncl.packer.get_buffer()
             obj_attributes = fattr4(self.ncl, attrmask, attr_vals)
             # Setattr operation
             operations.append(self.ncl.setattr_op(stateid, obj_attributes))
@@ -4008,7 +3992,7 @@ class SetattrSuite(NFSSuite):
         attrmask = nfs4lib.list2attrmask([FATTR4_TIME_MODIFY_SET])
         settime = settime4(dummy_ncl, set_it=SET_TO_CLIENT_TIME4, time=time)
         settime.pack()
-        attr_vals = dummy_ncl.packer.get_buf()
+        attr_vals = dummy_ncl.packer.get_buffer()
         obj_attributes = fattr4(self.ncl, attrmask, attr_vals)
         operations.append(self.ncl.setattr_op(stateid, obj_attributes))
 
@@ -4332,7 +4316,7 @@ class VerifySuite(NFSSuite):
             attrmask = nfs4lib.list2attrmask([FATTR4_OWNER])
             dummy_ncl = nfs4lib.DummyNcl()
             dummy_ncl.packer.pack_utf8string(name)
-            attr_vals = dummy_ncl.packer.get_buf()
+            attr_vals = dummy_ncl.packer.get_buffer()
             obj_attributes = fattr4(self.ncl, attrmask, attr_vals)
             operations.append(self.ncl.verify_op(obj_attributes))
 
