@@ -170,6 +170,7 @@ class PartialNFS4Client:
             claim = open_claim4(self, claim=CLAIM_NULL, file=file)
 
         if not owner:
+	    # FIXME: Change to PID?
             owner = pwd.getpwuid(os.getuid())[0]
 
         if not clientid:
