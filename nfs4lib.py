@@ -465,16 +465,17 @@ class PartialNFS4Client:
 
 	    entry = reply.entries[0]
 
+            # Loop over all entries in result. 
 	    while 1:
 		entries.append(entry)
-		cookie = entry.cookie
 		if not entry.nextentry:
 		    break
 		entry = entry.nextentry[0]
 	    
 	    if res.resarray[1].arm.arm.reply.eof:
 		break
-	    
+
+            cookie = entry.cookie
 	    cookieverf = res.resarray[1].arm.arm.cookieverf
 
 	return entries
