@@ -122,7 +122,6 @@ class ClientApp(cmd.Cmd):
         self.completer = Completer()
         self.completer.pythonmode = pythonmode
 
-        # FIXME: show current directory.
         self.baseprompt = "nfs4: %s>"
 
         # FIXME
@@ -162,7 +161,22 @@ class ClientApp(cmd.Cmd):
             if not self.ncl.cwd:
                 self.ncl.cwd = "/"
         else:
-            self.ncl.cwd = os.path.join(self.ncl.cwd, line)
+            candidate_cwd = os.path.join(self.ncl.cwd, line)
+            pathname = nfs4lib.str2pathname(candidate_cwd)
+            operations = [self.ncl.putrootfh_op()]
+            if pathname:
+                lookupop = self.ncl.lookup_op(pathname)
+                operations.append(lookupop)
+
+            res = self.ncl.compound(operations)
+            try:
+                nfs4lib.check_result(res)
+            except:
+                # FIXME: More detailed error handling. 
+                print "Cannot change directory to", line
+                return
+
+            self.ncl.cwd = candidate_cwd
 
         self._set_prompt()
 
