@@ -54,7 +54,16 @@ def main(treeroot):
     print "Creating doc/README"
     f = open("doc/README", "w")
     f.write("Welcome to this NFS4 server.\n")
-    f.write("Enjoy.")
+    f.write("Enjoy.\n")
+    f.close()
+
+    print "Creating directory doc/porting"
+    os.mkdir("doc/porting")
+
+    print "Creating doc/porting/TODO"
+    f = open("doc/porting/TODO", "w")
+    f.write("Need to work on DNIX support...\n")
+    f.write("Enjoy.\n")
     f.close()
 
     print "Creating src"
