@@ -77,7 +77,8 @@ class NFSSuite(unittest.TestCase):
         self.hello_c = nfs4lib.unixpath2comps("/src/hello.c")
         self.dirsymlinkfile = nfs4lib.unixpath2comps("/src/doc")
         # Should not exist
-        self.vaporfile = nfs4lib.unixpath2comps("vapor_object")
+        self.vaporfilename = "vapor_object"
+        self.vaporfile = nfs4lib.unixpath2comps(self.vaporfilename)
         # Not accessable
         self.notaccessablefile = nfs4lib.unixpath2comps("/private/info.txt")
     
@@ -2239,14 +2240,16 @@ class RemoveSuite(NFSSuite):
         NFSSuite.setUp(self)
         self.obj_name = "object1"
 
-        self.lookup_dir_op = self.ncl.lookup_op(self.tmp_dir)
+        self.lookup_dir_ops = self.ncl.lookup_path(self.tmp_dir)
 
     def _create_object(self):
         # Make sure we have something to remove. We create a directory, because
         # it's simple.
+        operations = [self.putrootfhop] + self.lookup_dir_ops
         objtype = createtype4(self.ncl, type=NF4DIR)
-        createop = self.ncl.create_op(self.obj_name, objtype)
-        res = self.do_compound([self.putrootfhop, self.lookup_dir_op, createop])
+        operations.append(self.ncl.create(objtype, self.obj_name))
+
+        res = self.do_compound(operations)
 
         self.assert_status(res, [NFS4_OK, NFS4ERR_EXIST])
 
@@ -2259,8 +2262,9 @@ class RemoveSuite(NFSSuite):
         Covered valid equivalence classes: 10, 20
         """
         self._create_object()
-        removeop = self.ncl.remove_op(self.obj_name)
-        res = self.do_compound([self.putrootfhop, self.lookup_dir_op, removeop])
+        operations = [self.putrootfhop] + self.lookup_dir_ops
+        operations.append(self.ncl.remove_op(self.obj_name))
+        res = self.do_compound(operations)
 
         self.assert_OK(res)
 
@@ -2272,9 +2276,11 @@ class RemoveSuite(NFSSuite):
 
         Covered invalid equivalence classes: 11
         """
-        lookupop = self.ncl.lookup_op(self.regfile)
-        removeop = self.ncl.remove_op(self.obj_name)
-        res = self.do_compound([self.putrootfhop, lookupop, removeop])
+        lookupops = self.ncl.lookup_path(self.regfile)
+        operations = [self.putrootfhop] + lookupops
+        operations.append(self.ncl.remove_op(self.obj_name))
+        
+        res = self.do_compound(operations)
 
         self.assert_status(res, [NFS4ERR_NOTDIR])
 
@@ -2293,9 +2299,10 @@ class RemoveSuite(NFSSuite):
         Covered invalid equivalence classes: 21
         """
         self._create_object()
+        operations = [self.putrootfhop] + self.lookup_dir_ops
 
-        removeop = self.ncl.remove_op("")
-        res = self.do_compound([self.putrootfhop, self.lookup_dir_op, removeop])
+        operations.append(self.ncl.remove_op(""))
+        res = self.do_compound(operations)
 
         self.assert_status(res, [NFS4ERR_INVAL])
 
@@ -2314,8 +2321,9 @@ class RemoveSuite(NFSSuite):
 
         Covered invalid equivalence classes: 23
         """
-        removeop = self.ncl.remove_op("vapor_object")
-        res = self.do_compound([self.putrootfhop, self.lookup_dir_op, removeop])
+        operations = [self.putrootfhop] + self.lookup_dir_ops
+        operations.append(self.ncl.remove_op(self.vaporfilename))
+        res = self.do_compound(operations)
 
         self.assert_status(res, [NFS4ERR_NOENT])
         
