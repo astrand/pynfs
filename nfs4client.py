@@ -192,8 +192,10 @@ class ClientApp(cmd.Cmd):
             
 
     def do_dir(self, line):
+        pathcomps = self.ncl.get_pathcomps_rel(line)
+        
         putrootfhop = self.ncl.putrootfh_op()
-        lookupops = self.ncl.lookup_path(self.ncl.cwd)
+        lookupops = self.ncl.lookup_path(pathcomps)
         operations = [putrootfhop] + lookupops
 
         getfhop = self.ncl.getfh_op()
