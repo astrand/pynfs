@@ -362,8 +362,8 @@ class PartialNFS4Client:
 
 	return self.setclientid_op(client_id, callback)
 
-    def setclientid_confirm_op(self, setclientid_confirm):
-	args = SETCLIENTID_CONFIRM4args(self, setclientid_confirm)
+    def setclientid_confirm_op(self, clientid):
+	args = SETCLIENTID_CONFIRM4args(self, clientid)
         return nfs_argop4(self, argop=OP_SETCLIENTID_CONFIRM, opsetclientid_confirm=args)
 
     def verify_op(self, obj_attributes):
@@ -396,10 +396,9 @@ class PartialNFS4Client:
         check_result(res)
         
         self.clientid = res.resarray[0].arm.arm.clientid
-        setclientid_confirm = res.resarray[0].arm.arm.setclientid_confirm
 
         # SETCLIENTID_CONFIRM
-        setclientid_confirmop = self.setclientid_confirm_op(setclientid_confirm)
+        setclientid_confirmop = self.setclientid_confirm_op(self.clientid)
         res =  self.compound([setclientid_confirmop])
 
         check_result(res)
