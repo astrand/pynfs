@@ -29,8 +29,11 @@
 # well. Currently, "invalid filehandle" are tested by doing operations without
 # filehandles.
 #
-# Add testing of \ to testSlash methods. 
-
+# Add testing of \ to testSlash methods.
+#
+# More testing of strange attributes and handling of NFS4ERR_ATTRNOTSUPP;
+# more fine-grained eqv.part of attribute masks. 
+#
 # Nomenclature: Each test class is referred to as a "test suite". Each
 # test* method is a "test case".
 
@@ -1118,6 +1121,9 @@ class CreateSuite(NFSSuite):
         """CREATE should fail with NFS4ERR_XDR on invalid attr_vals
 
         Covered invalid equivalence classes: 51
+
+        Comments: BADXDR should take precedence over NOTSUPP; BADXDR
+        should be returned even if the server does not support the attribute
         """
         if not self.remove_object(): return
         operations = [self.putrootfhop] + self.lookup_dir_ops
@@ -1125,9 +1131,8 @@ class CreateSuite(NFSSuite):
         objtype = createtype4(self.ncl, type=NF4DIR)
 
         attrmask = nfs4lib.list2attrmask([FATTR4_ARCHIVE])
-        dummy_ncl = nfs4lib.DummyNcl()
-        dummy_ncl.packer.pack_bool(TRUE)
-        attr_vals = dummy_ncl.packer.get_buf()
+        # We use a short buffer, to trigger BADXDR. 
+        attr_vals = ""
         createattrs = fattr4(self.ncl, attrmask, attr_vals)
         
         createop = self.ncl.create_op(objtype, self.obj_name, createattrs)
