@@ -3499,7 +3499,7 @@ class SetattrSuite(NFSSuite):
         # FIXME: Implement.
         self.info_message("(TEST NOT IMPLEMENTED)")
 
-    def testNamedattrdir(self):
+    def testNamedattr(self):
         """SETATTR(FATTR4_MODE) on named attribute 
 
         Covered valid equivalence classes: 18, 20, 30, 40
