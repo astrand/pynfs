@@ -3585,7 +3585,31 @@ class SetattrSuite(NFSSuite):
 
         self.assert_status(res, [NFS4ERR_BADXDR])
 
-    # FIXME: Cover class 42. Try setting mime-type with invalid UTF8. 
+    def testNonUTF8(self):
+        """SETATTR(FATTR4_MIMETYPE) with non-utf8 string should return NFS4ERR_INVAL
+
+        Covered invalid equivalence classes: 42
+
+        """
+        for name in self.get_invalid_utf8strings():
+            lookupops = self.ncl.lookup_path(self.regfile)
+            operations = [self.putrootfhop] + lookupops
+            
+            stateid = stateid4(self.ncl, 0, "")
+            # Create attribute
+            attrmask = nfs4lib.list2attrmask([FATTR4_MIMETYPE])
+            dummy_ncl = nfs4lib.DummyNcl()
+            dummy_ncl.packer.pack_utf8string(name)
+            attr_vals = dummy_ncl.packer.get_buf()
+            obj_attributes = fattr4(self.ncl, attrmask, attr_vals)
+            # Setattr operation
+            operations.append(self.ncl.setattr_op(stateid, obj_attributes))
+
+            res = self.do_compound(operations)
+            
+            if self._check_notsupp(res): return
+
+            self.assert_status(res, [NFS4ERR_INVAL])
 
     #
     # Extra tests. 
