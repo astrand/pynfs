@@ -479,7 +479,14 @@ class CommitTestSuite(NFSTestSuite):
         operations = [self.putrootfhop] + lookupops
         operations.append(self.ncl.commit_op(0xffffffffffffffffL, 0))
         res = self.do_compound(operations)
-        self.assert_OK(res)        
+        self.assert_OK(res)
+
+    def _testWithCount(self, count):
+        lookupops = self.ncl.lookup_path(self.normfile)
+        operations = [self.putrootfhop] + lookupops
+        operations.append(self.ncl.commit_op(0, count))
+        res = self.do_compound(operations)
+        self.assert_OK(res)
 
     def testCounts(self):
         """COMMIT on file with count 0, 1 and 2**32 - 1
@@ -490,92 +497,71 @@ class CommitTestSuite(NFSTestSuite):
         in the COMMIT operation. All values are legal. Tested values
         are 0, 1 and 2**32 - 1 (selected by BVA)
         """
-
-        def test_with_count(self, count):
-            lookupops = self.ncl.lookup_path(self.normfile)
-            operations = [self.putrootfhop] + lookupops
-            operations.append(self.ncl.commit_op(0, count))
-            res = self.do_compound(operations)
-            self.assert_OK(res)
-        
         # count = 0
-        test_with_count(self, 0)
+        self._testWithCount(0)
 
         # count = 1
-        test_with_count(self, 1)
+        self._testWithCount(1)
         
         # count = 2**32 - 1
-        test_with_count(self, 0xffffffffL)
+        self._testWithCount(0xffffffffL)
 
     #
     # Testcases covering invalid equivalence classes
     #
-    def testOnLink(self):
-        """COMMIT should fail with NFS4ERR_INVAL on Links
-
-        Covered invalid equivalence classes: 2
-        """
-        lookupops = self.ncl.lookup_path(self.linkfile)
+    def _testOnObj(self, obj, expected_response):
+        lookupops = self.ncl.lookup_path(obj)
         operations = [self.putrootfhop] + lookupops
         operations.append(self.ncl.commit_op(0, 0))
         res = self.do_compound(operations)
-        self.assert_status(res, [NFS4ERR_SYMLINK])
+        self.assert_status(res, [expected_response])
+    
+    def testOnLink(self):
+        """COMMIT should fail with NFS4ERR_SYMLINK on links
+
+        Covered invalid equivalence classes: 2
+        """
+        self._testOnObj(self.linkfile, NFS4ERR_SYMLINK)
 
     def testOnBlock(self):
         """COMMIT should fail with NFS4ERR_INVAL on block device
         
         Covered invalid equivalence classes: 3
         """
-        lookupop = self.ncl.lookup_op(self.blockfile)
-        commitop = self.ncl.commit_op(0, 0)
-        res = self.do_compound([self.putrootfhop, lookupop, commitop])
-        self.failUnlessEqual(res.status, NFS4ERR_INVAL)
+        self._testOnObj(self.blockfile, NFS4ERR_INVAL)
 
     def testOnChar(self):
         """COMMIT should fail with NFS4ERR_INVAL on character device
 
         Covered invalid equivalence classes: 4
         """
-        lookupop = self.ncl.lookup_op(self.charfile)
-        commitop = self.ncl.commit_op(0, 0)
-        res = self.do_compound([self.putrootfhop, lookupop, commitop])
-        self.failUnlessEqual(res.status, NFS4ERR_INVAL)
+        self._testOnObj(self.charfile, NFS4ERR_INVAL)
 
     def testOnSocket(self):
         """COMMIT should fail with NFS4ERR_INVAL on socket
 
         Covered invalid equivalence classes: 5
         """
-        lookupop = self.ncl.lookup_op(self.socketfile)
-        commitop = self.ncl.commit_op(0, 0)
-        res = self.do_compound([self.putrootfhop, lookupop, commitop])
-        self.failUnlessEqual(res.status, NFS4ERR_INVAL)
+        self._testOnObj(self.socketfile, NFS4ERR_INVAL)
 
     def testOnFifo(self):
         """COMMIT should fail with NFS4ERR_INVAL on FIFOs
 
         Covered invalid equivalence classes: 6
         """
-        lookupop = self.ncl.lookup_op(self.fifofile)
-        commitop = self.ncl.commit_op(0, 0)
-        res = self.do_compound([self.putrootfhop, lookupop, commitop])
-        self.failUnlessEqual(res.status, NFS4ERR_INVAL)
+        self._testOnObj(self.fifofile, NFS4ERR_INVAL)
         
     def testOnDir(self):
         """COMMIT should fail with NFS4ERR_ISDIR on directories
 
         Covered invalid equivalence classes: 7
         """
-        lookupop = self.ncl.lookup_op(self.dirfile)
-        commitop = self.ncl.commit_op(0, 0)
-        res = self.do_compound([self.putrootfhop, lookupop, commitop])
-        self.failUnlessEqual(res.status, NFS4ERR_ISDIR)
-
+        self._testOnObj(self.dirfile, NFS4ERR_ISDIR)
+        
     def testWithoutFh(self):
         """COMMIT should return NFS4ERR_NOFILEHANDLE if called without filehandle.
 
         Covered invalid equivalence classes: 8
-        
         """
         commitop = self.ncl.commit_op(0, 0)
         res = self.do_compound([commitop])
@@ -593,12 +579,11 @@ class CommitTestSuite(NFSTestSuite):
         plus count that is larger than 2**64, the server should return
         NFS4ERR_INVAL
         """
-        lookupop = self.ncl.lookup_op(self.normfile)
-        
-        commitop = self.ncl.commit_op(-1, -1)
-        res = self.do_compound([self.putrootfhop, lookupop, commitop])
-        self.failUnlessEqual(res.status, NFS4ERR_INVAL,
-                             "no NFS4ERR_INVAL on overflow")
+        lookupops = self.ncl.lookup_path(self.normfile)
+        operations = [self.putrootfhop] + lookupops
+        operations.append(self.ncl.commit_op(-1, -1))
+        res = self.do_compound(operations)
+        self.assert_status(res, [NFS4ERR_INVAL])
 
 
 class CreateTestSuite(NFSTestSuite):
