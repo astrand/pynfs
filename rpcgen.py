@@ -291,7 +291,7 @@ def gen_pack_code(ip, id, typedecl):
     base_type = known_types[typedecl.base_type]
     if base_type.composite:
         if typedecl.isarray:
-            ip.pr("pack_objarray(self, self.%s)" % id)
+            ip.pr("pack_objarray(self.ncl, self.%s)" % id)
         else:
             ip.pr("self.%s.pack()" % id)
     else:
@@ -302,9 +302,9 @@ def gen_unpack_code(ip, id, typedecl):
     base_type = known_types[typedecl.base_type]
     if base_type.composite:
         if typedecl.isarray:
-            ip.pr("self.%s = unpack_objarray(self, %s)" % (id, typedecl.base_type))
+            ip.pr("self.%s = unpack_objarray(self.ncl, %s)" % (id, typedecl.base_type))
         else:
-            ip.pr("self.%s = %s(self)" % (id, typedecl.base_type))
+            ip.pr("self.%s = %s(self.ncl)" % (id, typedecl.base_type))
             ip.pr("self.%s.unpack()" % id)
     else:
         ip.pr("self.%s = self.unpacker.unpack_%s()" % (id, typedecl.base_type))
@@ -324,7 +324,7 @@ def gen_packers(id, typeobj):
         ip.change(4)
         if base_type.composite:
             # Handled by class
-            ip.pr("pack_objarray(self, data)")
+            ip.pr("pack_objarray(self.ncl, data)")
         else:
             # Array
             if typeobj.base_type == "string":
@@ -353,7 +353,7 @@ def gen_packers(id, typeobj):
         ip.change(4)
         if base_type.composite:
             # Handled by class
-            ip.pr("return self.unpack_objarray(self, %s)" % typeobj.base_type)
+            ip.pr("return self.unpack_objarray(self.ncl, %s)" % typeobj.base_type)
         else:
             # Array
             if typeobj.base_type == "string":
