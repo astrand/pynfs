@@ -61,6 +61,13 @@ class NFSTestCase(unittest.TestCase):
 
 
 class AccessTestCase(NFSTestCase):
+    """Test ACCESS operation.
+
+    Note: We do not examine if the "access" result actually corresponds to
+    the correct rights. This is hard since the rights for a object can
+    change at any time.
+    """
+    
     maxval = ACCESS4_DELETE + ACCESS4_EXECUTE + ACCESS4_EXTEND + ACCESS4_LOOKUP \
              + ACCESS4_MODIFY + ACCESS4_READ
 
@@ -160,6 +167,12 @@ class AccessTestCase(NFSTestCase):
 
 
 class CommitTestCase(NFSTestCase):
+    """Test COMMIT operation.
+
+    Note: We do not examine the writeverifier in any way. It's hard
+    since it can change at any time.
+    """
+    
     def setUp(self):
         self.connect()
         self.putrootfhop = self.ncl.putrootfh_op()
@@ -225,7 +238,7 @@ class CommitTestCase(NFSTestCase):
         res = self.ncl.compound([self.putrootfhop, lookupop, commitop])
         self.failUnlessEqual(res.status, NFS4_OK)
 
-        
+
 
 class TestProgram(unittest.TestProgram):
     USAGE = """\
