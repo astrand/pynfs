@@ -2796,8 +2796,110 @@ class SetclientidconfirmTestCase(NFSTestCase):
 
 
 class VerifyTestCase(NFSTestCase):
-    # FIXME
-    pass
+    """Test VERIFY operation
+
+    Equivalence partitioning:
+
+    Input Condition: current filehandle
+        Valid equivalence classes:
+            link(1)
+            block(2)
+            char(3)
+            socket(4)
+            FIFO(5)
+            dir(6)
+            file(7)
+        Invalid equivalence classes:
+            invalid filehandle(8)
+    Input Condition: fattr.attrmask
+        Valid equivalence classes:
+            valid attribute(9)
+        Invalid equivalence classes:
+            invalid attrmask(10) (FATTR4_*_SET)
+    Input Condition: fattr.attr_vals
+        Valid equivalence classes:
+            same attributes(11)
+            not same attributes(12)
+        Invalid equivalence classes:
+            -
+    """
+    #
+    # Testcases covering valid equivalence classes.
+    #
+    def testSame(self):
+        """VERIFY with same attributes should execute remaining ops
+
+        Covered valid equivalence classes: 1, 2, 3, 4, 5, 6, 7, 9, 11
+        """
+        # Fetch sizes for all objects
+        obj_sizes = []
+        for lookupop in self.lookup_all_objects():
+            getattrop = self.ncl.getattr([FATTR4_SIZE])
+            res = self.do_compound([self.putrootfhop, lookupop, getattrop])
+            self.assert_OK(res)
+            obj = res.resarray[2].arm.arm.obj_attributes
+            d =  nfs4lib.fattr2dict(obj)
+            obj_sizes.append((lookupop, d["size"]))
+
+        # For each type of object, do verify with same filesize
+        # get filesize again, and check if it match previous size.
+        for (lookupop, objsize) in obj_sizes:
+            # Verify op
+            attrmask = nfs4lib.list2attrmask([FATTR4_SIZE])
+            # Size attribute is 8 bytes. 
+            attr_vals = nfs4lib.long2opaque(objsize, 8)
+            obj_attributes = nfs4lib.fattr4(self.ncl, attrmask, attr_vals)
+            verifyop = self.ncl.verify_op(obj_attributes)
+
+            # New getattr
+            getattrop = self.ncl.getattr([FATTR4_SIZE])
+
+            res = self.do_compound([self.putrootfhop, lookupop,
+                                    verifyop, getattrop])
+
+            self.assert_OK(res)
+
+            # Assert the new getattr was executed.
+            # File sizes should match. 
+            obj = res.resarray[-1].arm.arm.obj_attributes
+            d =  nfs4lib.fattr2dict(obj)
+            new_size = d["size"]
+            self.failIf(objsize != new_size,
+                        "GETATTR after VERIFY returned different filesize")
+
+    def testNotSame(self):
+        """VERIFY with not same attributes should return NFS4ERR_NOT_SAME
+
+        Covered valid equivalence classes: 1, 2, 3, 4, 5, 6, 7, 9, 12
+        """
+        # Fetch sizes for all objects
+        obj_sizes = []
+        for lookupop in self.lookup_all_objects():
+            getattrop = self.ncl.getattr([FATTR4_SIZE])
+            res = self.do_compound([self.putrootfhop, lookupop, getattrop])
+            self.assert_OK(res)
+            obj = res.resarray[2].arm.arm.obj_attributes
+            d =  nfs4lib.fattr2dict(obj)
+            obj_sizes.append((lookupop, d["size"]))
+        
+        # For each type of object, do verify with wrong filesize. 
+        for (lookupop, objsize) in obj_sizes:
+            # Verify op
+            attrmask = nfs4lib.list2attrmask([FATTR4_SIZE])
+            # Size attribute is 8 bytes. 
+            attr_vals = nfs4lib.long2opaque(objsize + 17, 8)
+            obj_attributes = nfs4lib.fattr4(self.ncl, attrmask, attr_vals)
+            verifyop = self.ncl.verify_op(obj_attributes)
+
+            res = self.do_compound([self.putrootfhop, lookupop,
+                                    verifyop])
+
+            self.assert_status(res, [NFS4ERR_NOT_SAME])
+
+
+    #
+    # Testcases covering invalid equivalence classes.
+    #
 
 class WriteTestCase(NFSTestCase):
     # FIXME
