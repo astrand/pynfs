@@ -2968,6 +2968,7 @@ class VerifySuite(NFSSuite):
 class WriteSuite(NFSSuite):
     """Test operation 38: WRITE
 
+    FIXME: Complete. 
     FIXME: Write to named attribute. 
 
     Equivalence partitioning:
@@ -3015,18 +3016,21 @@ class WriteSuite(NFSSuite):
 
         Covered equivalence classes: 10, 20, 30, 40, 50
         """
+        self.info_message("(TEST NOT IMPLEMENTED)")
 
     def testStateidOne(self):
         """WRITE with stateid=ones and DATA_SYNC4
 
         Covered equivalence classes: 10, 21, 31, 41, 51
         """
+        self.info_message("(TEST NOT IMPLEMENTED)")
 
     def testWithOpen(self):
         """WRITE with open and FILE_SYNC4
 
         Covered equivalence classes: 10, 22, 30, 42, 51
         """
+        self.info_message("(TEST NOT IMPLEMENTED)")
     #
     # Testcases covering invalid equivalence classes.
     #
