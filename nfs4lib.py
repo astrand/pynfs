@@ -30,6 +30,7 @@ import random
 import array
 import socket
 import os
+import pwd
 
 class PartialNFS4Client:
     def addpackers(self):
@@ -122,24 +123,18 @@ class PartialNFS4Client:
         # FIXME
         raise NotImplementedError()
 
-    def open(self, claim=None, openhow=None, owner=None, seqid=None, share_access=None, share_deny=None, clientid=None, file=None):
-        # FIXME: Clean up
+    def open(self, claim=None, how=UNCHECKED4, owner=None, seqid=0,
+             share_access=OPEN4_SHARE_ACCESS_READ, share_deny=OPEN4_SHARE_DENY_NONE,
+             clientid=None, file=None, opentype=OPEN4_NOCREATE):
+        
         if not claim:
             claim = open_claim4(self, claim=CLAIM_NULL, file=file)
 
-        if not openhow:
-            openhow = UNCHECKED4
+        if not owner:
+            owner = pwd.getpwuid(os.getuid())[0]
 
-        # FIXME
-        seqid = 0
-        #
-        share_access = OPEN4_SHARE_ACCESS_READ
-        share_deny = OPEN4_SHARE_DENY_NONE
-
-        #file = pathname4(ncl, path=["foo"])
-
-        openhow = openflag4(self, opentype=OPEN4_NOCREATE, how=UNCHECKED4)
-        owner = nfs_lockowner4(self, clientid=clientid, owner="peter")
+        openhow = openflag4(self, opentype=opentype, how=how)
+        owner = nfs_lockowner4(self, clientid=clientid, owner=owner)
 
         args = OPEN4args(self, claim, openhow, owner, seqid, share_access, share_deny)
         return nfs_argop4(self, argop=OP_OPEN, opopen=args)
@@ -207,8 +202,7 @@ class PartialNFS4Client:
         # FIXME
         raise NotImplementedError()
 
-    def setclientid(self, verifier=None, id=None, cb_program=None, r_netid=None, r_addr=None, ):
-        # FIXME: clean up. 
+    def setclientid(self, verifier=None, id=None, cb_program=None, r_netid=None, r_addr=None):
         if not verifier:
             self.verifier = self.gen_random_64()
         else:
@@ -237,8 +231,8 @@ class PartialNFS4Client:
         return nfs_argop4(self, argop=OP_SETCLIENTID, opsetclientid=args)
 
     def setclientid_confirm(self, setclientid_confirm):
-        # FIXME: Clean up. 
         args = SETCLIENTID_CONFIRM4args(self, setclientid_confirm=setclientid_confirm)
+        
         return nfs_argop4(self, argop=OP_SETCLIENTID_CONFIRM, opsetclientid_confirm=args)
 
     def verify(self):
@@ -248,7 +242,6 @@ class PartialNFS4Client:
     def write(self):
         # FIXME
         raise NotImplementedError()
-    
 
     def cb_getattr(self):
         # FIXME
