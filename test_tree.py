@@ -23,6 +23,8 @@ import os
 import sys
 import socket
 
+UID = 4711
+GID = 4711
 
 def main(treeroot):
     if treeroot == "/":
@@ -97,7 +99,19 @@ int main()
 
     print "Creating symlink src/doc -> ../doc"
     os.symlink("../doc", "src/doc")
-    
+
+    print "Setting owner.group on entire tree to %s.%s" % (UID, GID)
+    set_owners(treeroot)
+
+
+def set_owners(treeroot):
+    os.path.walk(treeroot, set_owner, 0)
+
+def set_owner(arg, dirname, names):
+    for name in names:
+        abs_name = dirname + os.sep + name
+        
+        os.chown(abs_name, UID, GID)
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
