@@ -1,0 +1,2 @@
+It's not possible to test NFS4ERR_BADHANDLE, since there is no way of
+knowing the servers internal representation.
