@@ -20,7 +20,8 @@
 
 # TODO:
 # completion: should not complete commands as arguments.
-# Handle errors such as NFS4ERR_RESOURCE and NFS4ERR_DELAY. 
+# Handle errors such as NFS4ERR_RESOURCE and NFS4ERR_DELAY.
+# Move LOOKUP handling to common function. 
 
 from nfs4constants import *
 from nfs4types import *
@@ -167,8 +168,8 @@ class ClientApp(cmd.Cmd):
             pathcomps = nfs4lib.unixpath2comps(candidate_cwd)
             operations = [self.ncl.putrootfh_op()]
             if pathcomps:
-                lookupop = self.ncl.lookup_op(pathcomps)
-                operations.append(lookupop)
+                lookupops = self.ncl.lookup_path(pathcomps)
+                operations.extend(lookupops)
 
             res = self.ncl.compound(operations)
             try:
@@ -192,8 +193,8 @@ class ClientApp(cmd.Cmd):
         operations = [putrootfhop]
         
         if pathcomps:
-            lookupop = self.ncl.lookup_op(pathcomps)
-            operations.append(lookupop)
+            lookupops = self.ncl.lookup_path(pathcomps)
+            operations.extend(lookupops)
 
         getfhop = self.ncl.getfh_op()
         operations.append(getfhop)
@@ -259,7 +260,7 @@ class ClientApp(cmd.Cmd):
         operations = [self.ncl.putrootfh_op()]
         if pathcomps:
             # LOOKUP
-            operations.append(self.ncl.lookup_op(pathcomps))
+            operations.extend(self.ncl.lookup_path(pathcomps))
 
         # ACCESS
         operations.append(self.ncl.access_op(allrights))
@@ -332,7 +333,7 @@ class ClientApp(cmd.Cmd):
         # LOOKUP
         pathcomps = nfs4lib.unixpath2comps(self.ncl.cwd)
         if pathcomps:
-            operations.append(self.ncl.lookup_op(pathcomps))
+            operations.extend(self.ncl.lookup_path(pathcomps))
 
         # CREATE
         createop = self.ncl.create_op(objname, objtype)
@@ -419,7 +420,7 @@ class ClientApp(cmd.Cmd):
         # LOOKUP
         pathcomps = nfs4lib.unixpath2comps(self.ncl.cwd)
         if pathcomps:
-            operations.append(self.ncl.lookup_op(pathcomps))
+            operations.extend(self.ncl.lookup_path(pathcomps))
 
         # REMOVE
         removeop = self.ncl.remove_op(objname)
