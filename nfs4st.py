@@ -152,8 +152,17 @@ class NFSSuite(unittest.TestCase):
         self.privatedir = nfs4lib.unixpath2comps("/private")
         self.notaccessablefile = nfs4lib.unixpath2comps("/private/info.txt")
 
+    def create_client(self, uid, gid):
+        if transport == "tcp":
+            ncl = TCPTestClient(self, host, port, uid, gid)
+        elif transport == "udp":
+            ncl = UDPTestClient(self, host, port, uid, gid)
+        else:
+            raise RuntimeError, "Invalid protocol"
+        return ncl
+
     def connect(self):
-        self.ncl = nfs4lib.create_client(host, port, transport)
+        self.ncl = self.create_client(UID, GID)
     
     def failIfRaises(self, excClass, callableObj, *args, **kwargs):
         """Fail if exception of excClass or EOFError is raised"""
@@ -4124,7 +4133,7 @@ class SetclientidSuite(NFSSuite):
         
 
         # 2nd SETCLIENTID 
-        ncl2 = nfs4lib.UDPNFS4Client(host, port, UID+1, GID+1)
+        ncl2 = self.create_client(UID+1, GID+1)
         res = self._set(ncl2, id)
         self.assert_status(res, [NFS4ERR_CLID_INUSE])
         # FIXME: Should NFS4ERR_CLID_INUSE be returned on SETCLIENTID
