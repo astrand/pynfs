@@ -877,6 +877,29 @@ def get_attrbitnum_dict():
 	    
     return attrbitnum_dict
 
+def get_bitnumattr_dict():
+    """Get dictionary with attribute bit positions.
+    
+    Note: This function uses introspection. It will fail if nfs4constants.py has
+
+    an attribute named FATTR4_<something>. 
+
+    Returns { 1: "fattr4_type", 3: "fattr4_change", ...}
+    """
+    
+    import nfs4constants
+    bitnumattr_dict = {}
+    for name in dir(nfs4constants):
+        if name.startswith("FATTR4_"):
+            value = getattr(nfs4constants, name)
+            # Sanity checking. Must be integer. 
+            assert(type(value) == type(0))
+            attrname = name[7:].lower()
+            bitnumattr_dict[value] = attrname
+          
+    return bitnumattr_dict
+
+
 def get_attrunpackers(unpacker):
     """Get dictionary with attribute unpackers
 
@@ -893,6 +916,50 @@ def get_attrunpackers(unpacker):
 	    attrunpackers[attrname] = getattr(unpacker, name)
 
     return attrunpackers
+
+
+def get_attrpackers(packer):
+    """Get dictionary with attribute packers
+
+    Note: This function uses introspection. It depends on that nfs4packer.py
+    has methods for every packer.pack_fattr4_<attribute>.
+    """
+    import nfs4packer
+    attrpackers = {}
+    dict = get_attrbitnum_dict()
+    for name in dir(nfs4packer.NFS4Packer):
+        if name.startswith("pack_fattr4_"):
+            # pack_fattr4 is 12 chars. 
+            attrname = name[12:]
+            attrpackers[dict[attrname]] = getattr(packer, name)
+
+    return attrpackers
+
+def dict2fattr(dict, ncl):
+    """Convert a dictionary to a fattr4 object.
+
+    Returns a fattr4 object.  
+    """
+
+    attrs = dict.keys()
+    attrs.sort()
+
+    attr_vals = ""
+    rstncl = DummyNcl() 
+    import nfs4packer;
+    packer = nfs4packer.NFS4Packer(rstncl)
+    attrpackers = get_attrpackers(packer) 
+    
+    for attr in attrs:
+        value = dict[attr];
+        packerfun = attrpackers[attr];
+        packer.reset()
+        packerfun(value)
+        attr_vals+=packer.get_buffer()
+    attrmask = list2attrmask(attrs)
+    return fattr4(ncl, attrmask, attr_vals); 
+
+
 
 def fattr2dict(obj):
     """Convert a fattr4 object to a dictionary with attribute name and values.
@@ -950,6 +1017,33 @@ def list2attrmask(attrlist):
         arrint = arrint | (1L << bitpos)
         attr_request[arrintpos] = arrint
     return attr_request
+
+def attrmask2list(attrmask):
+    """Construct a list of attribute constants from the bitmap4 attrmask.
+    This is intended as the conjugate function to list2attrmask."""
+    offset = 0;
+    attrs = [];
+    for uint in attrmask:
+        for bit in range(32):
+            value = 1L << bit
+            if uint & value:
+                attrs.append(bit+offset*32)
+        offset += 1
+    return attrs
+
+def attrmask2attrs(attrmask):
+    """Construct a list of attribute constants from the bitmap4 attrmask.
+    This is intended as the conjugate function to list2attrmask."""
+    offset = 0;
+    attrs = [];
+    mapping = get_bitnumattr_dict();
+    for uint in attrmask:
+        for bit in range(32):
+            value = 1L << bit
+            if uint & value:
+                attrs.append(mapping[bit+offset*32])
+        offset += 1
+    return attrs
 
 
 def get_callstack_full():
