@@ -43,6 +43,9 @@ port = None
 transport = "udp"
 
 
+
+
+
 class NFSTestCase(unittest.TestCase):
     def __init__(self, methodName='runTest'):
         unittest.TestCase.__init__(self, methodName)
@@ -521,6 +524,30 @@ class CommitTestCase(NFSTestCase):
 
 class CreateTestCase(NFSTestCase):
     """Test CREATE operation.
+
+    Equivalence partitioning:
+
+    Input Condition: currrent filehandle
+        Valid equivalence classes:
+            dir(1)
+        Invalid equivalence classes:
+            not dir(2)
+            no filehandle(3)
+    Input Condition: name
+        Valid equivalence classes:
+            legal name(4)
+        Invalid equivalence classes:
+            zero length(5)
+    Input Condition: type
+        Valid equivalence classes:
+            link(6)
+            blockdev(7)
+            chardev(8)
+            socket(9)
+            FIFO(10)
+            directory(11)
+        Invalid equivalence classes:
+            regular file(12)
     """
     
     def setUp(self):
@@ -529,24 +556,27 @@ class CreateTestCase(NFSTestCase):
         self.obj_dir = "/tmp"
         self.obj_name = "object1"
 
+        pathname = nfs4lib.str2pathname(self.obj_dir)
+        self.lookup_dir_op = self.ncl.lookup_op(pathname)
+
         # Make sure the object to create does not exist.
         # This tests at the same time the REMOVE operation. Not much
         # we can do about it. 
         operations = [self.ncl.putrootfh_op()]
-
-        pathname = nfs4lib.str2pathname(self.obj_dir)
-        self.lookup_dir_op = self.ncl.lookup_op(pathname)
         operations.append(self.lookup_dir_op)
-
         operations.append(self.ncl.remove_op(self.obj_name))
 
         res = self.do_compound(operations)
         self.assert_status(res, [NFS4_OK, NFS4ERR_NOENT])
 
-    def testLink(self):
-        """CREATE link
 
-        Create an (symbolic) link.
+    #
+    # Testcases covering valid equivalence classes.
+    #
+    def testLink(self):
+        """CREATE (symbolic) link
+
+        Covered valid equivalence classes: 1, 4, 6
         """
 
         operations = [self.putrootfhop, self.lookup_dir_op]
@@ -561,6 +591,8 @@ class CreateTestCase(NFSTestCase):
 
     def testBlock(self):
         """CREATE a block device
+
+        Covered valid equivalence classes: 1, 4, 7
         """
 
         operations = [self.putrootfhop, self.lookup_dir_op]
@@ -575,7 +607,9 @@ class CreateTestCase(NFSTestCase):
         self.assert_status(res, [NFS4_OK, NFS4ERR_BADTYPE])
 
     def testChar(self):
-        """CREATE a char device
+        """CREATE a character device
+
+        Covered valid equivalence classes: 1, 4, 8
         """
 
         operations = [self.putrootfhop, self.lookup_dir_op]
@@ -591,6 +625,8 @@ class CreateTestCase(NFSTestCase):
 
     def testSocket(self):
         """CREATE a socket
+
+        Covered valid equivalence classes: 1, 4, 9
         """
 
         operations = [self.putrootfhop, self.lookup_dir_op]
@@ -603,8 +639,10 @@ class CreateTestCase(NFSTestCase):
             self.info_message("sockets not supported")
         self.assert_status(res, [NFS4_OK, NFS4ERR_BADTYPE])
 
-    def testFifo(self):
+    def testFIFO(self):
         """CREATE a FIFO
+
+        Covered valid equivalence classes: 1, 4, 10
         """
         
         operations = [self.putrootfhop, self.lookup_dir_op]
@@ -617,9 +655,10 @@ class CreateTestCase(NFSTestCase):
             self.info_message("FIFOs not supported")
         self.assert_status(res, [NFS4_OK, NFS4ERR_BADTYPE])
 
-
     def testDir(self):
         """CREATE a directory
+
+        Covered valid equivalence classes: 1, 4, 11
         """
 
         operations = [self.putrootfhop, self.lookup_dir_op]
@@ -631,6 +670,71 @@ class CreateTestCase(NFSTestCase):
         if res.status == NFS4ERR_BADTYPE:
             self.info_message("directories not supported!")
         self.assert_status(res, [NFS4_OK, NFS4ERR_BADTYPE])
+
+    #
+    # Testcases covering invalid equivalence classes.
+    #
+    def testFhNotDir(self):
+        """CREATE should fail with NFS4ERR_NOTDIR if (cfh) is not dir
+
+        Covered invalid equivalence classes: 2
+        """
+        
+        pathname = nfs4lib.str2pathname(self.normfile)
+        lookupop = self.ncl.lookup_op(pathname)
+        
+        operations = [self.putrootfhop, lookupop]
+        objtype = createtype4(self.ncl, type=NF4DIR)
+        createop = self.ncl.create_op(self.obj_name, objtype)
+        operations.append(createop)
+
+        res = self.do_compound(operations)
+        self.assert_status(res, [NFS4ERR_NOTDIR])
+
+    def testNoFh(self):
+        """CREATE should fail with NFS4ERR_NOFILEHANDLE if no (cfh)
+
+        Covered invalid equivalence classes: 3
+        """
+        
+        objtype = createtype4(self.ncl, type=NF4DIR)
+        createop = self.ncl.create_op(self.obj_name, objtype)
+
+        res = self.do_compound([createop])
+        self.assert_status(res, [NFS4ERR_NOFILEHANDLE])
+
+    def testZeroLengthName(self):
+        """CREATE with zero length name should fail
+
+        Covered invalid equivalence classes: 5
+        """
+        operations = [self.putrootfhop, self.lookup_dir_op]
+        objtype = createtype4(self.ncl, type=NF4DIR)
+        createop = self.ncl.create_op("", objtype)
+        operations.append(createop)
+
+        res = self.do_compound(operations)
+        self.assert_status(res, [NFS4ERR_INVAL])
+
+    def testRegularFile(self):
+        """CREATE should fail with NFS4ERR_INVAL for regular files
+
+        Covered invalid equivalence classes: 12
+        """
+        operations = [self.putrootfhop, self.lookup_dir_op]
+
+        # nfs4types.createtype4 does not allow packing invalid types
+        class custom_createtype4(createtype4):
+            def pack(self, dummy=None):
+                assert_not_none(self, self.type)
+                self.packer.pack_nfs_ftype4(self.type)
+            
+        objtype = custom_createtype4(self.ncl, type=NF4REG)
+        createop = self.ncl.create_op(self.obj_name, objtype)
+        operations.append(createop)
+
+        res = self.do_compound(operations)
+        self.assert_status(res, [NFS4ERR_INVAL])
 
 
 class GetattrTestCase(NFSTestCase):
