@@ -154,7 +154,11 @@ class PartialNFS4Client:
 
     def get_pathcomps_rel(self, filename):
         """Transform a unix-like pathname, relative to self.ncl,
-        to a list of components"""
+        to a list of components. If filename is not, assume "."
+        """
+        if not filename:
+            return self.cwd
+            
         if filename[0] == "/":
             # Absolute path
             pathcomps = []
