@@ -949,10 +949,14 @@ class CreateSuite(NFSSuite):
         createop = self.ncl.create(objtype, self.obj_name)
         operations.append(createop)
 
+        # FIXME: Maybe try to create block and character devices as root.
         res = self.do_compound(operations)
         if res.status == NFS4ERR_BADTYPE:
             self.info_message("blocks devices not supported")
-        self.assert_status(res, [NFS4_OK, NFS4ERR_BADTYPE])
+        elif res.status == NFS4ERR_PERM:
+            self.info_message("not permitted")
+        else:
+            self.assert_status(res, [NFS4_OK, NFS4ERR_BADTYPE, NFS4ERR_PERM])
 
     def testChar(self):
         """CREATE a character device
@@ -969,7 +973,10 @@ class CreateSuite(NFSSuite):
         res = self.do_compound(operations)
         if res.status == NFS4ERR_BADTYPE:
             self.info_message("character devices not supported")
-        self.assert_status(res, [NFS4_OK, NFS4ERR_BADTYPE])
+        elif res.status == NFS4ERR_PERM:
+            self.info_message("not permitted")
+        else:
+            self.assert_status(res, [NFS4_OK, NFS4ERR_BADTYPE, NFS4ERR_PERM])
 
     def testSocket(self):
         """CREATE a socket
