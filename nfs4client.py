@@ -351,13 +351,14 @@ class ClientApp(cmd.Cmd):
 
 
 def usage():
-    print "Usage: %s host[:[port]]<directory> [-u|-t] [-d debuglevel]" % sys.argv[0]
+    print "Usage: %s host[:[port]]<directory> [-u|-t] [-d debuglevel] [-c string]" % sys.argv[0]
     print "options:"
     print "-h, --help                   display this help and exit"
     print "-u, --udp                    use UDP as transport (default)"
     print "-t, --tcp                    use TCP as transport"
     print "-d level, --debuglevel level set debuglevel"
     print "-p, --pythonmode             enable Python interpreter mode"
+    print "-c, --commandstring string   execute semicolon separated commands"
     sys.exit(2)
 
 
@@ -366,16 +367,38 @@ if __name__ == "__main__":
         usage()
 
 
-    # Reorder arguments, so we can add options at the end 
+    # Reorder arguments, so we can add options at the end.
+    # This got a bit complicated, but...
     ordered_args = []
-    for arg in sys.argv[1:]:
+    options_with_args = ["-c"]
+
+    arglist = sys.argv[1:]
+    num_args = len(arglist)
+    skip_next = 0
+    for argnum in range(num_args):
+        if skip_next:
+            skip_next = 0
+            continue
+        
+        arg = arglist[argnum]
+        try:
+            nextarg = arglist[argnum+1]
+        except:
+            nextarg = ""
+
         if arg.startswith("-"):
             ordered_args.insert(0, arg)
+            if arg in options_with_args:
+                ordered_args.insert(1, nextarg)
+                skip_next = 1
         else:
             ordered_args.append(arg)
 
+    # Let getopt parse the arguments
     try:
-        opts, args = getopt.getopt(ordered_args, "hutdp", ["help", "udp", "tcp", "debuglevel", "pythonmode"])
+        opts, args = getopt.getopt(ordered_args, "hutdpc:",
+                                   ["help", "udp", "tcp", "debuglevel",
+                                    "pythonmode", "commandstring="])
     except getopt.GetoptError:
         print "invalid option"
         usage()
@@ -384,6 +407,7 @@ if __name__ == "__main__":
     transport = "udp"
     debuglevel = 0
     pythonmode = 0
+    commandstring = None
 
     for o, a in opts:
         if o in ("-h", "--help"):
@@ -397,6 +421,8 @@ if __name__ == "__main__":
             debuglevel = a
         if o in ("-p", "--pythonmode"):
             pythonmode = 1
+        if o in ("-c", "--commandstring"):
+            commandstring = a
 
 
     # By now, there should only be one argument left.
@@ -421,6 +447,14 @@ if __name__ == "__main__":
             directory = "/"
 
     c = ClientApp(transport, host, port, directory, pythonmode)
+
+    commands = []
+    if commandstring:
+        commands = commandstring.split(";")
+
+    for command in commands:
+        c.onecmd(command)
+    
     c.cmdloop()
 
     
