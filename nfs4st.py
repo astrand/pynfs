@@ -240,6 +240,10 @@ class NFSSuite(unittest.TestCase):
         """Return a (guessed) invalid verifier"""
         return nfs4lib.long2opaque(123456780, NFS4_VERIFIER_SIZE/8)
 
+    def get_zero_verifier(self):
+        """Return a empty verifier"""
+        return nfs4lib.long2opaque(000000000, NFS4_VERIFIER_SIZE/8)
+
     def get_invalid_clientid(self):
         """Return a (guessed) invalid clientid"""
         return 0x1234567890L
@@ -1124,7 +1128,7 @@ class CreateSuite(NFSSuite):
         self.assert_status(res, [NFS4ERR_INVAL])
 
     def testInvalidAttributes(self):
-        """CREATE should fail with NFS4ERR_XDR on invalid attr_vals
+        """CREATE should fail with NFS4ERR_BADXDR on invalid attr_vals
 
         Covered invalid equivalence classes: 51
 
@@ -4396,8 +4400,8 @@ class SetclientidSuite(NFSSuite):
         res = self.do_compound([setclientidop], ncl=ncl)
         return res
 
-    def _confirm(self, ncl, clientid):
-        setclientid_confirmop = ncl.setclientid_confirm_op(clientid)
+    def _confirm(self, ncl, clientid, setclientid_confirm):
+        setclientid_confirmop = ncl.setclientid_confirm_op(clientid, setclientid_confirm)
         res = self.do_compound([setclientid_confirmop], ncl=ncl)
         return res
     
@@ -4413,7 +4417,8 @@ class SetclientidSuite(NFSSuite):
         res = self._set(self.ncl, id)
         self.assert_OK(res)
         clientid = res.resarray[0].arm.arm.clientid
-        res = self._confirm(self.ncl, clientid)
+        setclientid_confirm = res.resarray[0].arm.arm.setclientid_confirm
+        res = self._confirm(self.ncl, clientid, setclientid_confirm)
         self.assert_OK(res)
         
 
@@ -4424,7 +4429,8 @@ class SetclientidSuite(NFSSuite):
         # FIXME: Should NFS4ERR_CLID_INUSE be returned on SETCLIENTID
         # or SETCLIENTID_CONFIRM?
         #clientid = res.resarray[0].arm.arm.clientid
-        #res = self._confirm(self.ncl, clientid)
+        #setclientid_confirm = res.resarray[0].arm.arm.setclientid_confirm
+        #res = self._confirm(self.ncl, clientid, setclientid_confirm)
         #self.assert_OK(res)
         
     
@@ -4457,9 +4463,10 @@ class SetclientidconfirmSuite(NFSSuite):
         res =  self.do_compound([setclientidop])
         self.assert_OK(res)
         clientid = res.resarray[0].arm.arm.clientid
+        setclientid_confirm = res.resarray[0].arm.arm.setclientid_confirm
         
         # SETCLIENTID_CONFIRM
-        setclientid_confirmop = self.ncl.setclientid_confirm_op(clientid)
+        setclientid_confirmop = self.ncl.setclientid_confirm_op(clientid, setclientid_confirm)
         res =  self.do_compound([setclientid_confirmop])
         self.assert_OK(res)
 
@@ -4472,7 +4479,8 @@ class SetclientidconfirmSuite(NFSSuite):
         Covered invalid equivalence classes: 11
         """
         clientid = self.get_invalid_clientid()
-        setclientid_confirmop = self.ncl.setclientid_confirm_op(clientid)
+        setclientid_confirm = self.get_zero_verifier()
+        setclientid_confirmop = self.ncl.setclientid_confirm_op(clientid, setclientid_confirm)
         res =  self.do_compound([setclientid_confirmop])
         self.assert_status(res, [NFS4ERR_STALE_CLIENTID])
 
