@@ -590,7 +590,6 @@ class CreateSuite(NFSSuite):
     """Test operation 6: CREATE
 
     FIXME: Add attribute directory and named attribute testing.
-    FIXME: test attribute argument. 
 
     Equivalence partitioning:
 
@@ -815,6 +814,51 @@ class CreateSuite(NFSSuite):
         res = self.do_compound(operations)
         self.assert_status(res, [NFS4ERR_INVAL])
 
+    def testInvalidAttrmask(self):
+        """CREATE should fail with NFS4ERR_INVAL on invalid attrmask
+
+        Covered invalid equivalence classes: 41
+        """
+        self._remove_object()
+        operations = [self.putrootfhop] + self.lookup_dir_ops
+
+        objtype = createtype4(self.ncl, type=NF4DIR)
+
+        attrmask = nfs4lib.list2attrmask([FATTR4_TIME_ACCESS_SET])
+        dummy_ncl = nfs4lib.DummyNcl()
+        settime = settime4(dummy_ncl, set_it=SET_TO_SERVER_TIME4)
+        settime.pack()
+        attr_vals = dummy_ncl.packer.get_buf()
+        createattrs = fattr4(self.ncl, attrmask, attr_vals)
+        
+        createop = self.ncl.create_op(objtype, self.obj_name, createattrs)
+        operations.append(createop)
+
+        res = self.do_compound(operations)
+        self.assert_status(res, [NFS4ERR_INVAL])
+
+    def testInvalidAttributes(self):
+        """CREATE should fail with NFS4ERR_XDR on invalid attr_vals
+
+        Covered invalid equivalence classes: 51
+        """
+        self._remove_object()
+        operations = [self.putrootfhop] + self.lookup_dir_ops
+
+        objtype = createtype4(self.ncl, type=NF4DIR)
+
+        attrmask = nfs4lib.list2attrmask([FATTR4_ARCHIVE])
+        dummy_ncl = nfs4lib.DummyNcl()
+        dummy_ncl.packer.pack_bool(TRUE)
+        attr_vals = dummy_ncl.packer.get_buf()
+        createattrs = fattr4(self.ncl, attrmask, "")
+        
+        createop = self.ncl.create_op(objtype, self.obj_name, createattrs)
+        operations.append(createop)
+
+        res = self.do_compound(operations)
+        self.assert_status(res, [NFS4ERR_BADXDR])
+
 
 class DelegpurgeSuite(NFSSuite):
     """Test operation 7: DELEGPURGE
@@ -994,8 +1038,8 @@ class GetattrSuite(NFSSuite):
 
         obj = res.resarray[-1].arm.arm.obj_attributes
 
-        unpacker = nfs4lib.create_dummy_unpacker(obj.attr_vals)
-        intlist = unpacker.unpack_fattr4_supported_attrs()
+        ncl = nfs4lib.DummyNcl(obj.attr_vals)
+        intlist = ncl.unpacker.unpack_fattr4_supported_attrs()
         i = nfs4lib.intlist2long(intlist)
 
         all_mandatory_bits = 2**(FATTR4_RDATTR_ERROR+1) - 1
