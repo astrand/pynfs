@@ -2052,7 +2052,8 @@ class ReadTestCase(NFSTestCase):
 class ReaddirTestCase(NFSTestCase):
     """Test READDIR operation
 
-    FIXME: More testing of dircount/maxcount combinations. 
+    FIXME: More testing of dircount/maxcount combinations.
+    Note: maxcount represents READDIR4res. Test this. 
 
     Equivalence partitioning:
         
