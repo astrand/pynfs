@@ -77,7 +77,14 @@ class AccessTestCase(NFSTestCase):
         self.putrootfhop = self.ncl.putrootfh_op()
 
     def testSanityOnDir(self):
-        """All valid combinations of ACCESS arguments on directory"""
+        """All valid combinations of ACCESS arguments on directory
+
+        The ACCESS operation takes an uint32_t as an argument, which is
+        bitwised-or'd with zero or more of all ACCESS4* constants. This
+        component tests all valid combinations of these constants. It also
+        verifies that the server does not respond with an right in "access"
+        but not in "supported". 
+        """
         for accessop in self.valid_access_ops():
             res = self.ncl.compound([self.putrootfhop, accessop])
             self.failIfRaises(nfs4lib.NFSException, nfs4lib.check_result, res)
@@ -90,7 +97,10 @@ class AccessTestCase(NFSTestCase):
 
 
     def testSanityOnFile(self):
-        """All valid combinations of ACCESS arguments on file"""
+        """All valid combinations of ACCESS arguments on file
+
+        Se testSanityOnDir.
+        """
         path = nfs4lib.str2pathname("/README")
         lookupop = self.ncl.lookup_op(path)
         for accessop in self.valid_access_ops():
@@ -104,7 +114,11 @@ class AccessTestCase(NFSTestCase):
             self.failIf(access > supported, "access is %d, but supported is %d" % (access, supported))
 
     def testNoExecOnDir(self):
-        """ACCESS4_EXECUTE should never be returned for directory"""
+        """ACCESS4_EXECUTE should never be returned for directory
+
+        ACCESS4_EXECUTE has no meaning for directories and should not be
+        returned in "access" or "supported". 
+        """
         for accessop in self.valid_access_ops():
             res = self.ncl.compound([self.putrootfhop, accessop])
             self.failIfRaises(nfs4lib.NFSException, nfs4lib.check_result, res)
@@ -112,11 +126,19 @@ class AccessTestCase(NFSTestCase):
             supported = res.resarray[1].arm.arm.supported
             access = res.resarray[1].arm.arm.access
 
+            self.failIf(supported & ACCESS4_EXECUTE,
+                        "server returned ACCESS4_EXECUTE for root dir (supported=%d)" % supported)
+
             self.failIf(access & ACCESS4_EXECUTE,
                         "server returned ACCESS4_EXECUTE for root dir (access=%d)" % access)
 
     def testInvalids(self):
-        """ACCESS should fail on invalid arguments"""
+        """ACCESS should fail on invalid arguments
+
+        ACCESS should return with NFS4ERR_INVAL if called with an illegal
+        access request (eg. an integer with bits set that does not correspond to
+        any ACCESS4* constant).
+        """
         for accessop in self.invalid_access_ops():
             res = self.ncl.compound([self.putrootfhop, accessop])
             self.failUnlessEqual(res.status, NFS4ERR_INVAL,
@@ -124,7 +146,10 @@ class AccessTestCase(NFSTestCase):
                                  "should be NFS4ERR_INVAL")
 
     def testWithoutFh(self):
-        """ACCESS should fail without (cfh)"""
+        """ACCESS should fail without (cfh)
+
+        ACCESS should return NFS4ERR_NOFILEHANDLE if called without filehandle.
+        """
         accessop = self.ncl.access_op(ACCESS4_READ)
         res = self.ncl.compound([accessop])
         self.failUnlessEqual(res.status, NFS4ERR_NOFILEHANDLE)
@@ -136,7 +161,11 @@ class CommitTestCase(NFSTestCase):
         self.putrootfhop = self.ncl.putrootfh_op()
 
     def testOnDir(self):
-        """COMMIT should fail with NFS4ERR_ISDIR on directories"""
+        """COMMIT should fail with NFS4ERR_ISDIR on directories
+
+        COMMIT should fail with NFS4ERR_ISDIR if called with an filehandle
+        that corresponds to a directory. 
+        """
         global res
         commitop = self.ncl.commit_op(0, 0)
         res = self.ncl.compound([self.putrootfhop, commitop])
@@ -144,7 +173,11 @@ class CommitTestCase(NFSTestCase):
 
 
     def testOffsets(self):
-        """Simple COMMIT on file with offset 0, 1 and 2**64 - 1"""
+        """Simple COMMIT on file with offset 0, 1 and 2**64 - 1
+
+        This component tests boundary values for the offset parameter in the
+        COMMIT operation. All values are legal. 
+        """
         path = nfs4lib.str2pathname("/README")
         lookupop = self.ncl.lookup_op(path)
 
@@ -165,7 +198,11 @@ class CommitTestCase(NFSTestCase):
 
 
     def testCounts(self):
-        """COMMIT on file with count 0, 1 and 2**64 - 1"""
+        """COMMIT on file with count 0, 1 and 2**64 - 1
+
+        This component tests boundary values for the count parameter in the
+        COMMIT operation. All values are legal. 
+        """
         path = nfs4lib.str2pathname("/README")
         lookupop = self.ncl.lookup_op(path)
         
