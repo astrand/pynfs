@@ -148,9 +148,22 @@ class CLI(cmd.Cmd):
     do_rd = do_rmdir
 
     def do_cat(self, line):
-        # FIXME
-        print "not implemented"
+        filenames = line.split()
 
+        if not filenames:
+            print "cat <filename>..."
+            return
+        
+        for file in filenames:
+            f = nfs4lib.NFS4OpenFile(ncl)
+            try:
+                f.open(file)
+                print f.read(),
+                f.close()
+            except nfs4lib.BadCompondRes, r:
+                print "Error fetching file: operation %d returned %d" % (r.operation, r.errcode)
+        print
+        
     do_page = do_cat
 
     def do_debug(self, line):
@@ -242,7 +255,7 @@ if __name__ == "__main__":
     
     ncl.init_connection()
 
-    #c = CLI(ncl)
-    #c.cmdloop()
-    f = nfs4lib.NFS4OpenFile(ncl)
-
+    c = CLI(ncl)
+    c.cmdloop()
+    #f = nfs4lib.NFS4OpenFile(ncl)
+    #f.open("doc/todo")
