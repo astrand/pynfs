@@ -2515,9 +2515,11 @@ class RestorefhTestCase(NFSTestCase):
     # Testcases covering valid equivalence classes.
     #
     def testValid(self):
-        """RESTOREFH on valid, saved filehandle
+        """SAVEFH and RESTOREFH
 
         Covered equivalence classes: 10
+
+        Comments: Also tests SAVEFH operation. 
         """
         # The idea is to use a sequence of operations like this:
         # PUTROOTFH, LOOKUP, GETFH#1, SAVEFH, LOOKUP, RESTOREFH, GETH#2.
@@ -2553,13 +2555,35 @@ class RestorefhTestCase(NFSTestCase):
 
         Covered invalid equivalence classes: 11
         """
-        res = self.do_compound([self.ncl.savefh_op()])
+        res = self.do_compound([self.ncl.restorefh_op()])
         self.assert_status(res, [NFS4ERR_NOFILEHANDLE])
         
 
 class SavefhTestCase(NFSTestCase):
-    # FIXME
-    pass
+    """Test SAVEFH operation
+
+    Equivalence partitioning:
+
+    Input Condition: current filehandle
+        Valid equivalence classes:
+            valid filehandle(10)
+        Invalid equivalence classes:
+            no filehandle(11)
+
+    Comments: Equivalence class 10 is covered by
+    RestorefhTestCase.testValid.
+    """
+    #
+    # Testcases covering invalid equivalence classes.
+    #
+    def testNoFh(self):
+        """SAVEFH without (cfh) should return NFS4ERR_NOFILEHANDLE
+
+        Covered invalid equivalence classes: 11
+        """
+        res = self.do_compound([self.ncl.savefh_op()])
+        self.assert_status(res, [NFS4ERR_NOFILEHANDLE])
+    
 
 class SecinfoTestCase(NFSTestCase):
     # FIXME
