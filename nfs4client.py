@@ -125,20 +125,18 @@ class ClientApp(cmd.Cmd):
         self.transport = transport
         self.host = host
         self.port = port
-        self.ncl = None
-        self.debuglevel = debuglevel
 
         self.completer = Completer()
         self.completer.pythonmode = pythonmode
 
+        self.debuglevel = debuglevel
+        
         self.baseprompt = "nfs4: %s>"
-
         self._connect()
         self._set_prompt()
 
         # Try to CD to specified directory
         self.do_cd(directory)
-
 
     def _connect(self):
         if transport == "tcp":
@@ -147,6 +145,8 @@ class ClientApp(cmd.Cmd):
             self.ncl = nfs4lib.UDPNFS4Client(self.host, self.port)
         else:
             raise RuntimeError, "Invalid protocol"
+        # Use debugtags?
+        self.ncl.debugtags = (self.debuglevel and 1)
         self.ncl.init_connection()
 
     def _set_prompt(self):
@@ -476,6 +476,7 @@ class ClientApp(cmd.Cmd):
                 print "Invalid debuglevel"
                 return
             self.debuglevel = l
+            self.ncl.debugtags = (self.debuglevel and 1)
 
     def do_ping(self, unused_line):
         print "pinging", self.ncl.host, "via RPC NULL procedure"
