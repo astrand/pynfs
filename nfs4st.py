@@ -1090,7 +1090,7 @@ class CreateSuite(NFSSuite):
         operations.append(createop)
 
         res = self.do_compound(operations)
-        self.assert_status(res, [NFS4ERR_INVAL])
+        self.assert_status(res, [NFS4ERR_BADXDR])
 
     def testInvalidAttrmask(self):
         """CREATE should fail with NFS4ERR_INVAL on invalid attrmask
