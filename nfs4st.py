@@ -893,9 +893,8 @@ class CreateSuite(NFSSuite):
         attrmask = nfs4lib.list2attrmask([FATTR4_ARCHIVE])
         dummy_ncl = nfs4lib.DummyNcl()
         dummy_ncl.packer.pack_bool(TRUE)
-        # FIXME: attr_vals is not used!
         attr_vals = dummy_ncl.packer.get_buf()
-        createattrs = fattr4(self.ncl, attrmask, "")
+        createattrs = fattr4(self.ncl, attrmask, attr_vals)
         
         createop = self.ncl.create_op(objtype, self.obj_name, createattrs)
         operations.append(createop)
