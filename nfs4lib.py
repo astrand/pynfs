@@ -115,8 +115,6 @@ class PartialNFS4Client:
         self.verifier = None
         # Current directory. A list of components, like ["doc", "porting"]
         self.cwd = []
-        # Last seqid
-        self.seqid = 0
         # FIXME
         self.owner = 0
         # Set in sub-classes
@@ -189,11 +187,6 @@ class PartialNFS4Client:
     def gen_uniq_id(self):
         # Use FQDN and pid as ID.
         return socket.gethostname() + str(os.getpid())
-
-    def get_seqid(self):
-        self.seqid += 1
-        self.seqid = self.seqid % 2**32L
-        return self.seqid
 
     # FIXME
     def get_owner(self):
@@ -338,7 +331,7 @@ class PartialNFS4Client:
 
     # Convenience method for open. Only handles claim type CLAIM_NULL. If you want
     # to use other claims, use open_op directly. 
-    def open(self, file, opentype=OPEN4_NOCREATE,
+    def open(self, file, seqid, owner, opentype=OPEN4_NOCREATE,
              # For OPEN4_CREATE
              mode=UNCHECKED4, createattrs=None, createverf=None,
              # Shares
@@ -358,14 +351,6 @@ class PartialNFS4Client:
         how = createhow4(self, mode, createattrs, createverf)
         openhow = openflag4(self, opentype, how)
 
-        # owner
-        #ownerstring = pwd.getpwuid(os.getuid())[0]
-        # FIXME
-        owner = open_owner4(self, self.clientid, long2opaque(self.get_owner()))
-
-        # seqid
-        seqid = self.get_seqid()
-        
         return self.open_op(seqid, share_access, share_deny, owner, openhow, claim)
 
         
@@ -513,8 +498,7 @@ class PartialNFS4Client:
 
     # def do_access
 
-    def do_close(self, fh, stateid):
-        seqid = self.get_seqid()
+    def do_close(self, fh, seqid, stateid):
         putfhop = self.putfh_op(fh)
         closeop = self.close_op(seqid, stateid)
         res = self.compound([putfhop, closeop])
@@ -737,6 +721,24 @@ class PartialNFS4Client:
         obj_type = opaque2long(res.resarray[-1].arm.arm.obj_attributes.attr_vals)
 
         return obj_type
+
+#
+# Misc classes
+#
+class ActiveStateOwner:
+    """Contains either an open_owner och lock_owner, and
+    the seqid associated with this owner"""
+    def __init__(self, stateowner):
+        # stateowner is either an open_owner or lock_owner
+        self.stateowner = stateowner
+        # Last seqid sent
+        self._seqid = -1
+
+    def get_seqid(self):
+        self._seqid += 1
+        self._seqid = self._seqid % 2**32L
+        return self._seqid
+
         
 #
 # Misc. helper functions. 
@@ -1140,6 +1142,8 @@ class NFS4OpenFile:
         self.fh = None
         # NFS4 stateid
         self.stateid = None
+        # Owner
+        self.owner = None
 
     def __setattr__(self, name, val):
         if name in ["closed", "mode", "name"]:
@@ -1157,14 +1161,22 @@ class NFS4OpenFile:
         operations.extend(self.ncl.lookup_path(pathcomps[:-1]))
         filename = pathcomps[-1]
 
+        self.owner = ActiveStateOwner(open_owner4(self.ncl, self.ncl.clientid,
+                                                  long2opaque(self.ncl.get_owner())))
+
 	if mode == "r":
-            openop = self.ncl.open(file=filename)
+            openop = self.ncl.open(file=filename,
+                                   seqid=self.owner.get_seqid(),
+                                   owner=self.owner.stateowner)
             operations.append(openop)
 	elif mode == "w":
             # Truncate upon creation. 
             attr_request = list2attrmask([FATTR4_SIZE])
             createattrs = fattr4(self.ncl, attr_request, '\x00' * 8)
-            openop = self.ncl.open(file=filename, share_access=OPEN4_SHARE_ACCESS_WRITE,
+            openop = self.ncl.open(file=filename,
+                                   seqid=self.owner.get_seqid(),
+                                   owner=self.owner.stateowner,
+                                   share_access=OPEN4_SHARE_ACCESS_WRITE,
                                    opentype=OPEN4_CREATE, createattrs=createattrs)
             operations.append(openop)
 	else:
@@ -1190,8 +1202,8 @@ class NFS4OpenFile:
         if rflags & OPEN4_RESULT_CONFIRM:
             # Confirm open
             putfhop = self.ncl.putfh_op(self.fh)
-            seqid = self.ncl.get_seqid()
-            opconfirm = self.ncl.open_confirm_op(self.stateid, seqid)
+            opconfirm = self.ncl.open_confirm_op(self.stateid,
+                                                 self.owner.get_seqid())
             res = self.ncl.compound([putfhop, opconfirm])
             check_result(res)
             # Save new stateid
@@ -1200,7 +1212,7 @@ class NFS4OpenFile:
     def close(self):
         if not self.closed:
             self.__set_priv("closed", 1)
-            self.ncl.do_close(self.fh, self.stateid)
+            self.ncl.do_close(self.fh, self.owner.get_seqid(), self.stateid)
 
     def flush(self):
         if self.closed:
