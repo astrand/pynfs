@@ -275,6 +275,10 @@ class ClientApp(cmd.Cmd):
         pass
 
     def default(self, line):
+        if not self.completer.pythonmode:
+            print "Unknown command", line
+            return
+        
         if line[:1] == '@':
             line = line[1:]
 
