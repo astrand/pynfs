@@ -1415,6 +1415,20 @@ class LookupTestCase(NFSTestCase):
         res = self.do_compound([self.putrootfhop, lookupop])
         self.assert_status(res, [NFS4ERR_NOTDIR])
 
+    #
+    # Misc. tests.
+    #
+    def testDots(self):
+        """LOOKUP should not treat "." or ".." special
+        """
+        lookupop = self.ncl.lookup_op(["doc", ".", "README"])
+        res = self.do_compound([self.putrootfhop, lookupop])
+        self.assert_status(res, [NFS4ERR_NOENT])
+
+        lookupop = self.ncl.lookup_op(["doc", "porting", "..", "README"])
+        res = self.do_compound([self.putrootfhop, lookupop])
+        self.assert_status(res, [NFS4ERR_NOENT])
+
         
 
 class QuietTextTestRunner(unittest.TextTestRunner):
