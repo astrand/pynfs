@@ -23,6 +23,8 @@ import nfs4lib
 import readline
 import cmd
 import sys
+import getopt
+import re
 
 
 class CLI(cmd.Cmd):
@@ -60,13 +62,56 @@ class CLI(cmd.Cmd):
         print "Unknown command: %s" % line
 
 
+def usage():
+    print "Usage: %s host[:[port]]<directory> [-u|-t] [-d debuglevel]" % sys.argv[0]
+    print "options:"
+    print "-h, --help                   display this help and exit"
+    print "-u, --udp                    use UDP as transport (default)"
+    print "-t, --tcp                    use TCP as transport"
+    print "-d level, --debuglevel level set debuglevel"
+    sys.exit(2)
 
 
 if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        usage()
 
-    c = CLI()
-    c.cmdloop()
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], "hutd", ["help", "udp", "tcp", "debuglevel"])
+    except getopt.GetoptError:
+        print "invalid option"
+        usage()
+        sys.exit(2)
 
+    transport = "udp"
+    debuglevel = 0
+
+    for o, a in opts:
+        if o in ("-h", "--help"):
+            usage()
+            sys.exit()
+        if o in ("-u", "--udp"):
+            transport = "udp"
+        if o in ("-t", "--tcp"):
+            transport = "tcp"
+        if o in ("-d", "--debuglevel"):
+            debuglevel = a
+
+
+    # By now, there should only be one argument left.
+    if len(args) != 1:
+        usage()
+    else:
+        # Parse host/port/directory part. 
+        match = re.search(r'(?P<host>\w*)(?::(?P<port>\d*))?(?P<dir>[\w/]*)', args[0])
+        if not match:
+            usage()
+        host = match.group("host")
+        port = match.group("port")
+        dir = match.group("dir")
+        print "host is", host
+        print "port is", port
+        print "dir is", dir
 
     
 ##     import sys
