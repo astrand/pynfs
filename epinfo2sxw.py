@@ -41,6 +41,9 @@ def parse_method(meth):
     else:
         lines = []
 
+    valid_classes = "-"
+    invalid_classes = "-"
+    comments = ""
     while lines:
         line = lines[0]
         del lines[0]
@@ -48,22 +51,14 @@ def parse_method(meth):
         if line.find("Covered valid equivalence classes:") != -1:
             data = line[line.find(":") + 1:]
             data = data.strip()
-            xmlstr = """
-            <table:table-cell table:style-name="Table2.B3" table:value-type="string">
-            <text:p text:style-name="P1">%s</text:p>
-            </table:table-cell>
-            """ 
-            outfile.write(xmlstr % data)
+            valid_classes = data
             
         if line.find("Covered invalid equivalence classes:") != -1:
             data = line[line.find(":") + 1:]
             data = data.strip()
-            xmlstr = """
-            <table:table-cell table:style-name="Table2.A2" table:value-type="string">
-            <text:p text:style-name="P1">%s</text:p>
-            </table:table-cell>
-            """
-            outfile.write(xmlstr % data)
+            invalid_classes = data
+            
+
 
         if line.find("Comments:") != -1:
             data = line[line.find(":") + 1:]
@@ -73,14 +68,31 @@ def parse_method(meth):
                 line = lines[0]
                 data = data + " " + line.strip()
                 del lines[0]
+            comments = data
 
-            xmlstr = """
-            <table:table-cell table:style-name="Table2.D2" table:value-type="string">
-            <text:p text:style-name="Table Contents">%s</text:p>
-            </table:table-cell>
+    # Valid equivalence classes. 
+    xmlstr = """
+    <table:table-cell table:style-name="Table2.B3" table:value-type="string">
+    <text:p text:style-name="P1">%s</text:p>
+    </table:table-cell>
+    """
+    outfile.write(xmlstr % valid_classes)
+
+    # Invalid equivalence classes
+    xmlstr = """
+    <table:table-cell table:style-name="Table2.A2" table:value-type="string">
+    <text:p text:style-name="P1">%s</text:p>
+    </table:table-cell>
+    """
+    outfile.write(xmlstr % invalid_classes)
+
+    # Comments
+    xmlstr = """
+    <table:table-cell table:style-name="Table2.D2" table:value-type="string">
+    <text:p text:style-name="Table Contents">%s</text:p>
+    </table:table-cell>
             """ 
-            outfile.write(xmlstr % data)
-
+    outfile.write(xmlstr % comments)
             
     outfile.write('</table:table-row>\n')
 
