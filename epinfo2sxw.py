@@ -128,6 +128,9 @@ def handle_ep(lines):
 
 
 def class_output(klass):
+    if klass.__name__ == "NFSTestCase":
+        return
+    
     doc = klass.__doc__
     if not doc or doc.find("Equivalence partitioning:") == -1:
         print "Warning: %s has no Equivalence partitioning information" \
@@ -166,7 +169,6 @@ def main():
     outfile.write(TESTCASES_HEAD)
     for attr in dir(nfs4st):
         if attr.endswith("TestCase"):
-        #if attr == "AccessTestCase":
             parse_testcase(eval("nfs4st." + attr))
 
     ending = """
@@ -176,6 +178,7 @@ def main():
 """
     outfile.write(ending)
 
+    print "Wrote epinfo.sxw."
     create_zip("epinfo.sxw", outfile.getvalue())
     outfile.close()
 
