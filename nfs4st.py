@@ -1852,7 +1852,28 @@ class PutfhTestCase(NFSTestCase):
         putfhop = self.ncl.putfh_op(object)
         res = self.do_compound([putfhop])
         self.assert_status(res, [NFS4ERR_STALE])
-        
+
+
+class PutpubfhTestCase(NFSTestCase):
+    """Test PUTPUBFH operation
+
+    Equivalence partitioning:
+
+    Input Condition: -
+    
+    """
+    def setUp(self):
+        self.connect()
+
+    def testOp(self):
+        """Testing PUTPUBFH
+
+        Covered valid equivalence classes: -
+        """
+        putpubfhop = self.ncl.putpubfh_op()
+        res = self.do_compound([putpubfhop])
+        self.assert_OK(res)
+
 
 class PutrootfhTestCase(NFSTestCase):
     # FIXME
