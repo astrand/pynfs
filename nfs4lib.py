@@ -21,6 +21,7 @@
 # TODO: 
 # Implement buffering in NFS4OpenFile.
 
+
 NFS_PORT = 2049
 
 BUFSIZE = 4096
@@ -84,10 +85,12 @@ class ChDirError(NFSException):
     def __str__(self):
         return "Cannot change directory to %s" % self.dir
 
+
 class DummyNcl:
-    def __init__(self, packer=None, unpacker=None):
-	self.packer = packer
-	self.unpacker = unpacker
+    def __init__(self, data = ""):
+        self.unpacker = nfs4packer.NFS4Unpacker(self, data)
+        self.packer = nfs4packer.NFS4Packer(self)
+
 
 class PartialNFS4Client:
     def __init__(self):
@@ -828,13 +831,10 @@ def fattr2dict(obj):
             unpack_these[bitnum] = attr
 
     # Construct a dummy Client. 
-    ncl = DummyNcl()
-    # Construct a Unpacker with our object data. 
-    unpacker = nfs4packer.NFS4Unpacker(ncl, obj.attr_vals)
-    ncl.unpacker = unpacker
+    ncl = DummyNcl(obj.attr_vals)
 
     result = {}
-    attrunpackers = get_attrunpackers(unpacker)
+    attrunpackers = get_attrunpackers(ncl.unpacker)
     bitnums_to_unpack = unpack_these.keys()
     # The data on the wire is ordered according to attribute bit number. 
     bitnums_to_unpack.sort()
@@ -861,14 +861,6 @@ def list2attrmask(attrlist):
         arrint = arrint | (1L << bitpos)
         attr_request[arrintpos] = arrint
     return attr_request
-
-def create_dummy_unpacker(data):
-    # Construct a dummy Client. 
-    ncl = DummyNcl()
-    # Construct a Unpacker with our object data. 
-    unpacker = nfs4packer.NFS4Unpacker(ncl, data)
-    ncl.unpacker = unpacker
-    return unpacker
 
 
 class UDPNFS4Client(PartialNFS4Client, rpc.RawUDPClient):
