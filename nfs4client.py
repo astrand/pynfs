@@ -232,7 +232,8 @@ class ClientApp(cmd.Cmd):
                 remote.open(file)
                 local = open(basename, "w")
                 while 1:
-                    data = remote.read(BUFSIZE)
+                    # Read large chunks
+                    data = remote.read(BUFSIZE*64)
                     if not data:
                         break
                     
