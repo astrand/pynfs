@@ -161,6 +161,7 @@ class NFSSuite(unittest.TestCase):
             self.fail(e)
         except EOFError, e:
             self.fail("EOFError: short response")
+        return None
 
     def assert_OK(self, res):
         """Assert result from compound call is NFS4_OK"""
@@ -2971,16 +2972,17 @@ class SecinfoSuite(NFSSuite):
         # FIXME: Since the Linux server always returns NFS4ERR_NOTSUPP right
         # know, this is untested code.
         # FIXME: Also verify that all Kerberos and LIPKEY security triples
-        # listed in section 3.2.1.1 and 3.2.1.2 are supported. 
+        # listed in section 3.2.1.1 and 3.2.1.2 are supported.
+        RPCSEC_GSS = 6 # Defined in RFC2203; no .x file
         lookupops = self.ncl.lookup_path(self.dirfile)
         operations = [self.putrootfhop] + lookupops
         operations.append(self.ncl.secinfo_op("README"))
 
         res = self.do_compound(operations)
         self.assert_OK(res)
-
         mechanisms = res.resarray[-1].arm.arm
         found_rpcsec_gss = 0
+
         for mech in mechanisms:
             if mech.flavor == RPCSEC_GSS:
                 found_rpcsec_gss = 1
@@ -3628,7 +3630,6 @@ class FilehandleSuite(NFSSuite):
     def _create_object(self):
         # Make sure we have something to remove. We create a directory, because
         # it's simple.
-        lookup_dir_ops = self.ncl.lookup_path(self.tmp_dir)
         operations = [self.putrootfhop] + self.lookup_dir_ops
         objtype = createtype4(self.ncl, type=NF4DIR)
         operations.append(self.ncl.create(objtype, self.obj_name))
