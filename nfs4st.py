@@ -208,7 +208,7 @@ class CommitTestCase(NFSTestCase):
         res = self.ncl.compound([self.putrootfhop, lookupop, commitop])
         self.failUnlessEqual(res.status, NFS4ERR_INVAL)
 
-    def testOnBlock(self):
+    def testOnChar(self):
         """COMMIT should fail with NFS4ERR_INVAL on character device"""
 
         path = nfs4lib.str2pathname(self.charfile)
@@ -334,24 +334,90 @@ class CreateTestCase(NFSTestCase):
         operations.append(self.ncl.remove_op(self.obj_name))
 
         res = self.ncl.compound(operations)
-        self.failIf(res.status not in [NFS4_OK, NFS4ERR_NOENT],
-                    "cannot remove test object in preparation for CREATE test")
+        if res.status not in [NFS4_OK, NFS4ERR_NOENT]:
+            try:
+                nfs4lib.check_result(res)
+            except nfs4lib.NFSException, e:
+                self.fail("cannot remove test object in preparation for CREATE test:\n" +
+                          str(e))
+                    
 
     def testLink(self):
         """CREATE link
 
         Create an (symbolic) link.
         """
-        
-        objtype = createtype4(self.ncl, type=NF4LNK, linkdata="/etc/X11")
-        operations = [self.putrootfhop]
-        operations.append(self.lookup_dir_op)
 
+        operations = [self.putrootfhop, self.lookup_dir_op]
+        objtype = createtype4(self.ncl, type=NF4LNK, linkdata="/etc/X11")
         createop = self.ncl.create_op(self.obj_name, objtype)
         operations.append(createop)
 
         res = self.ncl.compound(operations)
         self.assert_OK(res)
+
+    def testBlock(self):
+        """CREATE a block device
+        """
+
+        operations = [self.putrootfhop, self.lookup_dir_op]
+        devdata = specdata4(self.ncl, 1, 2)
+        objtype = createtype4(self.ncl, type=NF4BLK, devdata=devdata)
+        createop = self.ncl.create_op(self.obj_name, objtype)
+        operations.append(createop)
+
+        res = self.ncl.compound(operations)
+        self.assert_OK(res)
+
+    def testChar(self):
+        """CREATE a char device
+        """
+
+        operations = [self.putrootfhop, self.lookup_dir_op]
+        devdata = specdata4(self.ncl, 1, 2)
+        objtype = createtype4(self.ncl, type=NF4CHR, devdata=devdata)
+        createop = self.ncl.create_op(self.obj_name, objtype)
+        operations.append(createop)
+
+        res = self.ncl.compound(operations)
+        self.assert_OK(res)
+
+    def testSocket(self):
+        """CREATE a socket
+        """
+
+        operations = [self.putrootfhop, self.lookup_dir_op]
+        objtype = createtype4(self.ncl, type=NF4SOCK)
+        createop = self.ncl.create_op(self.obj_name, objtype)
+        operations.append(createop)
+
+        res = self.ncl.compound(operations)
+        self.assert_OK(res)
+
+    def testFifo(self):
+        """CREATE a FIFO
+        """
+        
+        operations = [self.putrootfhop, self.lookup_dir_op]
+        objtype = createtype4(self.ncl, type=NF4FIFO)
+        createop = self.ncl.create_op(self.obj_name, objtype)
+        operations.append(createop)
+
+        res = self.ncl.compound(operations)
+        self.assert_OK(res)
+
+    def testDir(self):
+        """CREATE a directory
+        """
+
+        operations = [self.putrootfhop, self.lookup_dir_op]
+        objtype = createtype4(self.ncl, type=NF4DIR)
+        createop = self.ncl.create_op(self.obj_name, objtype)
+        operations.append(createop)
+
+        res = self.ncl.compound(operations)
+        self.assert_OK(res)
+        
         
 
 class TestProgram(unittest.TestProgram):
