@@ -504,11 +504,11 @@ class AccessSuite(NFSSuite):
                         "server returned ACCESS4_EXECUTE for root dir (access=%d)" % access)
 
 
-class CloseSuite(NFSSuite):
-    """Test operation 4: CLOSE
-    """
-    # FIXME
-    pass
+## class CloseSuite(NFSSuite):
+##     """Test operation 4: CLOSE
+##     """
+##     # FIXME
+##     pass
     
 
 class CommitSuite(NFSSuite):
@@ -934,18 +934,18 @@ class CreateSuite(NFSSuite):
         self.assert_status(res, [NFS4ERR_BADXDR])
 
 
-class DelegpurgeSuite(NFSSuite):
-    """Test operation 7: DELEGPURGE
-    """
-    # FIXME
-    pass
+## class DelegpurgeSuite(NFSSuite):
+##     """Test operation 7: DELEGPURGE
+##     """
+##     # FIXME
+##     pass
 
 
-class DelegreturnSuite(NFSSuite):
-    """Test operation 8: DELEGRETURN
-    """
-    # FIXME
-    pass
+## class DelegreturnSuite(NFSSuite):
+##     """Test operation 8: DELEGRETURN
+##     """
+##     # FIXME
+##     pass
 
 
 class GetattrSuite(NFSSuite):
@@ -1403,25 +1403,25 @@ class LinkSuite(NFSSuite):
         self.assert_status(res, [NFS4ERR_INVAL])
 
 
-class LockSuite(NFSSuite):
-    """Test operation 12: LOCK
-    """
-    # FIXME
-    pass
+## class LockSuite(NFSSuite):
+##     """Test operation 12: LOCK
+##     """
+##     # FIXME
+##     pass
 
 
-class LocktSuite(NFSSuite):
-    """Test operation 13: LOCKT
-    """
-    # FIXME
-    pass
+## class LocktSuite(NFSSuite):
+##     """Test operation 13: LOCKT
+##     """
+##     # FIXME
+##     pass
 
 
-class LockuSuite(NFSSuite):
-    """Test operation 14: LOCKU
-    """
-    # FIXME
-    pass
+## class LockuSuite(NFSSuite):
+##     """Test operation 14: LOCKU
+##     """
+##     # FIXME
+##     pass
 
 class LookupSuite(NFSSuite):
     """Test operation 15: LOOKUP
@@ -1934,17 +1934,17 @@ class OpenattrSuite(NFSSuite):
         self.info_message("(TEST NOT IMPLEMENTED)")
 
 
-class OpenconfirmSuite(NFSSuite):
-    """Test operation 20: OPEN_CONFIRM
-    """
-    # FIXME
-    pass
+## class OpenconfirmSuite(NFSSuite):
+##     """Test operation 20: OPEN_CONFIRM
+##     """
+##     # FIXME
+##     pass
 
-class OpendowngradeSuite(NFSSuite):
-    """Test operation 21: OPEN_DOWNGRADE
-    """
-    # FIXME
-    pass
+## class OpendowngradeSuite(NFSSuite):
+##     """Test operation 21: OPEN_DOWNGRADE
+##     """
+##     # FIXME
+##     pass
 
 class PutfhSuite(NFSSuite):
     """Test operation 22: PUTFH
@@ -2768,11 +2768,11 @@ class RenameSuite(NFSSuite):
     # FIXME: Cover eq. class 42.     
 
 
-class RenewSuite(NFSSuite):
-    """Test operation 30: RENEW
-    """
-    # FIXME
-    pass
+## class RenewSuite(NFSSuite):
+##     """Test operation 30: RENEW
+##     """
+##     # FIXME
+##     pass
 
 
 class RestorefhSuite(NFSSuite):
