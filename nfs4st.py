@@ -140,6 +140,7 @@ class NFSSuite(unittest.TestCase):
         self.vaporfilename = "vapor_object"
         self.vaporfile = nfs4lib.unixpath2comps(self.vaporfilename)
         # Not accessable
+        self.privatedir = nfs4lib.unixpath2comps("/private")
         self.notaccessablefile = nfs4lib.unixpath2comps("/private/info.txt")
 
     def create_client(self):
@@ -2219,7 +2220,8 @@ class ReaddirSuite(NFSSuite):
     """Test operation 26: READDIR
 
     FIXME: More testing of dircount/maxcount combinations.
-    Note: maxcount represents READDIR4resok. Test this. 
+    Note: maxcount represents READDIR4resok. Test this.
+    fattr4_rdattr_error vs. global error
 
     Equivalence partitioning:
         
@@ -2316,7 +2318,7 @@ class ReaddirSuite(NFSSuite):
                                         attr_request=[])
         res = self.do_compound([readdirop])
         self.assert_status(res, [NFS4ERR_NOFILEHANDLE])
-
+        
     def testInvalidCookie(self):
         """READDIR with invalid cookie should return NFS4ERR_BAD_COOKIE
 
@@ -2364,7 +2366,29 @@ class ReaddirSuite(NFSSuite):
         self.assert_status(res, [NFS4ERR_INVAL])
         
 
-    # FIXME: Misc. test: testa fattr4_rdattr_error kontra globalt fel. 
+    #
+    # Misc. tests.
+    #
+    def testUnaccessibleDirWithGetattr(self):
+        """READDIR with (cfh) in unaccessible directory
+
+        Comments: This test crashes/crashed the Linux server
+        """
+        # FIXME: Remove me. 
+        self.info_message("(TEST DISABLED)")
+        return
+        
+        lookupops = self.ncl.lookup_path(self.privatedir)
+        operations = [self.putrootfhop] + lookupops
+
+        attrmask = nfs4lib.list2attrmask([FATTR4_TYPE, FATTR4_SIZE, FATTR4_TIME_MODIFY])
+        readdirop = self.ncl.readdir_op(cookie=0, cookieverf="\x00",
+                                        dircount=2, maxcount=4096,
+                                        attr_request=attrmask)
+        operations.append(readdirop)
+        res = self.do_compound(operations)
+        self.assert_OK(res)
+
 
 class ReadlinkSuite(NFSSuite):
     """Test operation 27: READLINK
