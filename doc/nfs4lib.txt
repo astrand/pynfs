@@ -13,3 +13,11 @@ The functions for unpacking replies in nfs4lib.py always checks if
 extra, unextracted data remains after unpacking returned data types as
 specified by the protocol. This means that nfs4lib.py detects if
 servers return too much data. Most C implementations do not do this.
+
+
+Unsorted notes
+--------------
+
+* When it comes to filenames/paths, the library uses lists of
+components. The only exceptions is NFS4OpenFile, which uses Unix
+pathnames (currently) and get_pathcomps_rel. 
