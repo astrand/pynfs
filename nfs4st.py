@@ -271,7 +271,8 @@ class NFSSuite(unittest.TestCase):
     def clean_dir(self, directory):
         """Clean directory. Raises SkipException on failure"""
         fh = self.do_rpc(self.ncl.do_getfh, directory)
-        entries = self.ncl.do_readdir(fh)
+        entries = self.do_rpc(self.ncl.do_readdir, fh)
+        
         names = [entry.name for entry in entries]
 
         for name in names:
@@ -287,7 +288,7 @@ class NFSSuite(unittest.TestCase):
                 raise SkipException("Cannot clean directory %s" % directory)
 
         # Verify that all files were removed
-        entries = self.ncl.do_readdir(fh)
+        entries = self.do_rpc(self.ncl.do_readdir, fh)
         if entries:
             raise SkipException("Cannot clean directory %s" % directory)
 
@@ -326,7 +327,7 @@ class NFSSuite(unittest.TestCase):
 
         fh = self.do_rpc(self.ncl.do_getfh, directory)
         
-        entries = self.ncl.do_readdir(fh)
+        entries = self.do_rpc(self.ncl.do_readdir, fh)
         names = [entry.name for entry in entries]
         if name in names:
             # Strange, this file already exists
@@ -2827,7 +2828,7 @@ class ReaddirSuite(NFSSuite):
         fh = self.do_rpc(self.ncl.do_getfh, self.dirfile)
 
         # Get entries
-        entries = self.ncl.do_readdir(fh)
+        entries = self.do_rpc(self.ncl.do_readdir, fh)
         names = [entry.name for entry in entries]
 
         self.failIf("." in names,
@@ -2855,7 +2856,7 @@ class ReaddirSuite(NFSSuite):
         self.info_message("Rejected file names by OPEN: %s" % repr(rejected_names))
 
         fh = self.do_rpc(self.ncl.do_getfh, self.tmp_dir) 
-        entries = self.ncl.do_readdir(fh)
+        entries = self.do_rpc(self.ncl.do_readdir, fh)
         readdir_names = [entry.name for entry in entries]
 
         # Verify that READDIR returned all accepted_names
