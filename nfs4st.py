@@ -176,6 +176,10 @@ class NFSSuite(unittest.TestCase):
         """Return a (guessed) invalid verifier"""
         return nfs4lib.long2opaque(123456780, NFS4_VERIFIER_SIZE/8)
 
+    def get_invalid_clientid(self):
+        """Return a (guessed) invalid clientid"""
+        return 0x1234567890L
+
 class CompoundSuite(NFSSuite):
     """Test COMPOUND procedure
 
@@ -2656,10 +2660,11 @@ class SecinfoSuite(NFSSuite):
 
         Covered equivalence classes: 10, 20
         """
-        lookupop = self.ncl.lookup_op(["doc"])
-        secinfoop = self.ncl.secinfo_op("README")
+        lookupops = self.ncl.lookup_path(self.dirfile)
+        operations = [self.putrootfhop] + lookupops
+        operations.append(self.ncl.secinfo_op("README"))
 
-        res = self.do_compound([self.putrootfhop, lookupop, secinfoop])
+        res = self.do_compound(operations)
         self.assert_OK(res)
 
         # Make sure at least one security mechanisms is returned.
@@ -2675,10 +2680,11 @@ class SecinfoSuite(NFSSuite):
 
         Covered invalid equivalence classes: 11
         """
-        lookupop = self.ncl.lookup_op(self.regfile)
-        secinfoop = self.ncl.secinfo_op("README")
+        lookupops = self.ncl.lookup_path(self.regfile)
+        operations = [self.putrootfhop] + lookupops
+        operations.append(self.ncl.secinfo_op("README"))
 
-        res = self.do_compound([self.putrootfhop, lookupop, secinfoop])
+        res = self.do_compound(operations)
         self.assert_status(res, [NFS4ERR_NOTDIR])
 
     def testNonExistent(self):
@@ -2686,10 +2692,11 @@ class SecinfoSuite(NFSSuite):
 
         Covered invalid equivalence classes: 21
         """
-        lookupop = self.ncl.lookup_op(["doc"])
-        secinfoop = self.ncl.secinfo_op("vapor_object")
+        lookupops = self.ncl.lookup_path(self.dirfile)
+        operations = [self.putrootfhop] + lookupops
+        operations.append(self.ncl.secinfo_op(self.vaporfilename))
 
-        res = self.do_compound([self.putrootfhop, lookupop, secinfoop])
+        res = self.do_compound(operations)
         self.assert_status(res, [NFS4ERR_NOENT])
 
     def testZeroLengthName(self):
@@ -2697,10 +2704,11 @@ class SecinfoSuite(NFSSuite):
 
         Covered invalid equivalence classes: 22
         """
-        lookupop = self.ncl.lookup_op(["doc"])
-        secinfoop = self.ncl.secinfo_op("")
+        lookupops = self.ncl.lookup_path(self.dirfile)
+        operations = [self.putrootfhop] + lookupops
+        operations.append(self.ncl.secinfo_op(""))
 
-        res = self.do_compound([self.putrootfhop, lookupop, secinfoop])
+        res = self.do_compound(operations)
         self.assert_status(res, [NFS4ERR_INVAL])
 
     def testNonUTF8(self):
@@ -2787,11 +2795,11 @@ class SetclientidconfirmSuite(NFSSuite):
 
     Equivalence partitioning:
 
-    Input Condition: setclientid_confirm
+    Input Condition: clientid
         Valid equivalence classes:
-            valid verifier(10)
+            valid clientid(10)
         Invalid equivalence classes:
-            stale verifier(11)
+            stale clientid(11)
     """
     # Override setUp. Just connect, don't do SETCLIENTID etc. 
     def setUp(self):
@@ -2810,11 +2818,10 @@ class SetclientidconfirmSuite(NFSSuite):
         setclientidop = self.ncl.setclientid()
         res =  self.do_compound([setclientidop])
         self.assert_OK(res)
+        clientid = res.resarray[0].arm.arm.clientid
         
-        setclientid_confirm = res.resarray[0].arm.arm.setclientid_confirm
-
         # SETCLIENTID_CONFIRM
-        setclientid_confirmop = self.ncl.setclientid_confirm_op(setclientid_confirm)
+        setclientid_confirmop = self.ncl.setclientid_confirm_op(clientid)
         res =  self.do_compound([setclientid_confirmop])
         self.assert_OK(res)
 
@@ -2826,8 +2833,8 @@ class SetclientidconfirmSuite(NFSSuite):
 
         Covered invalid equivalence classes: 11
         """
-        setclientid_confirm = self.get_invalid_verifier()
-        setclientid_confirmop = self.ncl.setclientid_confirm_op(setclientid_confirm)
+        clientid = self.get_invalid_clientid()
+        setclientid_confirmop = self.ncl.setclientid_confirm_op(clientid)
         res =  self.do_compound([setclientid_confirmop])
         self.assert_status(res, [NFS4ERR_STALE_CLIENTID])
 
