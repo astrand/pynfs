@@ -19,10 +19,15 @@
 
 # TODO: Exceptions.
 # Remove self.rootfh?
+# Implement buffering in NFS4OpenFile.
+# Translation of error- and operation codes to enums. 
 
 NFS_PROGRAM = 100003
 NFS_VERSION = 4
 NFS_PORT = 2049
+
+BUFSIZE = 4096
+
 
 import rpc
 from nfs4constants import *
@@ -33,6 +38,19 @@ import array
 import socket
 import os
 import pwd
+
+
+# All NFS errors are subclasses of NFSException
+class NFSException(Exception):
+	pass
+
+class BadCompondRes(NFSException):
+    def __init__(self, operation, errcode):
+        self.operation = operation
+        self.errcode = errcode
+
+    def __str__(self):
+        return "operation %d gave result %d" % (self.operation, self.errcode)
 
 class PartialNFS4Client:
     def __init__(self):
@@ -275,8 +293,8 @@ class PartialNFS4Client:
         # SETCLIENTID
         op = self.setclientid()
         res =  self.compound([op])
-        if res.status:
-            raise "SETCLIENTID failed with status", res.status
+
+        check_result(res)
         
         self.clientid = res.resarray[0].arm.resok4.clientid
         setclientid_confirm = res.resarray[0].arm.resok4.setclientid_confirm
@@ -284,9 +302,9 @@ class PartialNFS4Client:
         # SETCLIENTID_CONFIRM
         op = self.setclientid_confirm(setclientid_confirm)
         res =  self.compound([op])
-        if res.status:
-            raise "SETCLIENTID_CONFIRM failed with status", res.status
 
+        check_result(res)
+        
         # Fetch root filehandle.
         self.fetch_root()
 
@@ -294,9 +312,9 @@ class PartialNFS4Client:
         putrootfhoperation = self.putrootfh()
         getfhoperation = self.getfh()
         res =  self.compound([putrootfhoperation, getfhoperation])
-        if res.status:
-            raise "failed with status", res.status
 
+        check_result(res)
+        
         self.rootfh = res.resarray[1].arm.arm.object
 
     def do_read(self, fh):
@@ -308,7 +326,7 @@ class PartialNFS4Client:
         while 1:
             op = self.read(count=2, offset=offset)
             res = self.compound([putfhoperation, op])
-            # FIXME: Error handling.
+            check_result(res)
             data += res.resarray[1].arm.arm.data
             
             if res.resarray[1].arm.arm.eof:
@@ -318,14 +336,20 @@ class PartialNFS4Client:
 
         return data
 
+def check_result(compoundres):
+    if not compoundres.status:
+        return
+
+    for resop in compoundres.resarray:
+        if resop.arm.status:
+            raise BadCompondRes(resop.resop, resop.arm.status)
+
 def str2pathname(str, pathname=[]):
     pathname = pathname[:]
     for component in str.split(os.sep):
         if (component == "") or (component == "."):
             pass
         elif component == "..":
-            # Remove last component
-            # FIXME: Sanity checkings. 
             pathname = pathname[:-1]
         else:
             pathname.append(component)
@@ -359,7 +383,6 @@ class TCPNFS4Client(PartialNFS4Client, rpc.RawTCPClient):
 class NFS4OpenFile:
     """Emulates a Python file object.
     """
-    # TODO: Implement buffering. 
     def __init__(self, ncl):
         self.ncl = ncl
         self.__set_priv("closed", 1)
@@ -379,8 +402,7 @@ class NFS4OpenFile:
     def __set_priv(self, name, val):
         self.__dict__[name] = val
 
-        # FIXME: bufsize from system default. 
-    def open(self, filename, mode="r", bufsize=1024):
+    def open(self, filename, mode="r", bufsize=BUFSIZE):
         if filename[0] == os.sep:
             # Absolute path
             # Remove slash, begin from root. 
@@ -396,11 +418,9 @@ class NFS4OpenFile:
         op = self.ncl.open(file=pathname)
         getfhoperation = self.ncl.getfh()
         res =  self.ncl.compound([putrootfhoperation, op, getfhoperation])
-        # FIXME: Intelligent error handling: In this app: Print error message.
-        # In nfs4lib: Raise exception. 
-        if res.status:
-            raise " failed with status", res.status
 
+        check_result(res)
+        
         self.__set_priv("closed", 0)
         self.__set_priv("mode", mode)
         self.__set_priv("name", os.path.join(os.sep, *pathname))
