@@ -69,20 +69,30 @@ AUTH_TOOWEAK      = 5			# rejected for security reasons
 
 # All RPC errors are subclasses of RPCException
 class RPCException(Exception):
-	pass
+        def __str__(self):
+	        return "RPCException"
 
 class BadRPCMsgType(RPCException):
 	def __init__(self, msg_type):
 		self.msg_type = msg_type
 
+	def __str__(self):
+		return "BadRPCMsgType %d" % self.msg_type
+
 class BadRPCVersion(RPCException):
 	def __init__(self, version):
 		self.version = version
+
+	def __str__(self):
+		return "BadRPCVersion %d" % self.version
 
 class RPCMsgDenied(RPCException):
 	# MSG_DENIED
 	def __init__(self, stat):
 		self.stat = stat
+
+	def __str__(self):
+		return "RPCMsgDenied %d" % self.stat
 
 class RPCMisMatch(RPCException):
 	# MSG_DENIED: RPC_MISMATCH
@@ -90,19 +100,29 @@ class RPCMisMatch(RPCException):
 		self.low = low
 		self.high = high
 
+	def __str__(self):
+		return "RPCMisMatch %d,%d" % (self.low, self.high)
+
 class RPCAuthError(RPCException):
 	# MSG_DENIED: AUTH_ERROR
 	def __init__(self, stat):
 		self.stat = stat
+
+	def __str__(self):
+		return "RPCAuthError %d" % self.stat
 
 class BadRPCReplyType(RPCException):
 	# Neither MSG_DENIED nor MSG_ACCEPTED
 	def __init__(self, msg_type):
 		self.msg_type = msg_type
 
+	def __str__(self):
+		return "BadRPCReplyType %d" % self.msg_type
+
 class RPCProgUnavail(RPCException):
 	# PROG_UNAVAIL
-	pass
+	def __str__(self):
+		return "RPCProgUnavail"
 
 class RPCProgMismatch(RPCException):
 	# PROG_MISMATCH
@@ -110,24 +130,35 @@ class RPCProgMismatch(RPCException):
 		self.low = low
 		self.high = high
 
+	def __str__(self):
+		return "RPCProgMismatch %d,%d" % (self.low, self.high)
+
 class RPCProcUnavail(RPCException):
 	# PROC_UNAVAIL
-	pass
+	def __str__(self):
+		return "RPCProcUnavail"
 
 class RPCGarbageArgs(RPCException):
 	# GARBAGE_ARGS
-	pass
+	def __str__(self):
+		return "RPCGarbageArgs"
 
 class RPCBadAcceptStats(RPCException):
 	# Unknown accept_stat
 	def __init__(self, stat):
 		self.stat = stat
 
+	def __str__(self):
+		return "RPCBadAcceptStats %d" % self.stat
+
 class XidMismatch(RPCException):
 	# Got wrong XID in reply, got "xid" instead of "expected"
 	def __init__(self, xid, expected):
  		self.xid = xid
 		self.expected = expected
+
+	def __str__(self):
+		return "XidMismatch %d,%d" % (self.xid, self.expected)
 
 class TimeoutError(RPCException):
 	pass
