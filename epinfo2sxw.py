@@ -133,23 +133,26 @@ def class_output(klass):
         print "Warning: %s has no Equivalence partitioning information" \
               % klass.__name__
         return
+
+
+    outfile.write(EQPART_HEAD % klass.__name__)
+    
     lines = doc.split("\n")
     while lines:
         line = lines[0]
         del lines[0]
         if line.find("Equivalence partitioning:") != -1:
             handle_ep(lines)
-            
-
-def parse_testcase(klass):
-    print "Parsing", klass.__name__
-    outfile.write(EQPART_HEAD % klass.__name__)
-    
-    class_output(klass)
 
     outfile.write('</table:table>\n')
     outfile.write('<text:p text:style-name="Standard"><text:s/></text:p>\n')
     outfile.write('<text:p text:style-name="Standard"/>\n')
+            
+
+def parse_testcase(klass):
+    print "Parsing", klass.__name__
+    
+    class_output(klass)
 
     outfile.write(TCPART_HEAD % klass.__name__)
     
@@ -159,11 +162,13 @@ def parse_testcase(klass):
             parse_method(method)
             
     outfile.write('</table:table>\n')
+    outfile.write('<text:p text:style-name="Standard"><text:s/></text:p>\n')
+    outfile.write('<text:p text:style-name="Standard"/>\n')
 
 def main():
     global outfile
     outfile = StringIO.StringIO()
-    outfile.write(TESTCASES_HEAD)
+    outfile.write(EPINFO_HEAD)
     for attr in dir(nfs4st):
         if attr == "NFSTestCase":
             continue
@@ -251,7 +256,7 @@ TCPART_HEAD = """
    </table:table-row>
 """
 
-TESTCASES_HEAD = """\
+EPINFO_HEAD = """\
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE office:document-content PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "office.dtd">
 <office:document-content xmlns:office="http://openoffice.org/2000/office" xmlns:style="http://openoffice.org/2000/style" xmlns:text="http://openoffice.org/2000/text" xmlns:table="http://openoffice.org/2000/table" xmlns:draw="http://openoffice.org/2000/drawing" xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:number="http://openoffice.org/2000/datastyle" xmlns:svg="http://www.w3.org/2000/svg" xmlns:chart="http://openoffice.org/2000/chart" xmlns:dr3d="http://openoffice.org/2000/dr3d" xmlns:math="http://www.w3.org/1998/Math/MathML" xmlns:form="http://openoffice.org/2000/form" xmlns:script="http://openoffice.org/2000/script" office:class="text" office:version="1.0">
