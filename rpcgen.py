@@ -21,9 +21,8 @@
 #
 # Note <something>_list means zero or more of <something>.
 #
-# TODO:
+# TODO: Code generation for programs and procedures. 
 #
-
 
 import sys
 import keyword
@@ -102,26 +101,29 @@ lex.lex(debug=0)
 # Section: Helper classes and functions. 
 #
 
-const_out = None
-types_out = None
+# Global variablers
+known_basics = {"int" : "pack_int",
+                "enum" : "pack_enum", 
+                "unsigned_int" : "pack_uint",
+                "unsigned" : "pack_uint",
+                "hyper" : "pack_hyper",
+                "unsigned_hyper" : "pack_uhyper",
+                "float" : "pack_float",
+                "double" : "pack_double",
+                # Note: xdrlib.py does not have a
+                # pack_quadruple currently. 
+                "quadruple" : "pack_double", 
+                "bool" : "pack_bool",
+                "opaque": "pack_opaque",
+                "string": "pack_string"}
+
+
+known_types = {}
+
 
 typesheader = """
 from nfs4constants import *
-
-def unpack_objarray(ncl, klass):
-    n = ncl.unpacker.unpack_uint()
-    list = []
-    for i in range(n):
-	obj = klass(ncl)
-	obj.unpack()
-	list.append(obj)
-    return list
-
-def pack_objarray(ncl, list):
-    # FIXME: Support for length assertion. 
-    ncl.packer.pack_uint(len(list))
-    for item in list:
-	item.pack()
+from nfs4packer import *
 
 def init_type_class(klass, ncl):
     # Initilize type class
@@ -134,6 +136,22 @@ def assert_not_none(klass, *args):
 	if arg == None:
 	    raise TypeError(repr(klass) + " has uninitialized data")
 
+def pack_objarray(ncl, list):
+    # FIXME: Support for length assertion. 
+    ncl.packer.pack_uint(len(list))
+    for item in list:
+	item.pack()
+
+def unpack_objarray(ncl, klass):
+    n = ncl.unpacker.unpack_uint()
+    list = []
+    for i in range(n):
+	obj = klass(ncl)
+	obj.unpack()
+	list.append(obj)
+    return list
+
+
 # All NFS errors are subclasses of NFSException
 class NFSException(Exception):
 	pass
@@ -144,27 +162,19 @@ class BadDiscriminant(NFSException):
 
 """
 
+
+packerheader = """
+import rpc
+from nfs4types import *
+
+"""
+
+
 def check_not_reserved(*args):
     for arg in args:
         if keyword.iskeyword(arg):
             raise "Invalid identifier %s is a reserved word" % str(arg)
 
-known_basics = {"int" : "pack_int",
-                "enum" : "pack_enum", 
-                "unsigned_int" : "pack_uint",
-                "unsigned" : "pack_uint",
-                "hyper" : "pack_hyper",
-                "unsigned_hyper" : "pack_uhyper",
-                "float" : "pack_float",
-                "double" : "pack_double",
-                # Note: xdrlib.py does not have a
-                # pack_quadruple currently. 
-                "quadruple" : "pack_quadruple", 
-                "bool" : "pack_bool",
-                "opaque": "pack_opaque",
-                "string": "pack_string"}
-
-known_types = {}
 
 class IndentPrinter:
     def __init__(self, writer):
@@ -189,50 +199,41 @@ class IndentPrinter:
     def cont(self, *args):
         for arg in args:
             self.writer.write(arg)
+
+
+class MemFile:
+    def __init__(self):
+        self.data = ""
+    
+    def write(self, data):
+        self.data += str(data)
+
+    def get_data(self):
+        return self.data
+        
         
 class RPCType:
     # Note: The name is not part of this object.
-    # This class does not update the global known_types. 
-    def __init__(self, base_type=None, packer=None,
-                 vararray=None, fixarray=None, arraylen=None,
-                 void=0):
-        # Which XDR packer function to use for packing.
-        # If None, this is not a basic type. 
-        self.packer = packer
+    def __init__(self, base_type=None,
+                 vararray=None, fixarray=None, arraylen=None, isarray=0,
+                 void=0, composite=0):
         # Base type. 
         self.base_type = base_type
-        # 1 if this is an array with variabel length. 
+        # 1 if this is an vector with variabel length. 
         self.vararray = vararray
-        # 1 if this is an array with fixed length. 
+        # 1 if this is an vector with fixed length. 
         self.fixarray = fixarray
-        # Array length. Arrays with infinite (=2**32-1) length have None. 
+        # Vector length. Vectors with infinite (=2**32-1) length have None. 
         self.arraylen = arraylen
+        # 1 if this is an true array. Note: string and opaque type
+        # does not count as arrays, but they uses vararray, fixarray
+        # and arraylen fields.
+        self.isarray = isarray
         # Void?
         self.void = void
-
-        if packer:
-            # Constructing manually. Do not inherit anything.
-            pass
-        else:
-            # Inherit packer. 
-            self._inherit_packer()
-            
-            array = (vararray or fixarray)
-            if not array:
-                self._inherit_arrayinfo()
-
-    def _inherit_packer(self):
-        # If this is a known_type, inherit packer. 
-        base = known_types.get(self.base_type, None)
-        if base:
-            self.packer = base.packer    
-
-    def _inherit_arrayinfo(self):
-        base = known_types.get(self.base_type, None)
-        if base:
-            self.fixarray = base.fixarray
-            self.vararray = base.vararray
-            self.arraylen = base.arraylen
+        # A composite type is a type with several components (eg. Union or Struct)
+        # They are represented by a class in this framework. 
+        self.composite = composite
 
     def array_string(self):
         if self.arraylen:
@@ -246,9 +247,6 @@ class RPCType:
             return "[%s]" % lenstring
         else:
             return ""
-
-    def isarray(self):
-        return (self.fixarray or self.vararray)
 
 
 class RPCunion_body:
@@ -271,82 +269,96 @@ class RPCcase_declaration:
 
 # Initialize known_types. 
 for t in known_basics.keys():
-    packer = known_basics[t]
-    known_types[t] = RPCType(packer=packer)
+    known_types[t] = RPCType()
+
 
 #
 # Section: Functions for code generation
 #
 
-def gen_pack_code(ip, id, rpctype):
-    if not rpctype.isarray():
-        # Not any kind of array.
-        if rpctype.packer:
-            check_not_reserved(rpctype.packer, id)
-            ip.pr("self.packer.%s(self.%s)" % (rpctype.packer, id))
+def gen_pack_code(ip, id, typedecl):
+    base_type = known_types[typedecl.base_type]
+    if base_type.composite:
+        if typedecl.isarray:
+            ip.pr("pack_objarray(self, self.%s)" % id)
         else:
-            check_not_reserved(id)
             ip.pr("self.%s.pack()" % id)
-
-    # Some kind of array
-    elif rpctype.packer == "pack_string":
-        # There is only variable length strings.
-        check_not_reserved(id)
-        ip.pr("self.packer.pack_string(self.%s)" % id)
-    elif rpctype.packer == "pack_opaque":
-        check_not_reserved(id)
-        if rpctype.fixarray:
-            # Fixed length opaque data
-            check_not_reserved(id)
-            ip.pr("self.packer.pack_fopaque(%s, self.%s)" % (rpctype.arraylen, id))
-        else:
-            # Variable length opaque data
-            ip.pr("self.packer.pack_opaque(self.%s)" % id)
     else:
-        # Some other kind of array. 
-        if rpctype.packer:
-            check_not_reserved(rpctype.packer, id)
-            ip.pr("self.packer.pack_array(self.%s, self.packer.%s)" % (id, rpctype.packer))
-        else:
-            # Pack list of objects
-            check_not_reserved(id)
-            ip.pr("pack_objarray(self.ncl, self.%s)" % id)
+        ip.pr("self.packer.pack_%s(self.%s)" % (typedecl.base_type, id))
 
 
-def gen_unpack_code(ip, id, rpctype):
-    if not rpctype.isarray():
-        # Not any kind of array.
-        if rpctype.packer:
-            check_not_reserved(id) # No reserved word beginning with "un"
-            ip.pr("self.%s = self.unpacker.%s()" % (id, "un" + rpctype.packer))
+def gen_unpack_code(ip, id, typedecl):
+    base_type = known_types[typedecl.base_type]
+    if base_type.composite:
+        if typedecl.isarray:
+            ip.pr("self.%s = unpack_objarray(self, %s)" % (id, typedecl.base_type))
         else:
-            check_not_reserved(id)
-            ip.pr("self.%s = %s(self.ncl)" % (id, rpctype.base_type))
+            ip.pr("self.%s = %s(self)" % (id, typedecl.base_type))
             ip.pr("self.%s.unpack()" % id)
-
-    # Some kind of array
-    elif rpctype.packer == "pack_string":
-        # There is only variable length strings.
-        check_not_reserved(id)
-        ip.pr("self.%s = self.unpacker.unpack_string()" % id)
-    elif rpctype.packer == "pack_opaque":
-        check_not_reserved(id)
-        if rpctype.fixarray:
-            # Fixed length opaque data
-            ip.pr("self.%s = self.unpacker.unpack_fopaque(%s)" % (id, rpctype.arraylen))
-        else:
-            # Variable length opaque data
-            ip.pr("self.%s = self.unpacker.unpack_opaque()" % id)
     else:
-        # Some other kind of array. 
-        if rpctype.packer:
-            check_not_reserved(id) # No reserved word beginning with "un"
-            ip.pr("self.%s = self.unpacker.unpack_array(%s)" % (id, "un" + rpctype.packer))
-        else:
-            # Unpack array of objects.
-            check_not_reserved(id, rpctype.base_type)
-            ip.pr("self.%s = unpack_objarray(self.ncl, %s)" % (id, rpctype.base_type))
+        ip.pr("self.%s = self.unpacker.unpack_%s()" % (id, typedecl.base_type))
 
+
+def gen_packers(id, typeobj):
+    base_type = known_types[typeobj.base_type]
+    
+    # Packers
+    ip = IndentPrinter(packer_out)
+    ip.change(4)
+    if (not base_type.composite) and (not typeobj.isarray):
+        # Simple alias
+        ip.pr("pack_%s = pack_%s\n" % (id, typeobj.base_type))
+    else:
+        ip.pr("def pack_%s(self, data):" % id)
+        ip.change(4)
+        if base_type.composite:
+            # Handled by class
+            ip.pr("pack_objarray(self, data)")
+        else:
+            # Array
+            if typeobj.base_type == "string":
+                ip.pr("self.pack_string(data)")
+            elif typeobj.base_type == "opaque":
+                if typeobj.fixarray:
+                    # Fixed length opaque data
+                    ip.pr("self.pack_fopaque(%s, data)" % typeobj.arraylen)
+                else:
+                    # Variable length opaque data
+                    ip.pr("self.pack_opaque(data)")
+            else:
+                # Some other kind of array. 
+                ip.pr("self.pack_array(data, self.pack_%s)" % typeobj.base_type)
+        ip.pr("")
+
+
+    # Unpackers
+    ip = IndentPrinter(unpacker_out)
+    ip.change(4)
+    if (not base_type.composite) and (not typeobj.isarray):
+        # Simple alias
+        ip.pr("unpack_%s = unpack_%s\n" % (id, typeobj.base_type))
+    else:
+        ip.pr("def unpack_%s(self):" % id)
+        ip.change(4)
+        if base_type.composite:
+            # Handled by class
+            ip.pr("return self.unpack_objarray(self, %s)" % typeobj.base_type)
+        else:
+            # Array
+            if typeobj.base_type == "string":
+                ip.pr("return self.unpack_string()")
+            elif typeobj.base_type == "opaque":
+                if typeobj.fixarray:
+                    # Fixed length opaque data
+                    ip.pr("return self.unpack_fopaque(%s)" % typeobj.arraylen)
+                else:
+                    # Variable length opaque data
+                    ip.pr("return self.unpack_opaque()")
+            else:
+                # Some other kind of array. 
+                ip.pr("return self.unpack_array(self.unpack_%s)" % typeobj.base_type)
+        ip.pr("")
+    
 
 def gen_switch_code(ip, union_body, packer, assertions=0):
     # Shortcuts
@@ -446,20 +458,38 @@ def p_type_def_1(t):
     id = t[2]
     obj = RPCType("enum")
     known_types[id] = obj
-    # Returns nothing. 
+
+    # Write packers
+    ip = IndentPrinter(packer_out)
+    ip.change(4)
+    ip.pr("pack_%s = pack_enum\n" % id)
+
+    # Write unpackers
+    ip = IndentPrinter(unpacker_out)
+    ip.change(4)
+    ip.pr("unpack_%s = unpack_enum\n" % id)
+    
+    # Returns nothing.
+
 
 def p_type_def_2(t):
     '''type_def : TYPEDEF declaration SEMI'''
 
     (id, typeobj) = t[2]
     known_types[id] = typeobj
+
+    print "Creating packers for typedef", id
+    gen_packers(id, typeobj)
     # Returns nothing. 
 
 def p_type_def_3(t):
     '''type_def : STRUCT ID struct_body SEMI'''
+
+    print "Creating class for struct", t[2]
+    
     # Add to known_types. 
     classname = t[2]
-    obj = RPCType()
+    obj = RPCType(composite=1)
     known_types[classname] = obj
 
     # Generate class code
@@ -527,9 +557,12 @@ def p_type_def_3(t):
     
 def p_type_def_4(t):
     '''type_def : UNION ID union_body SEMI'''
+
+    print "Creating class for union", t[2]
+    
     # Add to known_types. 
     classname = t[2]
-    obj = RPCType()
+    obj = RPCType(composite=1)
     known_types[classname] = obj
 
     # Shortcuts
@@ -592,6 +625,7 @@ def p_type_def_4(t):
             all_decl.append(declaration)
             
     ip.pr("# };")
+    
 
     # constructor line
     ip.prcomma("def __init__(self, ncl")
@@ -823,7 +857,7 @@ def p_declaration_2(t):
     base_type = t[1]
     id = t[2]
     arraylen = t[4]
-    obj = RPCType(base_type, fixarray=fixarray, vararray=vararray, arraylen=arraylen)
+    obj = RPCType(base_type, fixarray=fixarray, vararray=vararray, arraylen=arraylen, isarray=1)
     t[0] = (id, obj)
                
 
@@ -831,7 +865,7 @@ def p_declaration_3(t):
     '''declaration : type_specifier STAR ID'''
     # Short-cut: We interpret "type-name *identifier"
     # as "type-name identifier<1>".
-    obj = RPCType(t[1], vararray=1, arraylen=1)
+    obj = RPCType(t[1], vararray=1, arraylen=1, isarray=1)
     id = t[3]
     t[0] = (id, obj)
         
@@ -895,15 +929,37 @@ if __name__ == "__main__":
     name_base = infile[:infile.rfind(".")]
     constants_file = name_base + "constants.py"
     types_file = name_base + "types.py"
+    packer_file = name_base + "packer.py"
 
     print "Input file is", infile
     print "Writing constants to", constants_file
     print "Writing type classes to", types_file
+    print "Writing packer classes to", packer_file
 
     const_out = open(constants_file, "w")
     types_out = open(types_file, "w")
+    packer_file_out = open(packer_file, "w")
     # Write beginning of types file. 
     types_out.write(typesheader)
+
+    packer_out = MemFile()
+    packer_out.write("class NFS4Packer(rpc.Packer):\n")
+    unpacker_out = MemFile()
+    unpacker_out.write("class NFS4Unpacker(rpc.Unpacker):\n")
+
+    # Write beginning of packer file.
+    packer_file_out.write(packerheader)
+    ip = IndentPrinter(packer_out)
+    ip.change(4)
+    for t in known_basics.keys():
+        packer = known_basics[t]
+        ip.pr("pack_%s = rpc.Packer.%s\n" % (t, packer))
+
+    ip = IndentPrinter(unpacker_out)
+    ip.change(4)
+    for t in known_basics.keys():
+        packer = known_basics[t]
+        ip.pr("unpack_%s = rpc.Unpacker.%s\n" % (t, "un" + packer))
 
     import yacc
     yacc.yacc()
@@ -913,3 +969,11 @@ if __name__ == "__main__":
     f.close()
 
     yacc.parse(data, debug=0)
+
+    # Write out packer data. 
+    packer_file_out.write(packer_out.get_data())
+    packer_file_out.write(unpacker_out.get_data())
+
+    const_out.close()
+    types_out.close()
+    packer_file_out.close()

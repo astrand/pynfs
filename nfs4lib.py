@@ -25,6 +25,7 @@ NFS_PORT = 2049
 import rpc
 from nfs4constants import *
 from nfs4types import *
+import nfs4packer
 import random
 import array
 import socket
@@ -32,8 +33,8 @@ import os
 
 class PartialNFS4Client:
     def addpackers(self):
-        self.packer = rpc.Packer()
-        self.unpacker = rpc.Unpacker('')
+        self.packer = nfs4packer.NFS4Packer()
+        self.unpacker = nfs4packer.NFS4Unpacker('')
 
     def null(self):
 	return self.make_call(0, None, None, None)
