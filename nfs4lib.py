@@ -363,9 +363,9 @@ class PartialNFS4Client:
         args = SECINFO4args(self, name)
         return nfs_argop4(self, argop=OP_SECINFO, opsecinfo=args)
 
-    def setattr(self):
-        # FIXME
-        raise NotImplementedError()
+    def setattr_op(self, stateid, obj_attributes):
+        args = SETATTR4args(self, stateid, obj_attributes)
+        return nfs_argop4(self, argop=OP_SETATTR, opsetattr=args)
 
     def setclientid_op(self, client, callback):
 	args = SETCLIENTID4args(self, client, callback)
