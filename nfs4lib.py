@@ -239,7 +239,7 @@ class PartialNFS4Client:
 	return nfs_argop4(self, argop=OP_NVERIFY, opnverify=args)
 
     def open_op(self, seqid, share_access, share_deny, owner, openhow, claim):
-	args = OPEN4args(self, seqid, share_access, share_deny, owner, openhow, claim):
+	args = OPEN4args(self, seqid, share_access, share_deny, owner, openhow, claim)
         return nfs_argop4(self, argop=OP_OPEN, opopen=args)
 
     # Convenience method for open. Only handles claim type CLAIM_NULL. If you want
