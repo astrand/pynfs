@@ -111,6 +111,17 @@ class PartialNFS4Client:
         # Last seqid
         self.seqid = 0
 
+    def mkcred(self):
+	if self.cred == None:
+            hostname = socket.gethostname()
+            groups = os.getgroups()
+	    self.cred = (rpc.AUTH_UNIX, rpc.make_auth_unix(1, hostname, self.uid, self.gid, groups))
+	return self.cred
+
+    def mkverf(self):
+	if self.verf == None:
+	    self.verf = (rpc.AUTH_NULL, rpc.make_auth_null())
+	return self.verf
     
     def addpackers(self):
  	# Pass a reference to ourself to NFS4Packer and NFS4Unpacker. 
@@ -893,25 +904,14 @@ class UDPNFS4Client(PartialNFS4Client, rpc.RawUDPClient):
         self.uid = uid
         self.gid = gid
         
-    def mkcred(self):
-	if self.cred == None:
-            hostname = socket.gethostname()
-            groups = os.getgroups()
-	    self.cred = (rpc.AUTH_UNIX, rpc.make_auth_unix(1, hostname, self.uid, self.gid, groups))
-	return self.cred
-
-    def mkverf(self):
-	if self.verf == None:
-	    self.verf = (rpc.AUTH_NULL, rpc.make_auth_null())
-	return self.verf
-
 
 class TCPNFS4Client(PartialNFS4Client, rpc.RawTCPClient):
-    def __init__(self, host, port=NFS_PORT):
+    def __init__(self, host, port=NFS_PORT, uid=os.getuid(), gid=os.getgid()):
         rpc.RawTCPClient.__init__(self, host, NFS4_PROGRAM, NFS_V4, port)
         PartialNFS4Client.__init__(self)
+        self.uid = uid
+        self.gid = gid
 
-    # FIXME: As UDPNFS4Client. 
 
 class NFS4OpenFile:
     """Emulates a Python file object.
