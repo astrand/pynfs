@@ -267,9 +267,8 @@ class PartialNFS4Client:
         return self.open_op(claim, openhow, owner, seqid, share_access, share_deny)
 
         
-    def openattr(self):
-        # FIXME
-        raise NotImplementedError()
+    def openattr_op(self):
+        return nfs_argop4(self, argop=OP_OPENATTR)
 
     def open_confirm(self):
         # FIXME
