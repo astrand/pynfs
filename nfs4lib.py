@@ -529,6 +529,34 @@ def opaque2long(data):
 
     return result
 
+def intlist2long(intlist):
+    # Make sure we are dealing with longs.
+    # (unpack_uint in xdrlib returns an integer if possible, a long otherwise.)
+    intlist = map(lambda x: long(x), intlist)
+
+    result = 0L
+    for intpos in range(len(intlist)):
+        integer = intlist[intpos]
+        shiftbits = intpos * 32
+        result = result | (integer << shiftbits)
+    
+    return result
+
+def int2binstring(val):
+    numbits = 32
+    if type(val) == type(1L):
+        numbits = 64
+
+    result = ""
+    for bitpos in range(numbits-1, -1, -1):
+        bitval = 1L << bitpos
+        if bitval & val:
+            result += "1"
+        else:
+            result += "0"
+    return result
+
+
 def get_attrbitnum_dict():
     """Get dictionary with attribute bit positions.
 
@@ -628,6 +656,14 @@ def list2attrmask(attrlist):
         arrint = arrint | (1L << bitpos)
         attr_request[arrintpos] = arrint
     return attr_request
+
+def create_dummy_unpacker(data):
+    # Construct a dummy Client. 
+    ncl = DummyNcl()
+    # Construct a Unpacker with our object data. 
+    unpacker = nfs4packer.NFS4Unpacker(ncl, data)
+    ncl.unpacker = unpacker
+    return unpacker
 
 
 class UDPNFS4Client(PartialNFS4Client, rpc.RawUDPClient):
