@@ -1898,7 +1898,12 @@ class LookupSuite(NFSSuite):
         self.init_connection()
 
         # Saved files for LOOKUP
-        (accepted_names, rejected_names) = self.try_file_names(remove_files=0)
+        try:
+            (accepted_names, rejected_names) = self.try_file_names(remove_files=0)
+        except SkipException, e:
+            print e
+            return
+
         self.info_message("Rejected file names by OPEN: %s" % repr(rejected_names))
 
         # Ok, lets try LOOKUP on all accepted names
@@ -1920,7 +1925,12 @@ class LookupSuite(NFSSuite):
         """
         self.init_connection()
 
-        (accepted_names, rejected_names) = self.try_file_names()
+        try:
+            (accepted_names, rejected_names) = self.try_file_names()
+        except SkipException, e:
+            print e
+            return
+        
         self.info_message("Rejected file names by OPEN: %s" % repr(rejected_names))
 
         # Ok, lets try LOOKUP on all rejected names
@@ -2842,7 +2852,12 @@ class ReaddirSuite(NFSSuite):
         """
         self.init_connection()
         
-        (accepted_names, rejected_names) = self.try_file_names(remove_files=0)
+        try:
+            (accepted_names, rejected_names) = self.try_file_names(remove_files=0)
+        except SkipException, e:
+            print e
+            return
+        
         self.info_message("Rejected file names by OPEN: %s" % repr(rejected_names))
 
         fh = self.ncl.do_getfh(self.tmp_dir)
@@ -3080,7 +3095,12 @@ class RemoveSuite(NFSSuite):
         self.init_connection()
 
         # Save files for REMOVE
-        (accepted_names, rejected_names) = self.try_file_names(remove_files=0)
+        try:
+            (accepted_names, rejected_names) = self.try_file_names(remove_files=0)
+        except SkipException, e:
+            print e
+            return
+        
         self.info_message("Rejected file names by OPEN: %s" % repr(rejected_names))
 
         # Ok, lets try REMOVE on all accepted names
@@ -3101,8 +3121,12 @@ class RemoveSuite(NFSSuite):
         the server rejects creation of objects with these names
         """
         self.init_connection()
-
-        (accepted_names, rejected_names) = self.try_file_names()
+        try:
+            (accepted_names, rejected_names) = self.try_file_names()
+        except SkipException, e:
+            print e
+            return
+        
         self.info_message("Rejected file names by OPEN: %s" % repr(rejected_names))
 
         # Ok, lets try REMOVE on all rejected names
@@ -3409,7 +3433,12 @@ class RenameSuite(NFSSuite):
         self.init_connection()
 
         # Saved files for 
-        (accepted_names, rejected_names) = self.try_file_names(remove_files=0)
+        try:
+            (accepted_names, rejected_names) = self.try_file_names(remove_files=0)
+        except SkipException, e:
+            print e
+            return
+        
         self.info_message("Rejected file names by OPEN: %s" % repr(rejected_names))
 
         # Ok, lets try RENAME on all accepted names
@@ -3434,7 +3463,12 @@ class RenameSuite(NFSSuite):
         """
         self.init_connection()
 
-        (accepted_names, rejected_names) = self.try_file_names()
+        try:
+            (accepted_names, rejected_names) = self.try_file_names()
+        except SkipException, e:
+            print e
+            return
+        
         self.info_message("Rejected file names by OPEN: %s" % repr(rejected_names))
 
         # Ok, lets try RENAME on all rejected names
