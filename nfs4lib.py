@@ -734,8 +734,7 @@ def long2opaque(integer, pad_to=None):
     result = ""
     # Encode 4 bytes at a time.
     while l:
-        mask = 0xffffffff
-        lowest_bits = l & mask
+        lowest_bits = l & 0xffffffffL
         l = l >> 32
         result = struct.pack(">L", lowest_bits) + result
 
