@@ -21,6 +21,7 @@
 # TODO: 
 # Implement buffering in NFS4OpenFile.
 
+__pychecker__ = 'no-callinit no-reimport'
 
 NFS_PORT = 2049
 
@@ -52,7 +53,6 @@ if not hasattr(os, "getgid"):
 
 if not hasattr(os, "getgroups"):
     os.getgroups = lambda: []
-
 
 # All NFS errors are subclasses of NFSException
 class NFSException(rpc.RPCException):
@@ -110,6 +110,9 @@ class PartialNFS4Client:
         self.cwd = []
         # Last seqid
         self.seqid = 0
+        # Set in sub-classes
+        self.gid = None
+        self.uid = None
 
     def mkcred(self):
 	if self.cred == None:
@@ -127,6 +130,9 @@ class PartialNFS4Client:
  	# Pass a reference to ourself to NFS4Packer and NFS4Unpacker. 
         self.packer = nfs4packer.NFS4Packer(self)
         self.unpacker = nfs4packer.NFS4Unpacker(self, '')
+
+    def make_call(self, proc, args, pack_func, unpack_func):
+        raise NotImplementedError
 
     #
     # RPC procedures
@@ -150,7 +156,7 @@ class PartialNFS4Client:
     #
     def gen_random_64(self):
         a = array.array('I')
-        for turn in range(4):
+        for unused in range(4):
             a.append(random.randrange(2**16))
         return a.tostring()
 
@@ -566,14 +572,14 @@ class PartialNFS4Client:
             ncl.unpacker.unpack_opaque()
 
             # resarray
-            n = ncl.unpacker.unpack_uint()
+            unused = ncl.unpacker.unpack_uint()
 
             # PUTFH result
-            argop = ncl.unpacker.unpack_nfs_opnum4()
+            unused_argop = ncl.unpacker.unpack_nfs_opnum4()
             status = ncl.unpacker.unpack_nfsstat4()
 
             # READ result
-            argop = ncl.unpacker.unpack_nfs_opnum4()
+            unused_argop = ncl.unpacker.unpack_nfs_opnum4()
             status = ncl.unpacker.unpack_nfsstat4()
             eof = ncl.unpacker.unpack_bool()
             data = ncl.unpacker.unpack_opaque()
@@ -732,7 +738,9 @@ def verify_compound_result(res):
             if lastop.arm.status != res.status:
                 raise InvalidCompoundRes()
 
-def unixpath2comps(str, pathcomps=[]):
+def unixpath2comps(str, pathcomps=None):
+    if pathcomps == None:
+        pathcomps = []
     if str[0] == "/":
         pathcomps = []
     else:
@@ -823,7 +831,7 @@ def get_attrbitnum_dict():
     attrbitnum_dict = {}
     for name in dir(nfs4constants):
         if name.startswith("FATTR4_"):
-            value = eval("nfs4constants." + name)
+            value = getattr(nfs4constants, name)
             # Sanity checking. Must be integer. 
             assert(type(value) == type(0))
 	    attrname = name[7:].lower()
@@ -844,7 +852,7 @@ def get_attrunpackers(unpacker):
 	if name.startswith("unpack_fattr4_"):
             # unpack_fattr4_ is 14 chars. 
 	    attrname = name[14:]
-	    attrunpackers[attrname] = eval("unpacker.unpack_fattr4_" + attrname)
+	    attrunpackers[attrname] = getattr(unpacker, name)
 
     return attrunpackers
 
@@ -923,6 +931,7 @@ class TCPNFS4Client(PartialNFS4Client, rpc.RawTCPClient):
 
 
 class NFS4OpenFile:
+    __pychecker__ = 'no-classattr'
     """Emulates a Python file object.
     """
     # BUGS: If pos is set beyond file size and data is later written,
@@ -948,7 +957,7 @@ class NFS4OpenFile:
     def __set_priv(self, name, val):
         self.__dict__[name] = val
 
-    def open(self, filename, mode="r", bufsize=BUFSIZE):
+    def open(self, filename, mode="r", unused_bufsize=BUFSIZE):
         # filename is a normal unix-path, relative to self.ncl.cwd.
         operations = [self.ncl.putrootfh_op()]
 	pathcomps = self.ncl.get_pathcomps_rel(filename)
@@ -1026,7 +1035,7 @@ class NFS4OpenFile:
         else:
             return ""
 
-    def readlines(self, sizehint=None):
+    def readlines(self, unused_sizehint=None):
         if self.closed:
             raise ValueError("I/O operation on closed file")
         data = self.ncl.do_read(self.fh, self.pos)
