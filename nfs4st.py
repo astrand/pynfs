@@ -2107,7 +2107,7 @@ class ReaddirTestCase(NFSTestCase):
     def testFirst(self):
         """READDIR with cookie=0, maxcount=4096
 
-        Covered invalid equivalence classes: 10, 20, 30, 40, 50, 60
+        Covered valid equivalence classes: 10, 20, 30, 40, 50, 60
         """        
         readdirop = self.ncl.readdir_op(cookie=0, cookieverf="\x00",
                                         dircount=0, maxcount=4096,
@@ -2119,7 +2119,7 @@ class ReaddirTestCase(NFSTestCase):
     def testSubsequent(self):
         """READDIR with cookie from previus call
 
-        Covered invalid equivalence classes: 10, 21, 31, 41, 50, 60
+        Covered valid equivalence classes: 10, 21, 31, 41, 50, 60
         """
         # FIXME: Implement rest of testcase, as soon as
         # CITI supports dircount/maxcount. 
