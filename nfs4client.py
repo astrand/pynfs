@@ -160,10 +160,14 @@ class ClientApp(cmd.Cmd):
         sys.exit(0)
     
     def do_cd(self, line):
+        if not line:
+            print "cd <directory>"
+            return
+        
         if line == "..":
             self.ncl.cd_dotdot()
         elif line == ".":
-            pass
+            return
         else:
             try:
                 self.ncl.try_cd(line)
