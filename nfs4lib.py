@@ -996,14 +996,14 @@ def create_client(host, port, transport, **kwargs):
     if transport == "auto":
         # Try TCP first, then UDP, according to RFC2224
         try:
-            ncl = TCPNFS4Client(host, port, kwargs)
+            ncl = TCPNFS4Client(host, port, **kwargs)
         except socket.error:
             print "TCP Connection refused, trying UDP"
-            ncl = UDPNFS4Client(host, port, kwargs)
+            ncl = UDPNFS4Client(host, port, **kwargs)
     elif transport == "tcp":
-        ncl = TCPNFS4Client(host, port, kwargs)
+        ncl = TCPNFS4Client(host, port, **kwargs)
     elif transport == "udp":
-        ncl = UDPNFS4Client(host, port, kwargs)
+        ncl = UDPNFS4Client(host, port, **kwargs)
     else:
         raise RuntimeError, "Invalid protocol"
 
