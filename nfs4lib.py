@@ -60,8 +60,7 @@ class UDPNFS4Client(PartialNFS4Client, rpc.RawUDPClient):
 	return self.verf
 
 
-
-class TCPNFSClient(PartialNFS4Client, rpc.RawTCPClient):
+class TCPNFS4Client(PartialNFS4Client, rpc.RawTCPClient):
     def __init__(self, host):
         rpc.RawTCPClient.__init__(self, host, NFS_PROGRAM, NFS_VERSION, NFS_PORT)
 
