@@ -418,7 +418,14 @@ class CreateTestCase(NFSTestCase):
         res = self.ncl.compound(operations)
         self.assert_OK(res)
         
-        
+
+
+class QuietTextTestRunner(unittest.TextTestRunner):
+    def _makeResult(self):
+        ttr = unittest._TextTestResult(self.stream, self.descriptions, self.verbosity)
+        ttr.printErrors = lambda: 0
+        return ttr
+    
 
 class TestProgram(unittest.TestProgram):
     USAGE = """\
@@ -429,6 +436,7 @@ Options:
   -t, --tcp        use TCP as transport
   -h, --help       Show this message
   -q, --quiet      Minimal output
+  -v, --verbose    Verbose output, display tracebacks
 
 Examples:
   %(progName)s                               - run default set of tests
@@ -443,6 +451,7 @@ Examples:
         global host, port, transport
 
         self.verbosity = 2
+        self.display_tracebacks = 0
 
         # Reorder arguments, so we can add options at the end 
         ordered_args = []
@@ -453,8 +462,8 @@ Examples:
                 ordered_args.append(arg)
         
         try:
-            options, args = getopt.getopt(ordered_args, 'uthq',
-                                          ['help', 'quiet', 'udp', 'tcp'])
+            options, args = getopt.getopt(ordered_args, 'uthqv',
+                                          ['help', 'quiet', 'udp', 'tcp', 'verbose'])
         except getopt.error, msg:
             self.usageExit(msg)
             
@@ -467,6 +476,8 @@ Examples:
                 self.usageExit()
             if opt in ('-q','--quiet'):
                 self.verbosity = 0
+            if opt in ('-v','--verbose'):
+                self.display_tracebacks = 1
 
         if len(args) < 1:
             self.usageExit()
@@ -496,6 +507,14 @@ Examples:
             self.testNames = (self.defaultTest,)
 
         self.createTests()
+
+    def runTests(self):
+        if self.display_tracebacks:
+            self.testRunner = unittest.TextTestRunner(verbosity=self.verbosity)
+        else:
+            self.testRunner = QuietTextTestRunner(verbosity=self.verbosity)
+        result = self.testRunner.run(self.test)
+        sys.exit(not result.wasSuccessful())
 
 
 main = TestProgram
