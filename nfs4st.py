@@ -108,7 +108,7 @@ class NFSTestCase(unittest.TestCase):
         print >> sys.stderr, "\n  " + msg + ", ",
 
     def do_compound(self, *args, **kwargs):
-        """Call ncl.compound. Handle all rpc.RPCExceptions as failures."""
+        """Call ncl.compound. Handle all rpc.RPCExceptions as failures"""
         return self.failIfRaises(rpc.RPCException, self.ncl.compound, *args, **kwargs)
 
     def lookup_all_objects(self):
@@ -125,6 +125,19 @@ class NFSTestCase(unittest.TestCase):
             result.append(self.ncl.lookup_op(pathcomps))
 
         return result
+
+    def lookup_all_objects_and_sizes(self):
+        """Generate a list of lookup operations and object sizes"""
+        obj_sizes = []
+        for lookupop in self.lookup_all_objects():
+            getattrop = self.ncl.getattr([FATTR4_SIZE])
+            res = self.do_compound([self.putrootfhop, lookupop, getattrop])
+            self.assert_OK(res)
+            obj = res.resarray[2].arm.arm.obj_attributes
+            d =  nfs4lib.fattr2dict(obj)
+            obj_sizes.append((lookupop, d["size"]))
+
+        return obj_sizes
 
     def setUp(self):
         self.connect()
@@ -1527,16 +1540,8 @@ class NverifyTestCase(NFSTestCase):
 
         Covered valid equivalence classes: 1, 2, 3, 4, 5, 6, 7, 9, 11
         """
-
         # Fetch sizes for all objects
-        obj_sizes = []
-        for lookupop in self.lookup_all_objects():
-            getattrop = self.ncl.getattr([FATTR4_SIZE])
-            res = self.do_compound([self.putrootfhop, lookupop, getattrop])
-            self.assert_OK(res)
-            obj = res.resarray[2].arm.arm.obj_attributes
-            d =  nfs4lib.fattr2dict(obj)
-            obj_sizes.append((lookupop, d["size"]))
+        obj_sizes = self.lookup_all_objects_and_sizes()
         
         # For each type of object, do nverify with wrong filesize,
         # get new filesize and check if it match previous size. 
@@ -1573,14 +1578,7 @@ class NverifyTestCase(NFSTestCase):
         """
 
         # Fetch sizes for all objects
-        obj_sizes = []
-        for lookupop in self.lookup_all_objects():
-            getattrop = self.ncl.getattr([FATTR4_SIZE])
-            res = self.do_compound([self.putrootfhop, lookupop, getattrop])
-            self.assert_OK(res)
-            obj = res.resarray[2].arm.arm.obj_attributes
-            d =  nfs4lib.fattr2dict(obj)
-            obj_sizes.append((lookupop, d["size"]))
+        obj_sizes = self.lookup_all_objects_and_sizes()
         
         # For each type of object, do nverify with wrong filesize,
         # get new filesize and check if it match previous size. 
@@ -2832,15 +2830,8 @@ class VerifyTestCase(NFSTestCase):
         Covered valid equivalence classes: 1, 2, 3, 4, 5, 6, 7, 9, 11
         """
         # Fetch sizes for all objects
-        obj_sizes = []
-        for lookupop in self.lookup_all_objects():
-            getattrop = self.ncl.getattr([FATTR4_SIZE])
-            res = self.do_compound([self.putrootfhop, lookupop, getattrop])
-            self.assert_OK(res)
-            obj = res.resarray[2].arm.arm.obj_attributes
-            d =  nfs4lib.fattr2dict(obj)
-            obj_sizes.append((lookupop, d["size"]))
-
+        obj_sizes = self.lookup_all_objects_and_sizes()
+        
         # For each type of object, do verify with same filesize
         # get filesize again, and check if it match previous size.
         for (lookupop, objsize) in obj_sizes:
@@ -2873,14 +2864,7 @@ class VerifyTestCase(NFSTestCase):
         Covered valid equivalence classes: 1, 2, 3, 4, 5, 6, 7, 9, 12
         """
         # Fetch sizes for all objects
-        obj_sizes = []
-        for lookupop in self.lookup_all_objects():
-            getattrop = self.ncl.getattr([FATTR4_SIZE])
-            res = self.do_compound([self.putrootfhop, lookupop, getattrop])
-            self.assert_OK(res)
-            obj = res.resarray[2].arm.arm.obj_attributes
-            d =  nfs4lib.fattr2dict(obj)
-            obj_sizes.append((lookupop, d["size"]))
+        obj_sizes = self.lookup_all_objects_and_sizes()
         
         # For each type of object, do verify with wrong filesize. 
         for (lookupop, objsize) in obj_sizes:
