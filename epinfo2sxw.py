@@ -97,7 +97,7 @@ def parse_method(meth):
     outfile.write('</table:table-row>\n')
 
 
-def handle_valid_ec(lines):
+def get_cell_info(lines):
     cell = ""
     while lines:
         line = lines[0]
@@ -109,18 +109,17 @@ def handle_valid_ec(lines):
         else:
             cell += ", " + line.strip()
 
+    return cell
+
+def handle_valid_ec(lines):
+    cell = get_cell_info(lines)
+    
     outfile.write('<table:table-cell table:style-name="Table1.A2" table:value-type="string">\n')
     outfile.write('<text:p text:style-name="Table Contents">%s</text:p>\n' % cell)
     outfile.write('</table:table-cell>\n')
 
 def handle_invalid_ec(lines):
-    cell = ""
-    while lines:
-        line = lines[0]
-        if line.find("            ") == -1:
-            break
-        del lines[0]
-        cell += line.strip()
+    cell = get_cell_info(lines)
 
     outfile.write('<table:table-cell table:style-name="Table1.C2" table:value-type="string">\n')
     outfile.write('<text:p text:style-name="Table Contents">%s</text:p>\n' % cell)
