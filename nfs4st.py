@@ -111,8 +111,13 @@ class CompoundTestCase(NFSTestCase):
         res = self.do_compound([])
         self.assert_OK(res)
 
-    def testOperation1_2(self):
-        """Test COMPOUND with (undefined) operation 1 and 2
+    def testOperation0_1_2(self):
+        """Test COMPOUND with (undefined) operation 0, 1 and 2
+
+        The server should return NFS4ERR_NOTSUPP for the undefined
+        operations 0, 1 and 2. Although operation 2 may be introduced
+        in later minor versions, the server should always return
+        NFS4ERR_NOTSUPP if the minorversion is 0. 
         """
 
         # nfs4types.nfs_argop4 does not allow packing invalid operations. 
@@ -125,6 +130,10 @@ class CompoundTestCase(NFSTestCase):
             
             def pack(self, dummy=None):
                 self.packer.pack_nfs_opnum4(self.argop)
+
+        op = custom_nfs_argop4(self.ncl, argop=0)
+        res = self.do_compound([op])
+        self.assert_status(res, [NFS4ERR_NOTSUPP])
 
         op = custom_nfs_argop4(self.ncl, argop=1)
         res = self.do_compound([op])
