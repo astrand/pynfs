@@ -1017,10 +1017,11 @@ def p_error(t):
 #
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print "Usage: %s <filename>" % sys.argv[0]
+        print "Usage: %s <base-input-file> [extra-input-file...]" % sys.argv[0]
         sys.exit(1)
 
     infile = sys.argv[1]
+    extrafiles = sys.argv[2:]
     name_base = os.path.basename(infile[:infile.rfind(".")])
     # File names without .py
     constants_file = name_base + "constants"
@@ -1028,6 +1029,8 @@ if __name__ == "__main__":
     packer_file = name_base + "packer"
 
     print "Input file is", infile
+    if extrafiles:
+        print "Extra files are", extrafiles
     print "Writing constants to", constants_file + ".py"
     print "Writing type classes to", types_file + ".py"
     print "Writing packer classes to", packer_file + ".py"
@@ -1078,9 +1081,11 @@ if __name__ == "__main__":
     import yacc
     yacc.yacc()
 
-    f = open(infile)
-    data = f.read()
-    f.close()
+    data = ""
+    for f in extrafiles:
+        data += open(f).read()
+
+    data += open(infile).read()
 
     yacc.parse(data, debug=0)
 
