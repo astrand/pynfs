@@ -1249,14 +1249,16 @@ class LinkSuite(NFSSuite):
 
         self.lookup_dir_ops = self.ncl.lookup_path(self.tmp_dir)
 
-    def _remove_object(self):
+    def _remove_object(self, name=None):
         # Make sure the object to create does not exist.
         # This cannot be done in setUp(), since assertion errors
         # are treated like errors (not failures). 
         # This tests at the same time the REMOVE operation. Not much
         # we can do about it.
+        if not name:
+            name = self.obj_name
         operations = [self.ncl.putrootfh_op()] + self.lookup_dir_ops
-        operations.append(self.ncl.remove_op(self.obj_name))
+        operations.append(self.ncl.remove_op(name))
 
         res = self.do_compound(operations)
         self.assert_status(res, [NFS4_OK, NFS4ERR_NOENT])
@@ -2717,12 +2719,14 @@ class RenameSuite(NFSSuite):
 
         self.lookup_dir_ops = self.ncl.lookup_path(self.tmp_dir)
 
-    def _create_object(self):
+    def _create_object(self, name=None):
         # Make sure we have something to rename. We create a directory, because
         # it's simple.
+        if not name:
+            name = self.oldname
         operations = [self.putrootfhop] + self.lookup_dir_ops
         objtype = createtype4(self.ncl, type=NF4DIR)
-        operations.append(self.ncl.create(objtype, self.oldname))
+        operations.append(self.ncl.create(objtype, name))
         res = self.do_compound(operations)
 
         self.assert_status(res, [NFS4_OK, NFS4ERR_EXIST])
