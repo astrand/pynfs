@@ -2053,7 +2053,7 @@ class ReaddirTestCase(NFSTestCase):
     """Test READDIR operation
 
     FIXME: More testing of dircount/maxcount combinations.
-    Note: maxcount represents READDIR4res. Test this. 
+    Note: maxcount represents READDIR4resok. Test this. 
 
     Equivalence partitioning:
         
@@ -2200,7 +2200,7 @@ class ReaddirTestCase(NFSTestCase):
         self.assert_status(res, [NFS4ERR_INVAL])
         
 
-    # Misc. test: testa fattr4_rdattr_error kontra globalt fel. 
+    # FIXME: Misc. test: testa fattr4_rdattr_error kontra globalt fel. 
 
 class ReadlinkTestCase(NFSTestCase):
     # FIXME
