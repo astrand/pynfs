@@ -228,9 +228,9 @@ class PartialNFS4Client:
         args = READ4args(self, stateid=stateid, offset=offset, count=count)
         return nfs_argop4(self, argop=OP_READ, opread=args)
 
-    def readdir(self):
-        # FIXME
-        raise NotImplementedError()
+    def readdir(self, cookie=0, cookieverf="", dircount=2, maxcount=4096, attr_request=[]):
+	args = READDIR4args(self, cookie, cookieverf, dircount, maxcount, attr_request)
+	return nfs_argop4(self, argop=OP_READDIR, opreaddir=args)
 
     def readlink(self):
         # FIXME
@@ -370,6 +370,36 @@ class PartialNFS4Client:
         check_result(res)
 
         return res.resarray[1].arm.stateid
+
+    def do_readdir(self, fh, attr_request=[]):
+	# Since we may not get whole directory listing in one readdir request,
+	# loop until we do. For each request result, create a flat list
+	# with <entry4> objects. 
+	cookie = 0
+	cookieverf = ""
+	entries = []
+	while 1:
+	    putfhop = self.putfh(fh)
+	    readdirop = self.readdir(cookie, cookieverf, attr_request=attr_request)
+	    res = self.compound([putfhop, readdirop])
+	    check_result(res)
+
+	    entry = res.resarray[1].arm.arm.reply.entries[0]
+
+	    while 1:
+		entries.append(entry)
+		cookie = entry.cookie
+		if not entry.nextentry:
+		    break
+		entry = entry.nextentry[0]
+	    
+	    if res.resarray[1].arm.arm.reply.eof:
+		break
+	    
+	    cookieverf = res.resarray[1].arm.arm.cookieverf
+
+	return entries
+	
         
 #
 # Misc. helper functions. 
