@@ -270,7 +270,7 @@ class NFSSuite(unittest.TestCase):
 
     def clean_dir(self, directory):
         """Clean directory. Raises SkipException on failure"""
-        fh = self.ncl.do_getfh(directory)
+        fh = self.do_rpc(self.ncl.do_getfh, directory)
         entries = self.ncl.do_readdir(fh)
         names = [entry.name for entry in entries]
 
@@ -2824,7 +2824,7 @@ class ReaddirSuite(NFSSuite):
         "..", no files named "." or ".." should exist in /doc.
         """
         # Lookup fh for /doc
-        fh = self.ncl.do_getfh(self.dirfile)
+        fh = self.do_rpc(self.ncl.do_getfh, self.dirfile)
 
         # Get entries
         entries = self.ncl.do_readdir(fh)
@@ -2854,7 +2854,7 @@ class ReaddirSuite(NFSSuite):
         
         self.info_message("Rejected file names by OPEN: %s" % repr(rejected_names))
 
-        fh = self.ncl.do_getfh(self.tmp_dir)
+        fh = self.do_rpc(self.ncl.do_getfh, self.tmp_dir) 
         entries = self.ncl.do_readdir(fh)
         readdir_names = [entry.name for entry in entries]
 
