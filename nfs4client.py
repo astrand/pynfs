@@ -303,6 +303,10 @@ class ClientApp(cmd.Cmd):
         pass
 
     def default(self, line):
+        if line == "xyzzy":
+            print "Beware of black rabbits!"
+            return
+        
         if not self.completer.pythonmode:
             print "Unknown command", line
             return
