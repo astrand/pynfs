@@ -1434,7 +1434,7 @@ class LookupTestCase(NFSTestCase):
         Comments: Not yet implemented. 
         """
         # FIXME: Implement
-        pass
+        self.info_message("(TEST NOT IMPLEMENTED)")
 
     def testNonDirNotLast(self):
         """LOOKUP with non-dir components not last should return NFS4ERR_NOTDIR
@@ -1458,6 +1458,76 @@ class LookupTestCase(NFSTestCase):
         lookupop = self.ncl.lookup_op(["doc", "porting", "..", "README"])
         res = self.do_compound([self.putrootfhop, lookupop])
         self.assert_status(res, [NFS4ERR_NOENT])
+
+
+class LookuppTestCase(NFSTestCase):
+    """Test LOOKUPP operation
+
+    Equivalence partitioning:
+        
+    Input Condition: current filehandle
+        Valid equivalence classes:
+            dir(1)
+            named attribute dir(2)
+        Invalid equivalence classes:
+            not dir or named attribute dir(3)
+
+    """
+    def setUp(self):
+        self.connect()
+        self.putrootfhop = self.ncl.putrootfh_op()
+
+    #
+    # Testcases covering valid equivalence classes.
+    #
+    def testDir(self):
+        """LOOKUPP with directory (cfh)
+
+        Covered valid equivalence classes: 1
+        """
+        lookupop1 = self.ncl.lookup_op(["doc", "porting"])
+        lookuppop = self.ncl.lookupp_op()
+        lookupop2 = self.ncl.lookup_op(["README"])
+        res = self.do_compound([self.putrootfhop, lookupop1, lookuppop, lookupop2])
+        self.assert_OK(res)
+
+    def testNamedAttrDir(self):
+        """LOOKUPP with named attribute directory (cfh)
+
+        Covered valid equivalence classes: 2
+
+        Comments: Not yet implemented. 
+        """
+        # FIXME: Implement.
+        self.info_message("(TEST NOT IMPLEMENTED)")
+
+    #
+    # Testcases covering invalid equivalence classes.
+    #
+    def testInvalidFh(self):
+        """LOOKUPP with non-dir (cfh)
+
+        Covering invalid equivalence classes: 3
+        """
+        lookupop = self.ncl.lookup_op(["doc", "README"])
+        lookuppop = self.ncl.lookupp_op()
+        res = self.do_compound([self.putrootfhop, lookupop, lookuppop])
+        self.assert_status(res, [NFS4ERR_NOTDIR])
+
+    #
+    # Misc. tests.
+    #
+    def testAtRoot(self):
+        """LOOKUPP with (cfh) at root should return NFS4ERR_NOENT
+        """
+        # CITI crashes on this one. 
+        # FIXME: remove return
+        self.info_message("(DISABLED)")
+        return
+    
+        lookuppop = self.ncl.lookupp_op()
+        res = self.do_compound([self.putrootfhop, lookuppop])
+        self.assert_status(res, [NFS4ERR_NOTDIR])
 
         
 
