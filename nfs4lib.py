@@ -474,6 +474,7 @@ def check_result(compoundres):
     if not compoundres.status:
         return
 
+    # FIXME: Only necessary to check last operation. 
     for resop in compoundres.resarray:
         if resop.arm.status:
             raise BadCompoundRes(resop.resop, resop.arm.status)
