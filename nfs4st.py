@@ -2469,6 +2469,30 @@ class ReaddirSuite(NFSSuite):
         res = self.do_compound(operations)
         self.assert_OK(res)
 
+    def testDots(self):
+        """READDIR should not return . and .. in /doc
+
+        Extra test
+        
+        """
+        # Lookup fh for /doc
+        lookupops = self.ncl.lookup_path(self.dirfile)
+        operations = [self.putrootfhop] + lookupops
+        operations.append(self.ncl.getfh_op())
+        res = self.do_compound(operations)
+        self.assert_OK(res)
+        fh = res.resarray[-1].arm.arm.object
+
+        # Get entries
+        entries = self.ncl.do_readdir(fh)
+        names = [entry.name for entry in entries]
+
+        self.failIf("." in names,
+                    "READDIR in /doc returned .-entry")
+
+        self.failIf(".." in names,
+                    "READDIR in /doc returned ..-entry")
+            
 
 class ReadlinkSuite(NFSSuite):
     """Test operation 27: READLINK
