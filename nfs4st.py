@@ -1225,9 +1225,7 @@ class LinkSuite(NFSSuite):
         self.assert_OK(res)
 
     def testLink(self):
-        # FIXME: Is this allowed? See issue 118. Should the new link
-        # be a link for the symlink itself, or the symlink target?
-        """LINK a symbolic link
+        """LINK a symbolic link should succeed or return NFS4ERR_NOTSUPP
 
         Covered valid equivalence classes: 2, 9, 12
         """
@@ -1238,7 +1236,11 @@ class LinkSuite(NFSSuite):
         linkop = self.ncl.link_op(self.obj_name)
         operations.append(linkop)
         res = self.do_compound(operations)
-        self.assert_OK(res)
+
+        if res.status == NFS4ERR_NOTSUPP:
+            self.info_message("LINK a symbolic link is not supported")
+
+        self.assert_status(res, [NFS4_OK, NFS4ERR_NOTSUPP])
 
     def testBlock(self):
         """LINK a block device
