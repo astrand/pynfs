@@ -530,6 +530,8 @@ class CompoundSuite(NFSSuite):
             errcode = nfs4lib.opaque2long(data)
             self.failIf(errcode != NFS4ERR_NOTSUPP,
                         "Expected NFS4ERR_NOTSUPP, got %d" % errcode)
+        except rpc.RPCException, e:
+            self.fail(e)
 
     def testUndefinedOps(self):
         """COMPOUND with operations 0, 1, 2 and 1000 should return NFS4ERR_NOTSUPP
