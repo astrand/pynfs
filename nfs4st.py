@@ -573,38 +573,50 @@ class CommitSuite(NFSSuite):
 class CreateSuite(NFSSuite):
     """Test operation 6: CREATE
 
-    FIXME: Add attribute directory and named attribute testing. 
+    FIXME: Add attribute directory and named attribute testing.
+    FIXME: test attribute argument. 
 
     Equivalence partitioning:
 
     Input Condition: current filehandle
         Valid equivalence classes:
-            dir(1)
+            dir(10)
         Invalid equivalence classes:
-            not dir(2)
-            no filehandle(3)
-    Input Condition: name
-        Valid equivalence classes:
-            legal name(4)
-        Invalid equivalence classes:
-            zero length(5)
+            not dir(11)
+            no filehandle(12)
     Input Condition: type
         Valid equivalence classes:
-            link(6)
-            blockdev(7)
-            chardev(8)
-            socket(9)
-            FIFO(10)
-            directory(11)
+            link(20)
+            blockdev(21)
+            chardev(22)
+            socket(23)
+            FIFO(24)
+            directory(25)
         Invalid equivalence classes:
-            regular file(12)
+            regular file(26)
+    Input Condition: name
+        Valid equivalence classes:
+            legal name(30)
+        Invalid equivalence classes:
+            zero length(31)
+    Input Condition: fattr.attrmask
+        Valid equivalence classes:
+            valid attrmask(40)
+        Invalid equivalence classes:
+            invalid attrmask(41) (FATTR4_*_SET)
+    Input Condition: fattr.attr_vals
+        Valid equivalence classes:
+            valid attribute value(50)
+        Invalid equivalence classes:
+            valid attribute value(51)
+
     """
     
     def setUp(self):
         NFSSuite.setUp(self)
         self.obj_name = "object1"
 
-        self.lookup_dir_op = self.ncl.lookup_op(self.tmp_dir)
+        self.lookup_dir_ops = self.ncl.lookup_path(self.tmp_dir)
 
     def _remove_object(self):
         # Make sure the object to create does not exist.
@@ -612,8 +624,7 @@ class CreateSuite(NFSSuite):
         # are treated like errors (not failures). 
         # This tests at the same time the REMOVE operation. Not much
         # we can do about it.
-        operations = [self.ncl.putrootfh_op()]
-        operations.append(self.lookup_dir_op)
+        operations = [self.ncl.putrootfh_op()] + self.lookup_dir_ops
         operations.append(self.ncl.remove_op(self.obj_name))
 
         res = self.do_compound(operations)
@@ -625,12 +636,13 @@ class CreateSuite(NFSSuite):
     def testLink(self):
         """CREATE (symbolic) link
 
-        Covered valid equivalence classes: 1, 4, 6
+        Covered valid equivalence classes: 10, 20, 30, 40, 50
         """
         self._remove_object()
-        operations = [self.putrootfhop, self.lookup_dir_op]
+        operations = [self.putrootfhop] +  self.lookup_dir_ops
         objtype = createtype4(self.ncl, type=NF4LNK, linkdata="/etc/X11")
-        createop = self.ncl.create_op(self.obj_name, objtype)
+
+        createop = self.ncl.create(objtype, self.obj_name)
         operations.append(createop)
 
         res = self.do_compound(operations)
@@ -641,13 +653,14 @@ class CreateSuite(NFSSuite):
     def testBlock(self):
         """CREATE a block device
 
-        Covered valid equivalence classes: 1, 4, 7
+        Covered valid equivalence classes: 10, 21, 30, 40, 50
         """
         self._remove_object()
-        operations = [self.putrootfhop, self.lookup_dir_op]
+        operations = [self.putrootfhop] + self.lookup_dir_ops
+        
         devdata = specdata4(self.ncl, 1, 2)
         objtype = createtype4(self.ncl, type=NF4BLK, devdata=devdata)
-        createop = self.ncl.create_op(self.obj_name, objtype)
+        createop = self.ncl.create(objtype, self.obj_name)
         operations.append(createop)
 
         res = self.do_compound(operations)
@@ -658,13 +671,13 @@ class CreateSuite(NFSSuite):
     def testChar(self):
         """CREATE a character device
 
-        Covered valid equivalence classes: 1, 4, 8
+        Covered valid equivalence classes: 10, 22, 30, 40, 50
         """
         self._remove_object()
-        operations = [self.putrootfhop, self.lookup_dir_op]
+        operations = [self.putrootfhop] +  self.lookup_dir_ops
         devdata = specdata4(self.ncl, 1, 2)
         objtype = createtype4(self.ncl, type=NF4CHR, devdata=devdata)
-        createop = self.ncl.create_op(self.obj_name, objtype)
+        createop = self.ncl.create(objtype, self.obj_name)
         operations.append(createop)
 
         res = self.do_compound(operations)
@@ -675,12 +688,12 @@ class CreateSuite(NFSSuite):
     def testSocket(self):
         """CREATE a socket
 
-        Covered valid equivalence classes: 1, 4, 9
+        Covered valid equivalence classes: 10, 23, 30, 40, 50
         """
         self._remove_object()
-        operations = [self.putrootfhop, self.lookup_dir_op]
+        operations = [self.putrootfhop] +  self.lookup_dir_ops
         objtype = createtype4(self.ncl, type=NF4SOCK)
-        createop = self.ncl.create_op(self.obj_name, objtype)
+        createop = self.ncl.create(objtype, self.obj_name)
         operations.append(createop)
 
         res = self.do_compound(operations)
@@ -691,12 +704,12 @@ class CreateSuite(NFSSuite):
     def testFIFO(self):
         """CREATE a FIFO
 
-        Covered valid equivalence classes: 1, 4, 10
+        Covered valid equivalence classes: 10, 24, 30, 40, 50
         """
         self._remove_object()
-        operations = [self.putrootfhop, self.lookup_dir_op]
+        operations = [self.putrootfhop] + self.lookup_dir_ops
         objtype = createtype4(self.ncl, type=NF4FIFO)
-        createop = self.ncl.create_op(self.obj_name, objtype)
+        createop = self.ncl.create(objtype, self.obj_name)
         operations.append(createop)
 
         res = self.do_compound(operations)
@@ -707,12 +720,12 @@ class CreateSuite(NFSSuite):
     def testDir(self):
         """CREATE a directory
 
-        Covered valid equivalence classes: 1, 4, 11
+        Covered valid equivalence classes: 10, 25, 30, 40, 50
         """
         self._remove_object()
-        operations = [self.putrootfhop, self.lookup_dir_op]
+        operations = [self.putrootfhop] + self.lookup_dir_ops
         objtype = createtype4(self.ncl, type=NF4DIR)
-        createop = self.ncl.create_op(self.obj_name, objtype)
+        createop = self.ncl.create(objtype, self.obj_name)
         operations.append(createop)
 
         res = self.do_compound(operations)
@@ -726,14 +739,14 @@ class CreateSuite(NFSSuite):
     def testFhNotDir(self):
         """CREATE should fail with NFS4ERR_NOTDIR if (cfh) is not dir
 
-        Covered invalid equivalence classes: 2
+        Covered invalid equivalence classes: 11
         """
         self._remove_object()
-        lookupop = self.ncl.lookup_op(self.regfile)
+        lookupops = self.ncl.lookup_path(self.regfile)
         
-        operations = [self.putrootfhop, lookupop]
+        operations = [self.putrootfhop] + lookupops
         objtype = createtype4(self.ncl, type=NF4DIR)
-        createop = self.ncl.create_op(self.obj_name, objtype)
+        createop = self.ncl.create(objtype, self.obj_name)
         operations.append(createop)
 
         res = self.do_compound(operations)
@@ -742,11 +755,11 @@ class CreateSuite(NFSSuite):
     def testNoFh(self):
         """CREATE should fail with NFS4ERR_NOFILEHANDLE if no (cfh)
 
-        Covered invalid equivalence classes: 3
+        Covered invalid equivalence classes: 12
         """
         self._remove_object()
         objtype = createtype4(self.ncl, type=NF4DIR)
-        createop = self.ncl.create_op(self.obj_name, objtype)
+        createop = self.ncl.create(objtype, self.obj_name)
 
         res = self.do_compound([createop])
         self.assert_status(res, [NFS4ERR_NOFILEHANDLE])
@@ -754,12 +767,12 @@ class CreateSuite(NFSSuite):
     def testZeroLengthName(self):
         """CREATE with zero length name should fail
 
-        Covered invalid equivalence classes: 5
+        Covered invalid equivalence classes: 31
         """
         self._remove_object()
-        operations = [self.putrootfhop, self.lookup_dir_op]
+        operations = [self.putrootfhop] + self.lookup_dir_ops
         objtype = createtype4(self.ncl, type=NF4DIR)
-        createop = self.ncl.create_op("", objtype)
+        createop = self.ncl.create(objtype, "")
         operations.append(createop)
 
         res = self.do_compound(operations)
@@ -768,10 +781,10 @@ class CreateSuite(NFSSuite):
     def testRegularFile(self):
         """CREATE should fail with NFS4ERR_INVAL for regular files
 
-        Covered invalid equivalence classes: 12
+        Covered invalid equivalence classes: 26
         """
         self._remove_object()
-        operations = [self.putrootfhop, self.lookup_dir_op]
+        operations = [self.putrootfhop] + self.lookup_dir_ops
 
         # nfs4types.createtype4 does not allow packing invalid types
         class custom_createtype4(createtype4):
@@ -780,7 +793,7 @@ class CreateSuite(NFSSuite):
                 self.packer.pack_nfs_ftype4(self.type)
             
         objtype = custom_createtype4(self.ncl, type=NF4REG)
-        createop = self.ncl.create_op(self.obj_name, objtype)
+        createop = self.ncl.create(objtype, self.obj_name)
         operations.append(createop)
 
         res = self.do_compound(operations)
