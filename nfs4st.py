@@ -24,8 +24,6 @@
 #
 # Handle errors such as NFS4ERR_RESOURCE and NFS4ERR_DELAY.
 #
-# More tests on strings not obeying UTF-8.
-#
 # filehandles are split into eq. classes "valid filehandle" and
 # "invalid filehandle". There should probably be a class "no filehandle" as
 # well. Currently, "invalid filehandle" are tested by doing operations without
@@ -220,7 +218,7 @@ class NFSSuite(unittest.TestCase):
 
     def get_invalid_utf8strings(self):
         """Return a list of invalid ISO10646-UTF-8 strings"""
-        # FIXME: More invalid strings. Do equivalence partitioning on UTF8 definition
+        # FIXME: More invalid strings. Do equivalence partitioning on ISO10646-UTF8 definition
         return ["\xc0\xc1",
                 "\xe0\x8a"]
 
