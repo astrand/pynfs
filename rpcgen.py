@@ -331,8 +331,12 @@ def gen_unpack_code(ip, id, rpctype):
         ip.pr("self.%s = self.unpacker.unpack_string()" % id)
     elif rpctype.packer == "pack_opaque":
         check_not_reserved(id)
-        # Both for fixed- and variable length data. 
-        ip.pr("self.%s = self.unpacker.unpack_opaque()" % id)
+        if rpctype.fixarray:
+            # Fixed length opaque data
+            ip.pr("self.%s = self.unpacker.unpack_fopaque(%s)" % (id, rpctype.arraylen))
+        else:
+            # Variable length opaque data
+            ip.pr("self.%s = self.unpacker.unpack_opaque()" % id)
     else:
         # Some other kind of array. 
         if rpctype.packer:
