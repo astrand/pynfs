@@ -486,6 +486,17 @@ def p_type_def_1(t):
     ip = IndentPrinter(unpacker_out)
     ip.change(4)
     ip.pr("unpack_%s = unpack_enum\n" % id)
+
+    # Generate dictionary for translating enum to string
+    enum_list = t[3]
+    print >> const_out, "%s_id = {" % t[2]
+    # Print first
+    constant = enum_list[0]
+    const_out.write('    %s: "%s"' % (constant[0], constant[0]))
+    # Print rest
+    for constant in enum_list[1:]:
+        const_out.write(',\n    %s: "%s"' % (constant[0], constant[0]))
+    print >> const_out, "\n    }"
     
     # Returns nothing.
 
@@ -803,9 +814,15 @@ def p_struct_type_spec(t):
 # enum-body
 def p_enum_body(t):
     '''enum_body : LBRACE enum_body_contents RBRACE'''
+    t[0] = t[2]
 
 def p_enum_body_contents(t):
     '''enum_body_contents : enum_constant enum_constant_list'''
+    # Return list of (id, number)
+    enum_list = [t[1]]
+    if t[2]:
+        enum_list += t[2]
+    t[0] = enum_list
 
 def p_enum_constant(t):
     '''enum_constant : ID EQUALS NUMBER'''
@@ -813,10 +830,22 @@ def p_enum_constant(t):
     check_not_reserved(t[1], t[2], t[3])
     print >> const_out, t[1], t[2], t[3]
 
-def p_enum_constant_list(t):
-    '''enum_constant_list : enum_constant_list COMMA enum_constant
-                          | empty'''
+    # Return (id, number).
+    t[0] = (t[1], t[3])
 
+def p_enum_constant_list_1(t):
+    '''enum_constant_list : enum_constant_list COMMA enum_constant'''
+
+    if t[1]:
+        enum_list = t[1]
+        enum_list.append(t[3])
+    else:
+        enum_list = [t[3]]
+
+    t[0] = enum_list
+
+def p_enum_constant_list_2(t):
+    '''enum_constant_list : empty'''
 
 # enum-type-spec
 def p_enum_type_spec(t):
