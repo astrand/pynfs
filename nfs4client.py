@@ -286,12 +286,8 @@ class ClientApp(cmd.Cmd):
             code = compile(line + '\n', '<stdin>', 'single')
             exec code in globals()
         except:
-            t, v = sys.exc_info()[:2]
-            if type(t) == type(''):
-                exc_type_name = t
-            else: exc_type_name = t.__name__
-            print '***', exc_type_name + ':', v
-
+            import traceback
+            traceback.print_exc()
 
 
 def usage():
