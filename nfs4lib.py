@@ -184,21 +184,8 @@ class PartialNFS4Client:
         return nfs_argop4(self, argop=OP_GETATTR, opgetattr=args)
 
     def getattr(self, attrlist=[]):
-	# The argument to GETATTR4args is a list of integers. 
-	attr_request = []
-	for attr in attrlist:
-	    # Lost? Se section 2.2 in RFC3010. 
-	    arrintpos = attr / 32
-	    bitpos = attr % 32
-	    
-	    while (arrintpos+1) > len(attr_request):
-		attr_request.append(0)
-
-	    arrint = attr_request[arrintpos]
-	    arrint = arrint | (1L << bitpos)
-	    attr_request[arrintpos] = arrint
-
-	return self.getattr_op(attr_request)
+	# The argument to GETATTR4args is a list of integers.
+	return self.getattr_op(list2attrmask(attrlist))
 
     def getfh_op(self):
         return nfs_argop4(self, argop=OP_GETFH)
@@ -235,29 +222,38 @@ class PartialNFS4Client:
 	args = OPEN4args(self, claim, openhow, owner, seqid, share_access, share_deny)
         return nfs_argop4(self, argop=OP_OPEN, opopen=args)
 
-    def open(self, claim=None, how=UNCHECKED4, owner=None, seqid=None,
-             share_access=OPEN4_SHARE_ACCESS_READ, share_deny=OPEN4_SHARE_DENY_NONE,
-             clientid=None, file=None, opentype=OPEN4_NOCREATE):
+    # Convenience method for open. Only handles claim type CLAIM_NULL. If you want
+    # to use other claims, use open_op directly. 
+    def open(self, file, opentype=OPEN4_NOCREATE,
+             # For OPEN4_CREATE
+             mode=UNCHECKED4, createattrs=None, createverf=None,
+             # Shares
+             share_access=OPEN4_SHARE_ACCESS_READ, share_deny=OPEN4_SHARE_DENY_NONE):
+
+        # claim
+        claim = open_claim4(self, CLAIM_NULL, file)
+
+        # openhow
+        if mode in [UNCHECKED4, GUARDED4] and not createattrs:
+            # FIXME: Consider using local umask as default mode. 
+            #mask = os.umask(0)
+            #os.umask(mask)
+            attr_request = list2attrmask([])
+            createattrs = fattr4(self, attr_request, "")
         
-        if not claim:
-            claim = open_claim4(self, claim=CLAIM_NULL, file=file)
+        how = createhow4(self, mode, createattrs, createverf)
+        openhow = openflag4(self, opentype, how)
 
-        if not owner:
-	    # FIXME: Change to PID?
-	    # FIXME: variable clashing: owner. 
-            owner = pwd.getpwuid(os.getuid())[0]
+        # owner
+        ownerstring = pwd.getpwuid(os.getuid())[0]
+        owner = nfs_lockowner4(self, self.clientid, ownerstring)
 
-        if not clientid:
-            clientid = self.clientid
-
-        if not seqid:
-            seqid = self.get_seqid()
-
-        openhow = openflag4(self, opentype=opentype, how=how)
-        owner = nfs_lockowner4(self, clientid=clientid, owner=owner)
-
+        # seqid
+        seqid = self.get_seqid()
+        
         return self.open_op(claim, openhow, owner, seqid, share_access, share_deny)
 
+        
     def openattr(self):
         # FIXME
         raise NotImplementedError()
@@ -567,6 +563,23 @@ def fattr2dict(obj):
     return result
 
 
+def list2attrmask(attrlist):
+    """Construct a bitmap4 attrmask from a list of attribute constants"""
+    attr_request = []
+    for attr in attrlist:
+        # Lost? Se section 2.2 in RFC3010. 
+        arrintpos = attr / 32
+        bitpos = attr % 32
+
+        while (arrintpos+1) > len(attr_request):
+            attr_request.append(0)
+
+        arrint = attr_request[arrintpos]
+        arrint = arrint | (1L << bitpos)
+        attr_request[arrintpos] = arrint
+    return attr_request
+
+
 class UDPNFS4Client(PartialNFS4Client, rpc.RawUDPClient):
     def __init__(self, host, port=NFS_PORT):
         rpc.RawUDPClient.__init__(self, host, NFS_PROGRAM, NFS_VERSION, port)
@@ -626,14 +639,17 @@ class NFS4OpenFile:
         putrootfhop = self.ncl.putrootfh_op()
 
 	if mode == "r":
-	    share_access = OPEN4_SHARE_ACCESS_READ
+            openop = self.ncl.open(file=pathname)
 	elif mode == "w":
-	    share_access = OPEN4_SHARE_ACCESS_WRITE
+            # Truncate upon creation. 
+            attr_request = list2attrmask([FATTR4_SIZE])
+            createattrs = fattr4(self.ncl, attr_request, '\x00' * 8)
+            openop = self.ncl.open(file=pathname, share_access=OPEN4_SHARE_ACCESS_WRITE,
+                                   opentype=OPEN4_CREATE, createattrs=createattrs)
 	else:
 	    # FIXME: More modes allowed. 
 	    raise TypeError("Invalid mode")
 	
-        openop = self.ncl.open(file=pathname, share_access=share_access)
         getfhop = self.ncl.getfh_op()
         res =  self.ncl.compound([putrootfhop, openop, getfhop])
 
