@@ -319,9 +319,9 @@ class ClientApp(cmd.Cmd):
             devdata = specdata4(self.ncl, major, minor)
             objtype = createtype4(self.ncl, type=NF4CHR, devdata=devdata)
         elif type == "socket":
-            pass
+            objtype = createtype4(self.ncl, type=NF4SOCK)
         elif type == "fifo":
-            pass
+            objtype = createtype4(self.ncl, type=NF4FIFO)
         elif type == "dir":
             objtype = createtype4(self.ncl, type=NF4DIR)
         else:
