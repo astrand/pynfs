@@ -507,6 +507,80 @@ class CreateTestCase(NFSTestCase):
         self.assert_status(res, [NFS4_OK, NFS4ERR_BADTYPE])
 
 
+class GetattrTestCase(NFSTestCase):
+    """Test GETATTR operation.
+    """
+
+    # FIXME: Test:
+    # Att servern ej ger fel för requests för okända attribut. 
+    # GETATTR med tom attr-sträng. 
+    # GETATTR utan filhandtag. 
+    # GETATTR både för filer, kataloger och andra objekt.
+    # Testa "supported attributes". 
+
+    
+    def setUp(self):
+        self.connect()
+        self.putrootfhop = self.ncl.putrootfh_op()
+        self.normfile = "/doc/README"
+
+    def testOnFile(self):
+        """Simple GETATTR on file
+        """
+        path = nfs4lib.str2pathname(self.normfile)
+        lookupop = self.ncl.lookup_op(path)
+        getattrop = self.ncl.getattr_op([FATTR4_SIZE])
+        res = self.do_compound([self.putrootfhop, lookupop, getattrop])
+        self.assert_OK(res)
+
+    def testOnDir(self):
+        # FIXME
+        pass
+
+    def testAllMandatory(self):
+        """Test GETATTR can return all mandatory attributes 
+        """
+
+        attrbitnum_dict = nfs4lib.get_attrbitnum_dict()
+        all_mandatory_names = [
+            "supported_attrs", 
+            "type",
+            "fh_expire_type",
+            "change",
+            "size",
+            "link_support",
+            "symlink_support",
+            "named_attr",
+            "fsid",
+            "unique_handles",
+            "lease_time",
+            "rdattr_error"]
+        all_mandatory = []
+        
+        for attrname in all_mandatory_names:
+            all_mandatory.append(attrbitnum_dict[attrname])
+        
+        path = nfs4lib.str2pathname(self.normfile)
+        lookupop = self.ncl.lookup_op(path)
+        getattrop = self.ncl.getattr(all_mandatory)
+        
+        res = self.do_compound([self.putrootfhop, lookupop, getattrop])
+        self.assert_OK(res)
+        obj = res.resarray[-1].arm.arm.obj_attributes
+        d = nfs4lib.fattr2dict(obj)
+
+        unsupported = []
+        keys = d.keys()
+        for attrname in all_mandatory_names:
+            if not attrname in keys:
+                unsupported.append(attrname)
+
+
+        if unsupported:
+            self.fail("mandatory attributes not supported: %s" % str(unsupported))
+
+
+
 class QuietTextTestRunner(unittest.TextTestRunner):
     def _makeResult(self):
         ttr = unittest._TextTestResult(self.stream, self.descriptions, self.verbosity)
