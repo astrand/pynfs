@@ -77,7 +77,7 @@ int main()
 
     print "Creating tmp"
     os.mkdir("tmp")
-    os.chmod("tmp", 777)
+    os.chmod("tmp", 0777)
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
