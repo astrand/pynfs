@@ -155,7 +155,6 @@ class ClientApp(cmd.Cmd):
         sys.exit(0)
     
     def do_cd(self, line):
-        # FIXME: Check for directory existence. 
         if line == "..":
             self.ncl.cwd = self.ncl.cwd[:self.ncl.cwd.rindex("/")]
             if not self.ncl.cwd:
@@ -276,8 +275,32 @@ class ClientApp(cmd.Cmd):
 
 
     def do_put(self, line):
-        # FIXME
-        print "not implemented"
+        # FIXME: Not tested. 
+        filenames = line.split()
+
+        if not filenames:
+            print "put <filename>..."
+            return
+        
+        for file in filenames:
+            basename = os.path.basename(file)
+            remote = nfs4lib.NFS4OpenFile(self.ncl)
+            try:
+                local = open(file)
+                remote.open(basename, "w")
+                
+                while 1:
+                    data = local.read(BUFSIZE)
+                    if not data:
+                        break
+                    
+                    remote.write(data)
+                
+                remote.close()
+                local.close()
+            except nfs4lib.BadCompoundRes, r:
+                print "Error fetching file: operation %d returned %d" % (r.operation, r.errcode)
+        print
 
     def do_mkdir(self, line):
         # FIXME
