@@ -220,9 +220,16 @@ class PartialNFS4Client:
         # FIXME
         raise NotImplementedError()
 
-    def lookup_op(self, pathcomps):
-	args = LOOKUP4args(self, pathcomps)
+    def lookup_op(self, objname):
+	args = LOOKUP4args(self, objname)
 	return nfs_argop4(self, argop=OP_LOOKUP, oplookup=args)
+
+    def lookup_path(self, pathcomps):
+        """Generate a list of lookup operations from path components"""
+        lookupops = []
+        for component in pathcomps:
+            lookupops.append(self.lookup_op(component))
+        return lookupops
 
     def lookupp_op(self):
 	return nfs_argop4(self, argop=OP_LOOKUPP)
