@@ -299,6 +299,24 @@ class PartialNFS4Client:
 
         self.rootfh = res.resarray[1].arm.arm.object
 
+    def do_read(self, fh):
+        putfhoperation = self.putfh(fh)
+        offset = 0
+        data = ""
+
+        # FIXME: Change count. 
+        while 1:
+            op = self.read(count=2, offset=offset)
+            res = self.compound([putfhoperation, op])
+            # FIXME: Error handling.
+            data += res.resarray[1].arm.arm.data
+            
+            if res.resarray[1].arm.arm.eof:
+                break
+
+            offset += 2
+
+        return data
 
 def str2pathname(str, pathname=[]):
     pathname = pathname[:]
@@ -407,8 +425,8 @@ class NFS4OpenFile:
     def read(self, size=None):
         if self.closed:
             raise ValueError("I/O operation on closed file")
-        # FIXME
-        pass
+        data = self.ncl.do_read(self.fh)
+        print "got data:", data
 
     def readline(self, size=None):
         if self.closed:
