@@ -279,8 +279,9 @@ class PartialNFS4Client:
         return self.open_op(seqid, share_access, share_deny, owner, openhow, claim)
 
         
-    def openattr_op(self):
-        return nfs_argop4(self, argop=OP_OPENATTR)
+    def openattr_op(self, createdir):
+        args = OPENATTR4args(self, createdir)
+        return nfs_argop4(self, argop=OP_OPENATTR, opopenattr=args)
 
     def open_confirm(self):
         # FIXME
