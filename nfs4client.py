@@ -164,10 +164,10 @@ class ClientApp(cmd.Cmd):
                 self.ncl.cwd = "/"
         else:
             candidate_cwd = os.path.join(self.ncl.cwd, line)
-            pathname = nfs4lib.str2pathname(candidate_cwd)
+            pathcomps = nfs4lib.unixpath2comps(candidate_cwd)
             operations = [self.ncl.putrootfh_op()]
-            if pathname:
-                lookupop = self.ncl.lookup_op(pathname)
+            if pathcomps:
+                lookupop = self.ncl.lookup_op(pathcomps)
                 operations.append(lookupop)
 
             res = self.ncl.compound(operations)
@@ -186,13 +186,13 @@ class ClientApp(cmd.Cmd):
         print "not implemented"
 
     def do_dir(self, line):
-        pathname = nfs4lib.str2pathname(self.ncl.cwd)
+        pathcomps = nfs4lib.unixpath2comps(self.ncl.cwd)
 
         putrootfhop = self.ncl.putrootfh_op()
         operations = [putrootfhop]
         
-        if pathname:
-            lookupop = self.ncl.lookup_op(pathname)
+        if pathcomps:
+            lookupop = self.ncl.lookup_op(pathcomps)
             operations.append(lookupop)
 
         getfhop = self.ncl.getfh_op()
@@ -252,13 +252,13 @@ class ClientApp(cmd.Cmd):
         allrights = ACCESS4_DELETE + ACCESS4_EXECUTE + ACCESS4_EXTEND + ACCESS4_LOOKUP \
                     + ACCESS4_MODIFY + ACCESS4_READ
         
-        pathname = self.ncl.get_pathname(line)
+        pathcomps = self.ncl.get_pathname(line)
 
         # PUTROOT
         operations = [self.ncl.putrootfh_op()]
-        if pathname:
+        if pathcomps:
             # LOOKUP
-            operations.append(self.ncl.lookup_op(pathname))
+            operations.append(self.ncl.lookup_op(pathcomps))
 
         # ACCESS
         operations.append(self.ncl.access_op(allrights))
@@ -329,9 +329,9 @@ class ClientApp(cmd.Cmd):
         operations = [self.ncl.putrootfh_op()]
 
         # LOOKUP
-        pathname = nfs4lib.str2pathname(self.ncl.cwd)
-        if pathname:
-            operations.append(self.ncl.lookup_op(pathname))
+        pathcomps = nfs4lib.unixpath2comps(self.ncl.cwd)
+        if pathcomps:
+            operations.append(self.ncl.lookup_op(pathcomps))
 
         # CREATE
         createop = self.ncl.create_op(objname, objtype)
@@ -416,9 +416,9 @@ class ClientApp(cmd.Cmd):
         operations = [self.ncl.putrootfh_op()]
 
         # LOOKUP
-        pathname = nfs4lib.str2pathname(self.ncl.cwd)
-        if pathname:
-            operations.append(self.ncl.lookup_op(pathname))
+        pathcomps = nfs4lib.unixpath2comps(self.ncl.cwd)
+        if pathcomps:
+            operations.append(self.ncl.lookup_op(pathcomps))
 
         # REMOVE
         removeop = self.ncl.remove_op(objname)

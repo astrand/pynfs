@@ -139,17 +139,17 @@ class PartialNFS4Client:
         self.seqid = self.seqid % 2**32L
         return self.seqid
 
-    def get_pathname(self, filename):
+    def get_pathcomps(self, filename):
 	if filename[0] == "/":
             # Absolute path
             # Remove slash, begin from root. 
             filename = filename[1:]
-            pathname = []
+            pathcomps = []
         else:
             # Relative path. Begin with cwd.
-            pathname = str2pathname(self.cwd)
+            pathcomps = unixpath2comps(self.cwd)
 
-	return str2pathname(filename, pathname)
+	return unixpath2comps(filename, pathcomps)
 
     # 
     # Operations. These come in two flawors: <operation>_op and <operation>.
@@ -220,8 +220,8 @@ class PartialNFS4Client:
         # FIXME
         raise NotImplementedError()
 
-    def lookup_op(self, path):
-	args = LOOKUP4args(self, path)
+    def lookup_op(self, pathcomps):
+	args = LOOKUP4args(self, pathcomps)
 	return nfs_argop4(self, argop=OP_LOOKUP, oplookup=args)
 
     def lookupp_op(self):
@@ -302,9 +302,8 @@ class PartialNFS4Client:
     def readdir(self, cookie=0, cookieverf="", dircount=2, maxcount=4096, attr_request=[]):
 	return self.readdir_op(cookie, cookieverf, dircount, maxcount, attr_request)
 
-    def readlink(self):
-        # FIXME
-        raise NotImplementedError()
+    def readlink_op(self):
+        return nfs_argop4(self, argop=OP_READLINK)
 
     def remove_op(self, target):
         args = REMOVE4args(self, target)
@@ -507,16 +506,16 @@ def verify_compound_result(res):
             if res.status != lastop.arm.status:
                 raise InvalidCompoundRes()
 
-def str2pathname(str, pathname=[]):
-    pathname = pathname[:]
+def unixpath2comps(str, pathcomps=[]):
+    pathcomps = pathcomps[:]
     for component in str.split("/"):
         if (component == "") or (component == "."):
             pass
         elif component == "..":
-            pathname = pathname[:-1]
+            pathcomps = pathcomps[:-1]
         else:
-            pathname.append(component)
-    return pathname
+            pathcomps.append(component)
+    return pathcomps
 
 def opaque2long(data):
     import struct
@@ -740,17 +739,17 @@ class NFS4OpenFile:
         self.__dict__[name] = val
 
     def open(self, filename, mode="r", bufsize=BUFSIZE):
-	pathname = self.ncl.get_pathname(filename)
+	pathcomps = self.ncl.get_pathcomps(filename)
 
         putrootfhop = self.ncl.putrootfh_op()
 
 	if mode == "r":
-            openop = self.ncl.open(file=pathname)
+            openop = self.ncl.open(file=pathcomps)
 	elif mode == "w":
             # Truncate upon creation. 
             attr_request = list2attrmask([FATTR4_SIZE])
             createattrs = fattr4(self.ncl, attr_request, '\x00' * 8)
-            openop = self.ncl.open(file=pathname, share_access=OPEN4_SHARE_ACCESS_WRITE,
+            openop = self.ncl.open(file=pathcomps, share_access=OPEN4_SHARE_ACCESS_WRITE,
                                    opentype=OPEN4_CREATE, createattrs=createattrs)
 	else:
 	    # FIXME: More modes allowed. 
@@ -763,7 +762,7 @@ class NFS4OpenFile:
         
         self.__set_priv("closed", 0)
         self.__set_priv("mode", mode)
-        self.__set_priv("name", os.path.join(os.sep, *pathname))
+        self.__set_priv("name", os.path.join(os.sep, *pathcomps))
         self.stateid = res.resarray[1].arm.arm.stateid
         self.fh = res.resarray[2].arm.arm.object
         

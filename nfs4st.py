@@ -120,8 +120,8 @@ class NFSTestCase(unittest.TestCase):
                      self.linkfile,
                      self.socketfile,
                      self.fifofile]:
-            path = nfs4lib.str2pathname(name)
-            result.append(self.ncl.lookup_op(path))
+            pathcomps = nfs4lib.unixpath2comps(name)
+            result.append(self.ncl.lookup_op(pathcomps))
 
         return result
 
@@ -316,8 +316,8 @@ class AccessTestCase(NFSTestCase):
 
         Comments: See testDir. 
         """
-        path = nfs4lib.str2pathname(self.normfile)
-        lookupop = self.ncl.lookup_op(path)
+        pathcomps = nfs4lib.unixpath2comps(self.normfile)
+        lookupop = self.ncl.lookup_op(pathcomps)
         for accessop in self.valid_access_ops():
             res = self.do_compound([self.putrootfhop, lookupop, accessop])
             self.assert_OK(res)
@@ -433,10 +433,10 @@ class CommitTestCase(NFSTestCase):
         parameter in the COMMIT operation. All values are
         legal. Tested values are 0, 1 and 2**64 - 1 (selected by BVA)
         """
-        path = nfs4lib.str2pathname(self.normfile)
-        lookupop = self.ncl.lookup_op(path)
+        pathcomps = nfs4lib.unixpath2comps(self.normfile)
+        lookupop = self.ncl.lookup_op(pathcomps)
 
-        # offset = 0
+        # Offset = 0
         commitop = self.ncl.commit_op(0, 0)
         res = self.do_compound([self.putrootfhop, lookupop, commitop])
         self.assert_OK(res)
@@ -460,8 +460,8 @@ class CommitTestCase(NFSTestCase):
         in the COMMIT operation. All values are legal. Tested values
         are 0, 1 and 2**64 - 1 (selected by BVA)
         """
-        path = nfs4lib.str2pathname(self.normfile)
-        lookupop = self.ncl.lookup_op(path)
+        pathcomps = nfs4lib.unixpath2comps(self.normfile)
+        lookupop = self.ncl.lookup_op(pathcomps)
         
         # count = 0
         commitop = self.ncl.commit_op(0, 0)
@@ -488,8 +488,8 @@ class CommitTestCase(NFSTestCase):
         Covered invalid equivalence classes: 2
         """
 
-        path = nfs4lib.str2pathname(self.linkfile)
-        lookupop = self.ncl.lookup_op(path)
+        pathcomps = nfs4lib.unixpath2comps(self.linkfile)
+        lookupop = self.ncl.lookup_op(pathcomps)
         commitop = self.ncl.commit_op(0, 0)
         res = self.do_compound([self.putrootfhop, lookupop, commitop])
         self.failUnlessEqual(res.status, NFS4ERR_INVAL)
@@ -500,8 +500,8 @@ class CommitTestCase(NFSTestCase):
         Covered invalid equivalence classes: 3
         """
 
-        path = nfs4lib.str2pathname(self.blockfile)
-        lookupop = self.ncl.lookup_op(path)
+        pathcomps = nfs4lib.unixpath2comps(self.blockfile)
+        lookupop = self.ncl.lookup_op(pathcomps)
         commitop = self.ncl.commit_op(0, 0)
         res = self.do_compound([self.putrootfhop, lookupop, commitop])
         self.failUnlessEqual(res.status, NFS4ERR_INVAL)
@@ -512,8 +512,8 @@ class CommitTestCase(NFSTestCase):
         Covered invalid equivalence classes: 4
         """
 
-        path = nfs4lib.str2pathname(self.charfile)
-        lookupop = self.ncl.lookup_op(path)
+        pathcomps = nfs4lib.unixpath2comps(self.charfile)
+        lookupop = self.ncl.lookup_op(pathcomps)
         commitop = self.ncl.commit_op(0, 0)
         res = self.do_compound([self.putrootfhop, lookupop, commitop])
         self.failUnlessEqual(res.status, NFS4ERR_INVAL)
@@ -524,8 +524,8 @@ class CommitTestCase(NFSTestCase):
         Covered invalid equivalence classes: 5
         """
         
-        path = nfs4lib.str2pathname(self.socketfile)
-        lookupop = self.ncl.lookup_op(path)
+        pathcomps = nfs4lib.unixpath2comps(self.socketfile)
+        lookupop = self.ncl.lookup_op(pathcomps)
         commitop = self.ncl.commit_op(0, 0)
         res = self.do_compound([self.putrootfhop, lookupop, commitop])
         self.failUnlessEqual(res.status, NFS4ERR_INVAL)
@@ -536,8 +536,8 @@ class CommitTestCase(NFSTestCase):
         Covered invalid equivalence classes: 6
         """
 
-        path = nfs4lib.str2pathname(self.fifofile)
-        lookupop = self.ncl.lookup_op(path)
+        pathcomps = nfs4lib.unixpath2comps(self.fifofile)
+        lookupop = self.ncl.lookup_op(pathcomps)
         commitop = self.ncl.commit_op(0, 0)
         res = self.do_compound([self.putrootfhop, lookupop, commitop])
         self.failUnlessEqual(res.status, NFS4ERR_INVAL)
@@ -548,8 +548,8 @@ class CommitTestCase(NFSTestCase):
         Covered invalid equivalence classes: 7
         """
 
-        path = nfs4lib.str2pathname(self.dirfile)
-        lookupop = self.ncl.lookup_op(path)
+        pathcomps = nfs4lib.unixpath2comps(self.dirfile)
+        lookupop = self.ncl.lookup_op(pathcomps)
         commitop = self.ncl.commit_op(0, 0)
         res = self.do_compound([self.putrootfhop, lookupop, commitop])
         self.failUnlessEqual(res.status, NFS4ERR_ISDIR)
@@ -577,8 +577,8 @@ class CommitTestCase(NFSTestCase):
         NFS4ERR_INVAL
         """
         
-        path = nfs4lib.str2pathname(self.normfile)
-        lookupop = self.ncl.lookup_op(path)
+        pathcomps = nfs4lib.unixpath2comps(self.normfile)
+        lookupop = self.ncl.lookup_op(pathcomps)
         
         commitop = self.ncl.commit_op(-1, -1)
         res = self.do_compound([self.putrootfhop, lookupop, commitop])
@@ -621,8 +621,8 @@ class CreateTestCase(NFSTestCase):
         self.obj_dir = "/tmp"
         self.obj_name = "object1"
 
-        pathname = nfs4lib.str2pathname(self.obj_dir)
-        self.lookup_dir_op = self.ncl.lookup_op(pathname)
+        pathcomps = nfs4lib.unixpath2comps(self.obj_dir)
+        self.lookup_dir_op = self.ncl.lookup_op(pathcomps)
 
     def _remove_object(self):
         # Make sure the object to create does not exist.
@@ -747,8 +747,8 @@ class CreateTestCase(NFSTestCase):
         Covered invalid equivalence classes: 2
         """
         self._remove_object()
-        pathname = nfs4lib.str2pathname(self.normfile)
-        lookupop = self.ncl.lookup_op(pathname)
+        pathcomps = nfs4lib.unixpath2comps(self.normfile)
+        lookupop = self.ncl.lookup_op(pathcomps)
         
         operations = [self.putrootfhop, lookupop]
         objtype = createtype4(self.ncl, type=NF4DIR)
@@ -876,8 +876,8 @@ class GetattrTestCase(NFSTestCase):
         FATTR4_TIME_ACCESS_SET and FATTR4_TIME_MODIFY_SET). If GETATTR
         is called with any of these, NFS4ERR_INVAL should be returned.
         """
-        path = nfs4lib.str2pathname(self.normfile)
-        lookupop = self.ncl.lookup_op(path)
+        pathcomps = nfs4lib.unixpath2comps(self.normfile)
+        lookupop = self.ncl.lookup_op(pathcomps)
 
         getattrop = self.ncl.getattr([FATTR4_TIME_ACCESS_SET])
         res = self.do_compound([self.putrootfhop, lookupop, getattrop])
@@ -914,8 +914,8 @@ class GetattrTestCase(NFSTestCase):
         for attrname in all_mandatory_names:
             all_mandatory.append(attrbitnum_dict[attrname])
         
-        path = nfs4lib.str2pathname(self.normfile)
-        lookupop = self.ncl.lookup_op(path)
+        pathcomps = nfs4lib.unixpath2comps(self.normfile)
+        lookupop = self.ncl.lookup_op(pathcomps)
         getattrop = self.ncl.getattr(all_mandatory)
         
         res = self.do_compound([self.putrootfhop, lookupop, getattrop])
@@ -940,8 +940,8 @@ class GetattrTestCase(NFSTestCase):
         Comments: This test calls GETATTR with request for attribute
         number 1000.  Servers should not fail on unknown attributes.
         """
-        path = nfs4lib.str2pathname(self.normfile)
-        lookupop = self.ncl.lookup_op(path)
+        pathcomps = nfs4lib.unixpath2comps(self.normfile)
+        lookupop = self.ncl.lookup_op(pathcomps)
 
         getattrop = self.ncl.getattr([1000])
         res = self.do_compound([self.putrootfhop, lookupop, getattrop])
@@ -955,8 +955,8 @@ class GetattrTestCase(NFSTestCase):
         Comments: GETATTR should accept empty request
         """
 
-        path = nfs4lib.str2pathname(self.normfile)
-        lookupop = self.ncl.lookup_op(path)
+        pathcomps = nfs4lib.unixpath2comps(self.normfile)
+        lookupop = self.ncl.lookup_op(pathcomps)
 
         getattrop = self.ncl.getattr([])
         res = self.do_compound([self.putrootfhop, lookupop, getattrop])
@@ -971,8 +971,8 @@ class GetattrTestCase(NFSTestCase):
         least all mandatory attributes
         """
 
-        path = nfs4lib.str2pathname(self.normfile)
-        lookupop = self.ncl.lookup_op(path)
+        pathcomps = nfs4lib.unixpath2comps(self.normfile)
+        lookupop = self.ncl.lookup_op(pathcomps)
 
         getattrop = self.ncl.getattr([FATTR4_SUPPORTED_ATTRS])
         res = self.do_compound([self.putrootfhop, lookupop, getattrop])
@@ -1080,8 +1080,8 @@ class LinkTestCase(NFSTestCase):
         self.obj_dir = "/tmp"
         self.obj_name = "link1"
 
-        pathname = nfs4lib.str2pathname(self.obj_dir)
-        self.lookup_dir_op = self.ncl.lookup_op(pathname)
+        pathcomps = nfs4lib.unixpath2comps(self.obj_dir)
+        self.lookup_dir_op = self.ncl.lookup_op(pathcomps)
 
     def _remove_object(self):
         # Make sure the object to create does not exist.
@@ -1101,8 +1101,8 @@ class LinkTestCase(NFSTestCase):
         operations = [self.putrootfhop]
 
         # Lookup source and save FH
-        path = nfs4lib.str2pathname(sourcefile)
-        operations.append(self.ncl.lookup_op(path))
+        pathcomps = nfs4lib.unixpath2comps(sourcefile)
+        operations.append(self.ncl.lookup_op(pathcomps))
         operations.append(self.ncl.savefh_op())
 
         # Lookup target directory
@@ -1242,13 +1242,13 @@ class LinkTestCase(NFSTestCase):
         operations = [self.putrootfhop]
 
         # Lookup source and save FH
-        path = nfs4lib.str2pathname(self.normfile)
-        operations.append(self.ncl.lookup_op(path))
+        pathcomps = nfs4lib.unixpath2comps(self.normfile)
+        operations.append(self.ncl.lookup_op(pathcomps))
         operations.append(self.ncl.savefh_op())
 
         # Lookup target directory (a file, this time)
         operations.append(self.putrootfhop)
-        operations.append(self.ncl.lookup_op(path))
+        operations.append(self.ncl.lookup_op(pathcomps))
 
         # Link operation
         linkop = self.ncl.link_op(self.obj_name)
@@ -1644,8 +1644,8 @@ class NverifyTestCase(NFSTestCase):
 
         Comments: See GetattrTestCase.testWriteOnlyAttributes. 
         """
-        path = nfs4lib.str2pathname(self.normfile)
-        lookupop = self.ncl.lookup_op(path)
+        pathcomps = nfs4lib.unixpath2comps(self.normfile)
+        lookupop = self.ncl.lookup_op(pathcomps)
 
         # Nverify
         attrmask = nfs4lib.list2attrmask([FATTR4_TIME_ACCESS_SET])
@@ -1729,8 +1729,8 @@ class OpenattrTestCase(NFSTestCase):
         Comments: Not yet implemented. 
         """
         # Open attribute dir for doc/README
-        path = nfs4lib.str2pathname(self.normfile)
-        lookupop = self.ncl.lookup_op(path)
+        pathcomps = nfs4lib.unixpath2comps(self.normfile)
+        lookupop = self.ncl.lookup_op(pathcomps)
         openattrop = self.ncl.openattr_op()
         res = self.do_compound([self.putrootfhop, lookupop, openattrop])
 
@@ -1898,8 +1898,8 @@ class ReadTestCase(NFSTestCase):
 
         Covered valid equivalence classes: 1, 11, 14, 17
         """
-        path = nfs4lib.str2pathname(self.normfile)
-        lookupop = self.ncl.lookup_op(path)
+        pathcomps = nfs4lib.unixpath2comps(self.normfile)
+        lookupop = self.ncl.lookup_op(pathcomps)
         
         readop = self.ncl.read(offset=0, count=0, stateid=0)
         res = self.do_compound([self.putrootfhop, lookupop, readop])
@@ -1918,8 +1918,8 @@ class ReadTestCase(NFSTestCase):
 
         Covered valid equivalence classes: 1, 12, 15, 18
         """
-        path = nfs4lib.str2pathname(self.normfile)
-        lookupop = self.ncl.lookup_op(path)
+        pathcomps = nfs4lib.unixpath2comps(self.normfile)
+        lookupop = self.ncl.lookup_op(pathcomps)
         
         readop = self.ncl.read(offset=2, count=1, stateid=0xffffffffffffffffL)
         res = self.do_compound([self.putrootfhop, lookupop, readop])
@@ -1931,8 +1931,8 @@ class ReadTestCase(NFSTestCase):
         Covered valid equivalence classes: 1, 13, 16, 19
         """
         # OPEN
-        path = nfs4lib.str2pathname(self.normfile)
-        openop = self.ncl.open(file=path)
+        pathcomps = nfs4lib.unixpath2comps(self.normfile)
+        openop = self.ncl.open(file=pathcomps)
         getfhop = self.ncl.getfh_op()
         res = self.do_compound([self.putrootfhop, openop, getfhop])
         self.assert_OK(res)
@@ -1954,8 +1954,8 @@ class ReadTestCase(NFSTestCase):
 
         Covered invalid equivalence classes: 3
         """
-        path = nfs4lib.str2pathname(self.dirfile)
-        lookupop = self.ncl.lookup_op(path)
+        pathcomps = nfs4lib.unixpath2comps(self.dirfile)
+        lookupop = self.ncl.lookup_op(pathcomps)
         readop = self.ncl.read()
 
         res = self.do_compound([self.putrootfhop, lookupop, readop])
@@ -1971,8 +1971,8 @@ class ReadTestCase(NFSTestCase):
                      self.linkfile,
                      self.socketfile,
                      self.fifofile]:
-            path = nfs4lib.str2pathname(name)
-            lookupop = self.ncl.lookup_op(path)
+            pathcomps = nfs4lib.unixpath2comps(name)
+            lookupop = self.ncl.lookup_op(pathcomps)
             readop = self.ncl.read()
 
             res = self.do_compound([self.putrootfhop, lookupop, readop])
@@ -2191,8 +2191,8 @@ class ReadlinkTestCase(NFSTestCase):
                      self.charfile,
                      self.socketfile,
                      self.fifofile]:
-            path = nfs4lib.str2pathname(name)
-            lookupop = self.ncl.lookup_op(path)
+            pathcomps = nfs4lib.unixpath2comps(name)
+            lookupop = self.ncl.lookup_op(pathcomps)
             readlinkop = self.ncl.readlink_op()
 
             res = self.do_compound([self.putrootfhop, lookupop, readlinkop])
@@ -2207,8 +2207,8 @@ class ReadlinkTestCase(NFSTestCase):
 
         Covered valid equivalence classes: 12
         """
-        path = nfs4lib.str2pathname(self.dirfile)
-        lookupop = self.ncl.lookup_op(path)
+        pathcomps = nfs4lib.unixpath2comps(self.dirfile)
+        lookupop = self.ncl.lookup_op(pathcomps)
         readlinkop = self.ncl.readlink_op()
 
         res = self.do_compound([self.putrootfhop, lookupop, readlinkop])
