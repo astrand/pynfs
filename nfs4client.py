@@ -34,14 +34,16 @@ import re
 import os
 import time
 
-SYNTAX = """\
-Syntax:
-nfs4client host[:[port]]<directory> [-u|-t] [-d debuglevel]
-
--u --udp (default)
--t --tcp
-
--d --debuglevel debuglevel
+USAGE = """\
+Usage: %s host[:[port]]<directory> [-u|-t] [-d debuglevel]
+       [-c string] 
+options:
+-h, --help                   display this help and exit
+-u, --udp                    use UDP as transport (default)
+-t, --tcp                    use TCP as transport
+-d level, --debuglevel level set debuglevel
+-p, --pythonmode             enable Python interpreter mode
+-c, --commandstring string   execute semicolon separated commands
 """
 
 VERSION = "0.0"
@@ -70,7 +72,7 @@ else:
         commands = [
             "help", "cd", "rm", "dir", "ls", "exit", "quit", "get",
             "put", "mkdir", "md", "rmdir", "rd", "cat", "page",
-            "debug", "ping", "version", "pythonmode", "shell", "access",
+            "debuglevel", "ping", "version", "pythonmode", "shell", "access",
             "create", ]
 
         def complete(self, text, state):
@@ -117,12 +119,14 @@ else:
 
 
 class ClientApp(cmd.Cmd):
-    def __init__(self, transport, host, port, directory, pythonmode):
+    def __init__(self, transport, host, port, directory, pythonmode,
+                 debuglevel):
         self.transport = transport
         self.host = host
         self.port = port
         self.directory = directory
         self.ncl = None
+        self.debuglevel = debuglevel
 
         self.completer = Completer()
         self.completer.pythonmode = pythonmode
@@ -425,9 +429,16 @@ class ClientApp(cmd.Cmd):
         
     do_page = do_cat
     
-    def do_debug(self, line):
-        # FIXME
-        print "not implemented"
+    def do_debuglevel(self, line):
+        if not line:
+            print "debuglevel is", self.debuglevel
+        else:
+            try:
+                l = int(line)
+            except:
+                print "Invalid debuglevel"
+                return
+            self.debuglevel = l
 
     def do_ping(self, line):
         print "pinging", self.ncl.host, "via RPC NULL procedure"
@@ -457,7 +468,7 @@ class ClientApp(cmd.Cmd):
         print "Change current directory"
     
     def help_overview(self):
-        print SYNTAX
+        print USAGE % sys.argv[0]
 
     def emptyline(self):
         pass
@@ -483,18 +494,7 @@ class ClientApp(cmd.Cmd):
 
 
 def usage():
-    USAGE = """\
-Usage: %s host[:[port]]<directory> [-u|-t] [-d debuglevel] [-c string] 
-options:
--h, --help                   display this help and exit
--u, --udp                    use UDP as transport (default)
--t, --tcp                    use TCP as transport
--d level, --debuglevel level set debuglevel
--p, --pythonmode             enable Python interpreter mode
--c, --commandstring string   execute semicolon separated commands
-""" % sys.argv[0]
-
-    print >> sys.stderr, USAGE
+    print >> sys.stderr, USAGE % sys.argv[0]
     sys.exit(2)
 
 
@@ -564,7 +564,11 @@ if __name__ == "__main__":
         if o in ("-t", "--tcp"):
             transport = "tcp"
         if o in ("-d", "--debuglevel"):
-            debuglevel = a
+            try:
+                debuglevel = int(a)
+            except:
+                print "Invalid debuglevel"
+                sys.exit()
         if o in ("-p", "--pythonmode"):
             pythonmode = 1
         if o in ("-c", "--commandstring"):
@@ -593,7 +597,7 @@ if __name__ == "__main__":
         if not directory:
             directory = "/"
 
-    c = ClientApp(transport, host, port, directory, pythonmode)
+    c = ClientApp(transport, host, port, directory, pythonmode, debuglevel)
 
     commands = []
     if commandstring:
