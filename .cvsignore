@@ -1,0 +1,6 @@
+*.pyc
+*.pyo
+nfs4constants.py*
+nfs4types.py*
+parser.out
+parsetab.py
