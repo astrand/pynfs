@@ -8,7 +8,7 @@
  *
  */
 
-%#pragma ident	"@(#)nfs4_prot.x	1.109"
+%#pragma ident	"@(#)nfs4_prot.x	1.119"
 
 /*
  * Basic typedefs for RFC 1832 data type definitions
@@ -44,39 +44,39 @@ enum nfs_ftype4 {
  * Error status
  */
 enum nfsstat4 {
-	NFS4_OK			= 0,
-	NFS4ERR_PERM		= 1,
-	NFS4ERR_NOENT		= 2,
-	NFS4ERR_IO		= 5,
-	NFS4ERR_NXIO		= 6,
-	NFS4ERR_ACCESS		= 13,
-	NFS4ERR_EXIST		= 17,
-	NFS4ERR_XDEV		= 18,
-	NFS4ERR_NODEV		= 19,
-	NFS4ERR_NOTDIR		= 20,
-	NFS4ERR_ISDIR		= 21,
-	NFS4ERR_INVAL		= 22,
-	NFS4ERR_FBIG		= 27,
-	NFS4ERR_NOSPC		= 28,
-	NFS4ERR_ROFS		= 30,
-	NFS4ERR_MLINK		= 31,
-	NFS4ERR_NAMETOOLONG	= 63,
-	NFS4ERR_NOTEMPTY	= 66,
-	NFS4ERR_DQUOT		= 69,
-	NFS4ERR_STALE		= 70,
-	NFS4ERR_BADHANDLE	= 10001,
-	NFS4ERR_BAD_COOKIE	= 10003,
-	NFS4ERR_NOTSUPP		= 10004,
-	NFS4ERR_TOOSMALL	= 10005,
-	NFS4ERR_SERVERFAULT	= 10006,
-	NFS4ERR_BADTYPE		= 10007,
-	NFS4ERR_DELAY		= 10008,
+	NFS4_OK			= 0,    /* everything is okay      */
+	NFS4ERR_PERM		= 1,    /* caller not privileged   */
+	NFS4ERR_NOENT		= 2,    /* no such file/directory  */
+	NFS4ERR_IO		= 5,    /* hard I/O error          */
+	NFS4ERR_NXIO		= 6,    /* no such device          */
+	NFS4ERR_ACCESS		= 13,   /* access denied           */
+	NFS4ERR_EXIST		= 17,   /* file already exists     */
+	NFS4ERR_XDEV		= 18,   /* different filesystems   */
+	/* Unused/reserved        19 */
+	NFS4ERR_NOTDIR		= 20,   /* should be a directory   */
+	NFS4ERR_ISDIR		= 21,   /* should not be directory */
+	NFS4ERR_INVAL		= 22,   /* invalid argument        */
+	NFS4ERR_FBIG		= 27,   /* file exceeds server max */
+	NFS4ERR_NOSPC		= 28,   /* no space on filesystem  */
+	NFS4ERR_ROFS		= 30,   /* read-only filesystem    */
+	NFS4ERR_MLINK		= 31,   /* too many hard links     */
+	NFS4ERR_NAMETOOLONG	= 63,   /* name exceeds server max */
+	NFS4ERR_NOTEMPTY	= 66,   /* directory not empty     */
+	NFS4ERR_DQUOT		= 69,   /* hard quota limit reached*/
+	NFS4ERR_STALE		= 70,   /* file no longer exists   */
+	NFS4ERR_BADHANDLE	= 10001,/* Illegal filehandle      */
+	NFS4ERR_BAD_COOKIE	= 10003,/* READDIR cookie is stale */
+	NFS4ERR_NOTSUPP		= 10004,/* operation not supported */
+	NFS4ERR_TOOSMALL	= 10005,/* response limit exceeded */
+	NFS4ERR_SERVERFAULT	= 10006,/* undefined server error  */
+	NFS4ERR_BADTYPE		= 10007,/* type invalid for CREATE */
+	NFS4ERR_DELAY		= 10008,/* file "busy" - retry     */
 	NFS4ERR_SAME		= 10009,/* nverify says attrs same */
 	NFS4ERR_DENIED		= 10010,/* lock unavailable	   */
 	NFS4ERR_EXPIRED		= 10011,/* lock lease expired	   */
 	NFS4ERR_LOCKED		= 10012,/* I/O failed due to lock  */
 	NFS4ERR_GRACE		= 10013,/* in grace period	   */
-	NFS4ERR_FHEXPIRED	= 10014,/* file handle expired	   */
+	NFS4ERR_FHEXPIRED	= 10014,/* filehandle expired	   */
 	NFS4ERR_SHARE_DENIED	= 10015,/* share reserve denied	   */
 	NFS4ERR_WRONGSEC	= 10016,/* wrong security flavor   */
 	NFS4ERR_CLID_INUSE	= 10017,/* clientid in use	   */
@@ -84,24 +84,33 @@ enum nfsstat4 {
 	NFS4ERR_MOVED		= 10019,/* filesystem relocated	   */
 	NFS4ERR_NOFILEHANDLE	= 10020,/* current FH is not set   */
 	NFS4ERR_MINOR_VERS_MISMATCH = 10021,/* minor vers not supp */
-	NFS4ERR_STALE_CLIENTID	= 10022,
-	NFS4ERR_STALE_STATEID	= 10023,
-	NFS4ERR_OLD_STATEID	= 10024,
-	NFS4ERR_BAD_STATEID	= 10025,
-	NFS4ERR_BAD_SEQID	= 10026,
+	NFS4ERR_STALE_CLIENTID	= 10022,/* server has rebooted     */
+	NFS4ERR_STALE_STATEID	= 10023,/* server has rebooted     */
+	NFS4ERR_OLD_STATEID	= 10024,/* state is out of sync    */
+	NFS4ERR_BAD_STATEID	= 10025,/* incorrect stateid       */
+	NFS4ERR_BAD_SEQID	= 10026,/* request is out of seq.  */
 	NFS4ERR_NOT_SAME	= 10027,/* verify - attrs not same */
-	NFS4ERR_LOCK_RANGE	= 10028,
-	NFS4ERR_SYMLINK		= 10029,
-	NFS4ERR_READDIR_NOSPC	= 10030,
-	NFS4ERR_LEASE_MOVED	= 10031,
-	NFS4ERR_ATTRNOTSUPP	= 10032,
-	NFS4ERR_NO_GRACE	= 10033,
-	NFS4ERR_RECLAIM_BAD	= 10034,
-	NFS4ERR_RECLAIM_CONFLICT = 10035,
-	NFS4ERR_BADXDR		= 10036,
-	NFS4ERR_LOCKS_HELD	= 10037,
-	NFS4ERR_OPENMODE	= 10038,
-	NFS4ERR_BADOWNER	= 10039
+	NFS4ERR_LOCK_RANGE	= 10028,/* lock range not supported*/
+	NFS4ERR_SYMLINK		= 10029,/* should be file/directory*/
+	NFS4ERR_RESTOREFH	= 10030,/* no saved filehandle     */
+	NFS4ERR_LEASE_MOVED	= 10031,/* some filesystem moved   */
+	NFS4ERR_ATTRNOTSUPP	= 10032,/* recommended attr not sup*/
+	NFS4ERR_NO_GRACE	= 10033,/* reclaim outside of grace*/
+	NFS4ERR_RECLAIM_BAD	= 10034,/* reclaim error at server */
+	NFS4ERR_RECLAIM_CONFLICT = 10035,/* conflict on reclaim    */
+	NFS4ERR_BADXDR		= 10036,/* XDR decode failed       */
+	NFS4ERR_LOCKS_HELD	= 10037,/* file locks held at CLOSE*/
+	NFS4ERR_OPENMODE	= 10038,/* conflict in OPEN and I/O*/
+	NFS4ERR_BADOWNER	= 10039,/* owner translation bad   */
+	NFS4ERR_BADCHAR		= 10040,/* utf-8 char not supported*/
+	NFS4ERR_BADNAME		= 10041,/* name not supported      */
+	NFS4ERR_BAD_RANGE	= 10042,/* lock range not supported*/
+	NFS4ERR_LOCK_NOTSUPP	= 10043,/* no atomic up/downgrade  */
+	NFS4ERR_OP_ILLEGAL	= 10044,/* undefined operation     */
+	NFS4ERR_DEADLOCK	= 10045,/* file locking deadlock   */
+	NFS4ERR_FILE_OPEN	= 10046,/* open file blocks op.    */
+	NFS4ERR_ADMIN_REVOKED	= 10047,/* lockowner state revoked */
+	NFS4ERR_CB_PATH_DOWN    = 10048 /* callback path down      */
 };
 
 /*
@@ -288,12 +297,28 @@ struct nfsace4 {
 };
 
 /*
+ * Field definitions for the fattr4_mode attribute
+ */
+const MODE4_SUID = 0x800;  /* set user id on execution */
+const MODE4_SGID = 0x400;  /* set group id on execution */
+const MODE4_SVTX = 0x200;  /* save text even after use */
+const MODE4_RUSR = 0x100;  /* read permission: owner */
+const MODE4_WUSR = 0x080;  /* write permission: owner */
+const MODE4_XUSR = 0x040;  /* execute permission: owner */
+const MODE4_RGRP = 0x020;  /* read permission: group */
+const MODE4_WGRP = 0x010;  /* write permission: group */
+const MODE4_XGRP = 0x008;  /* execute permission: group */
+const MODE4_ROTH = 0x004;  /* read permission: other */
+const MODE4_WOTH = 0x002;  /* write permission: other */
+const MODE4_XOTH = 0x001;  /* execute permission: other */
+
+/*
  * Special data/attribute associated with
  * file types NF4BLK and NF4CHR.
  */
 struct specdata4 {
-	uint32_t	specdata1;
-	uint32_t	specdata2;
+	uint32_t	specdata1;	/* major device number */
+	uint32_t	specdata2;	/* minor device number */
 };
 
 /*
@@ -341,6 +366,7 @@ typedef uint64_t	fattr4_maxread;
 typedef uint64_t	fattr4_maxwrite;
 typedef	utf8string	fattr4_mimetype;
 typedef mode4		fattr4_mode;
+typedef uint64_t	fattr4_mounted_on_fileid;
 typedef	bool		fattr4_no_trunc;
 typedef	uint32_t	fattr4_numlinks;
 typedef	utf8string	fattr4_owner;
@@ -379,6 +405,7 @@ const FATTR4_FSID		= 8;
 const FATTR4_UNIQUE_HANDLES	= 9;
 const FATTR4_LEASE_TIME		= 10;
 const FATTR4_RDATTR_ERROR	= 11;
+const FATTR4_FILEHANDLE		= 19;
 
 /*
  * Recommended Attributes
@@ -390,7 +417,6 @@ const FATTR4_CANSETTIME		= 15;
 const FATTR4_CASE_INSENSITIVE	= 16;
 const FATTR4_CASE_PRESERVING	= 17;
 const FATTR4_CHOWN_RESTRICTED	= 18;
-const FATTR4_FILEHANDLE		= 19;
 const FATTR4_FILEID		= 20;
 const FATTR4_FILES_AVAIL	= 21;
 const FATTR4_FILES_FREE		= 22;
@@ -426,7 +452,7 @@ const FATTR4_TIME_DELTA		= 51;
 const FATTR4_TIME_METADATA	= 52;
 const FATTR4_TIME_MODIFY	= 53;
 const FATTR4_TIME_MODIFY_SET	= 54;
-
+const FATTR4_MOUNTED_ON_FILEID	= 55;
 
 typedef	opaque	attrlist4<>;
 
@@ -522,7 +548,7 @@ union ACCESS4res switch (nfsstat4 status) {
 };
 
 /*
- * CLOSE: Close a file and release share locks
+ * CLOSE: Close a file and release share reservations
  */
 struct CLOSE4args {
 	/* CURRENT_FH: object */
@@ -960,8 +986,6 @@ switch (open_delegation_type4 delegation_type) {
 /*
  * Result flags
  */
-/* Mandatory locking is in effect for this file. */
-const OPEN4_RESULT_MLOCK	= 0x00000001;
 /* Client must confirm open */
 const OPEN4_RESULT_CONFIRM	= 0x00000002;
 /* Type of file locking behavior at the server */
@@ -1275,6 +1299,7 @@ struct SETCLIENTID4args {
 
 struct SETCLIENTID4resok {
 	clientid4	clientid;
+	verifier4	setclientid_confirm;
 };
 
 union SETCLIENTID4res switch (nfsstat4 status) {
@@ -1288,6 +1313,7 @@ union SETCLIENTID4res switch (nfsstat4 status) {
 
 struct SETCLIENTID_CONFIRM4args {
 	clientid4	clientid;
+	verifier4	setclientid_confirm;
 };
 
 struct SETCLIENTID_CONFIRM4res {
@@ -1348,6 +1374,13 @@ struct RELEASE_LOCKOWNER4res {
 };
 
 /*
+ * ILLEGAL: Response for illegal operation numbers
+ */
+struct ILLEGAL4res {
+	nfsstat4        status;
+};
+
+/*
  * Operation arrays
  */
 
@@ -1388,7 +1421,8 @@ enum nfs_opnum4 {
 	OP_SETCLIENTID_CONFIRM	= 36,
 	OP_VERIFY		= 37,
 	OP_WRITE		= 38,
-	OP_RELEASE_LOCKOWNER	= 39
+	OP_RELEASE_LOCKOWNER	= 39,
+	OP_ILLEGAL		= 10044
 };
 
 union nfs_argop4 switch (nfs_opnum4 argop) {
@@ -1431,6 +1465,7 @@ union nfs_argop4 switch (nfs_opnum4 argop) {
  case OP_WRITE:		WRITE4args opwrite;
  case OP_RELEASE_LOCKOWNER:	RELEASE_LOCKOWNER4args
 				    oprelease_lockowner;
+ case OP_ILLEGAL:	void;
 };
 
 union nfs_resop4 switch (nfs_opnum4 resop){
@@ -1473,6 +1508,7 @@ union nfs_resop4 switch (nfs_opnum4 resop){
  case OP_WRITE:		WRITE4res opwrite;
  case OP_RELEASE_LOCKOWNER:	RELEASE_LOCKOWNER4res
 				    oprelease_lockowner;
+ case OP_ILLEGAL:	ILLEGAL4res opillegal;
 };
 
 struct COMPOUND4args {
@@ -1540,21 +1576,31 @@ struct CB_RECALL4res {
 };
 
 /*
+ * CB_ILLEGAL: Response for illegal operation numbers
+ */
+struct CB_ILLEGAL4res {
+	nfsstat4        status;
+};
+
+/*
  * Various definitions for CB_COMPOUND
  */
 enum nfs_cb_opnum4 {
 	OP_CB_GETATTR		= 3,
-	OP_CB_RECALL		= 4
+	OP_CB_RECALL		= 4,
+	OP_CB_ILLEGAL		= 10044
 };
 
 union nfs_cb_argop4 switch (unsigned argop) {
  case OP_CB_GETATTR:	CB_GETATTR4args opcbgetattr;
  case OP_CB_RECALL:	CB_RECALL4args	opcbrecall;
+ case OP_CB_ILLEGAL:	void;
 };
 
 union nfs_cb_resop4 switch (unsigned resop){
  case OP_CB_GETATTR:	CB_GETATTR4res	opcbgetattr;
  case OP_CB_RECALL:	CB_RECALL4res	opcbrecall;
+ case OP_CB_ILLEGAL:	CB_ILLEGAL4res	opcbillegal;
 };
 
 struct CB_COMPOUND4args {
