@@ -2177,104 +2177,353 @@ class NverifySuite(NFSSuite):
 
 
 
-## class OpenSuite(NFSSuite):
-##     """Test operation 18: OPEN
+class OpenSuite(NFSSuite):
+    """Test operation 18: OPEN
 
-##     FIXME: Verify that this eqv.part is correct, when updated state
-##     description is available.
+    FIXME: Add test for file named "." and ".." in
+    open_claim_delegate_cur4.file, open_claim4.file and
+    open_claim4.file_delegate_prev.
 
-##     FIXME: Add test for file named "." and ".." in
-##     open_claim_delegate_cur4.file, open_claim4.file and
-##     open_claim4.file_delegate_prev. 
+    Note: In this test, some input conditions only exists if some condition
+    holds for some other input condition. For example, openhow.how.mode
+    only exists if openhow.opentype==OPEN4_CREATE. 
 
-##     Equivalence partitioning:
+    Equivalence partitioning:
 
-##     Input Condition: seqid
-##         Valid equivalence classes:
-##             correct seqid(10)
-##         Invalid equivalence classes:
-##             to small seqid(11)
-##             to large seqid(12)
-##     Input Condition: share_access
-##         Valid equivalence classes:
-##             valid share_access(20)
-##         Invalid equivalence classes:
-##             invalid share_access(21)
-##     Input Condition: share_deny
-##         Valid equivalence classes:
-##             valid share_deny(30)
-##         Invalid equivalence classes:
-##             invalid share_deny(31)
-##     Input Condition: owner.clientid
-##         Valid equivalence classes:
-##             valid clientid(40)
-##         Invalid equivalence classes:
-##             stale clientid(41)
-##     Input Condition: owner.opaque
-##         Valid equivalence classes:
-##             valid owner(50)
-##         Invalid equivalence classes:
-##             invalid owner(51)
-##     Input Condition: openhow.opentype
-##         Valid equivalence classes:
-##             OPEN_NOCREATE4(60)
-##             OPEN_CREATE4(61)
-##         Invalid equivalence classes:
-##             invalid openhow.opentype(62)
-##     Input Condition: openhow.how
-##         Valid equivalence classes:
-##             UNCHECKED4(70)
-##             GUARDED4(71)
-##             EXCLUSIVE4(72)
-##         Invalid equivalence classes:
-##             invalid openhow.how(73)
-##     Input Condition: openhow.how.createattrs
-##         Valid equivalence classes:
-##             valid createattrs(80)
-##         Invalid equivalence classes:
-##             invalid createattrs(80)
-##     Input Condition: openhow.how.createverf
-##         Valid equivalence classes:
-##             matching verifier(90):
-##             non-matching verifier(91)
-##         Invalid equivalence classes:
-##             -
-##     Input Condition: claim.claim
-##         Valid equivalence classes:
-##             CLAIM_NULL(100)
-##             CLAIM_PREVIOUS(101)
-##             CLAIM_DELEGATE_CUR(102)
-##             CLAIM_DELEGATE_PREV(103)
-##         Invalid equivalence classes:
-##             invalid claim.claim(104)
-##     Input Condition: claim.file:
-##         Valid equivalence classes:
-##             valid filename(110)
-##         Invalid equivalence classes:
-##             non-utf8 filename(111)
-##     Input Condition: claim.delegate_type
-##         Valid equivalence classes:
-##             valid claim.delegate_type(120)
-##         Invalid equivalence classes:
-##             invalid claim.delegate_type(121)
-##     Input Condition: claim.delegate_cur_info.delegate_stateid
-##         Valid equivalence classes:
-##             valid stateid(130)
-##         Invalid equivalence classes:
-##             invalid stateid(131)
-##     Input Condition: claim.delegate_cur_info.file
-##         Valid equivalence classes:
-##             valid filename(140)
-##         Invalid equivalence classes:
-##             invalid filenname(141)
-##     Input Condition: claim.file_delegate_prev
-##         Valid equivalence classes:
-##             valid filename(150)
-##         Invalid equivalence classes:
-##             invalid filename(151)
-##     """
-##     # FIXME
-##     pass
+    Input Condition: seqid
+        Valid equivalence classes:
+            correct seqid(10)
+        Invalid equivalence classes:
+            to small seqid(11)
+            to large seqid(12)
+    Input Condition: share_access
+        Valid equivalence classes:
+            valid share_access(20)
+        Invalid equivalence classes:
+            invalid share_access(21)
+    Input Condition: share_deny
+        Valid equivalence classes:
+            valid share_deny(30)
+        Invalid equivalence classes:
+            invalid share_deny(31)
+    Input Condition: owner.clientid
+        Valid equivalence classes:
+            valid clientid(40)
+        Invalid equivalence classes:
+            stale clientid(41)
+    Input Condition: owner.owner
+        Valid equivalence classes:
+            valid owner(50)
+        Invalid equivalence classes:
+            invalid owner(51)
+    Input Condition: openhow.opentype
+        Valid equivalence classes:
+            OPEN_NOCREATE4(60)
+            OPEN_CREATE4(61)
+        Invalid equivalence classes:
+            invalid openhow.opentype(62)
+    Input Condition: openhow.how.mode
+        Valid equivalence classes:
+            UNCHECKED4(70)
+            GUARDED4(71)
+            EXCLUSIVE4(72)
+        Invalid equivalence classes:
+            invalid openhow.how.mode(73)
+    Input Condition: openhow.how.createattrs
+        Valid equivalence classes:
+            valid createattrs(80)
+        Invalid equivalence classes:
+            invalid createattrs(81)
+    Input Condition: openhow.how.createverf
+        Valid equivalence classes:
+            matching verifier(90):
+            non-matching verifier(91)
+        Invalid equivalence classes:
+            -
+    Input Condition: claim.claim
+        Valid equivalence classes:
+            CLAIM_NULL(100)
+            CLAIM_PREVIOUS(101)
+            CLAIM_DELEGATE_CUR(102)
+            CLAIM_DELEGATE_PREV(103)
+        Invalid equivalence classes:
+            invalid claim.claim(104)
+    Input Condition: claim.file:
+        Valid equivalence classes:
+            valid filename(110)
+        Invalid equivalence classes:
+            zerolength(111)
+            non-utf8 filename(112)
+    Input Condition: claim.delegate_type
+        Valid equivalence classes:
+            OPEN_DELEGATE_NONE(120)
+            OPEN_DELEGATE_READ(121)
+            OPEN_DELEGATE_WRITE(122)
+        Invalid equivalence classes:
+            invalid claim.delegate_type(123)
+    Input Condition: claim.delegate_cur_info.delegate_stateid
+        Valid equivalence classes:
+            valid stateid(130)
+        Invalid equivalence classes:
+            invalid stateid(131)
+    Input Condition: claim.delegate_cur_info.file
+        Valid equivalence classes:
+            valid filename(140)
+        Invalid equivalence classes:
+            zerolength(141)
+            non-utf8 filename(142)
+    Input Condition: claim.file_delegate_prev
+        Valid equivalence classes:
+            valid filename(150)
+        Invalid equivalence classes:
+            zerolength(151)
+            non-utf8 filename(152)
+
+    To summarize:
+
+    Valid equivalence classes: 10, 20, 30, 40, 50, 60, 61, 70, 71, 72,
+    80, 90, 91, 100, 101, 102, 103, 110, 120, 121, 122, 130, 140, 150
+
+    Invalid equivalence classes: 11, 12, 21, 31, 41, 51, 62, 73, 81,
+    104, 111, 112, 123, 131, 141, 142, 151, 152
+
+    
+    """
+    #
+    # Testcases covering valid equivalence classes.
+    #
+
+    def testValidNocreate(self):
+        """OPEN with NOCREATE, CLAIM_NULL, valid filename
+
+        Covered valid equivalence classes: 10, 20, 30, 40, 50, 60, 100, 110
+        """
+        self.info_message("(TEST NOT IMPLEMENTED)")
+
+    def testValidUnchecked(self):
+        """OPEN with CREATE, UNCHECKED, CLAIM_NULL, valid filename
+
+        Covered valid equivalence classes: 10, 20, 30, 40, 50, 61, 70, 80, 100, 110 
+        """
+        self.info_message("(TEST NOT IMPLEMENTED)")
+
+    def testValidGuarded(self):
+        """OPEN with CREATE, GUARDED, CLAIM_NULL, valid filename
+
+        Covered valid equivalence classes: 10, 20, 30, 40, 50, 61, 71, 80, 100, 110
+        """
+        self.info_message("(TEST NOT IMPLEMENTED)")
+
+    def testValidExclusiveMatching(self):
+        """OPEN with CREATE, EXCLUSIVE, CLAIM_NULL, matching verf
+
+        Covered valid equivalence classes: 10, 20, 30, 40, 50, 61, 72, 90, 100, 110
+        """
+        self.info_message("(TEST NOT IMPLEMENTED)")
+
+    def testValidExclusiveNonMatching(self):
+        """OPEN with CREATE, EXCLUSIVE, CLAIM_NULL, nonmatching verf
+
+        Covered valid equivalence classes: 10, 20, 30, 40, 50, 61, 72, 91, 100, 110
+        """
+        self.info_message("(TEST NOT IMPLEMENTED)")
+
+    def testValidClaimPrevNone(self):
+        """OPEN with NOCREATE, CLAIM_PREVIOUS, and DELEGATE_NONE
+
+        Covered valid equivalence classes: 10, 20, 30, 40, 50, 60, 101, 120
+        """
+        self.info_message("(TEST NOT IMPLEMENTED)")
+
+    def testValidClaimPrevRead(self):
+        """OPEN with NOCREATE, CLAIM_PREVIOUS, and DELEGATE_READ
+
+        Covered valid equivalence classes: 10, 20, 30, 40, 50, 60, 101, 121
+        """
+        self.info_message("(TEST NOT IMPLEMENTED)")
+
+    def testValidClaimPrevWrite(self):
+        """OPEN with NOCREATE, CLAIM_PREVIOUS, and DELEGATE_WRITE
+
+        Covered valid equivalence classes: 10, 20, 30, 40, 50, 60, 101, 122
+        """
+        self.info_message("(TEST NOT IMPLEMENTED)")
+
+    def testValidClaimDlgCur(self):
+        """OPEN with NOCREATE, CLAIM_DELEGATE_CUR, valid stateid & filename
+
+        Covered valid equivalence classes: 10, 20, 30, 40, 50, 60, 102, 130, 140
+        """
+        self.info_message("(TEST NOT IMPLEMENTED)")
+
+    def testValidClaimDlgPrev(self):
+        """OPEN with NOCREATE, CLAIM_DELEGATE_PREV, valid filename
+
+        Covered valid equivalence classes: 10, 20, 30, 40, 50, 60, 103, 150
+        """
+        self.info_message("(TEST NOT IMPLEMENTED)")
+
+    #
+    # Testcases covering invalid equivalence classes.
+    #
+    def testInvalidSmallSeqid(self):
+        """OPEN with to small seqid
+
+        Covered invalid equivalence classes: 11
+        Valid equivalence classes: 20, 30, 40, 50, 60, 100, 110
+        """
+        self.info_message("(TEST NOT IMPLEMENTED)")
+
+    def testInvalidLargeSeqid(self):
+        """OPEN with to large seqid
+
+        Covered invalid equivalence classes: 12
+        Valid equivalence classes: 20, 30, 40, 50, 60, 100, 110
+        """
+        self.info_message("(TEST NOT IMPLEMENTED)")
+
+    def testInvalidShareAccess(self):
+        """OPEN with invalid share_access
+
+        Covered invalid equivalence classes: 21
+        Valid equivalence classes: 10, 30, 40, 50, 60, 100, 110
+        """
+        self.info_message("(TEST NOT IMPLEMENTED)")
+
+    def testInvalidShareDeny(self):
+        """OPEN with invalid share_deny
+
+        Covered invalid equivalence classes: 31
+        Valid equivalence classes: 10, 20, 40, 50, 60, 100, 110
+        """
+        self.info_message("(TEST NOT IMPLEMENTED)")
+
+    def testInvalidStaleClientId(self):
+        """OPEN with stale clientid
+
+        Covered invalid equivalence classes: 41
+        Valid equivalence classes: 10, 20, 30, 50, 60, 100, 110
+        """
+        self.info_message("(TEST NOT IMPLEMENTED)")
+
+    def testInvalidOwner(self):
+        """OPEN with invalid owner
+
+        Covered invalid equivalence classes: 51
+        Valid equivalence classes: 10, 20, 30, 40, 60, 100, 110
+        """
+        self.info_message("(TEST NOT IMPLEMENTED)")
+
+    # It's so hard to come up with good names for the test cases
+    # below. I just just the number for the invalid eqv. class
+    # instead...
+
+    def testInvalid62(self):
+        """OPEN with invalid openhow.opentype
+
+        Covered invalid equivalence classes: 62
+        Valid equivalence classes: 10, 20, 30, 40, 50, 100, 110
+        """
+        self.info_message("(TEST NOT IMPLEMENTED)")
+
+    def testInvalid73(self):
+        """OPEN with invalid openhow.how.mode
+
+        Covered invalid equivalence classes: 73
+	Valid equivalence classes: 10, 20, 30, 40, 50, 61, 100, 110
+        """
+        self.info_message("(TEST NOT IMPLEMENTED)")
+
+    def testInvalid81(self):
+        """OPEN with invalid openhow.how.createattrs
+
+        Covered invalid equivalence classes: 81
+	Valid equivalence classes: 10, 20, 30, 40, 50, 61, 70, 100, 110
+        """
+        self.info_message("(TEST NOT IMPLEMENTED)")
+
+    def testInvalid104(self):
+        """OPEN with invalid claim.claim
+
+        Covered invalid equivalence classes: 104
+	Valid equivalence classes: 10, 20, 30, 40, 50, 60
+        """
+        self.info_message("(TEST NOT IMPLEMENTED)")
+
+    def testInvalid111(self):
+        """OPEN with zerolength claim.file
+
+        Covered invalid equivalence classes: 111
+	Valid equivalence classes: 10, 20, 30, 40, 50, 60, 100
+        """
+        self.info_message("(TEST NOT IMPLEMENTED)")
+
+    def testInvalid112(self):
+        """OPEN with non-utf8 claim.file
+
+        Covered invalid equivalence classes: 112
+	Valid equivalence classes: 10, 20, 30, 40, 50, 60, 100
+        """
+        self.info_message("(TEST NOT IMPLEMENTED)")
+
+    def testInvalid123(self):
+        """OPEN with invalid claim.delegate_type
+
+        Covered invalid equivalence classes: 123
+	Valid equivalence classes: 10, 20, 30, 40, 50, 60, 101
+        """
+        self.info_message("(TEST NOT IMPLEMENTED)")
+
+    def testInvalid131(self):
+        """OPEN with invalid claim.delegate_cur_info.delegate_stateid
+
+        Covered invalid equivalence classes: 131
+	Valid equivalence classes: 10, 20, 30, 40, 50, 60, 102
+        """
+        self.info_message("(TEST NOT IMPLEMENTED)")
+
+    def testInvalid141(self):
+        """OPEN with zerolength claim.delegate_cur_info.file
+
+        Covered invalid equivalence classes: 141
+	Valid equivalence classes: 10, 20, 30, 40, 50, 60, 102
+        """
+        self.info_message("(TEST NOT IMPLEMENTED)")
+
+    def testInvalid142(self):
+        """OPEN with non-utf8 claim.delegate_cur_info.file
+
+        Covered invalid equivalence classes: 142
+	Valid equivalence classes: 10, 20, 30, 40, 50, 60, 102
+        """
+        self.info_message("(TEST NOT IMPLEMENTED)")
+
+    def testInvalid151(self):
+        """OPEN with zerolength claim.file_delegate_prev
+
+        Covered invalid equivalence classes: 151
+	Valid equivalence classes: 10, 20, 30, 40, 50, 60, 103
+        """
+        self.info_message("(TEST NOT IMPLEMENTED)")
+
+    def testInvalid152(self):
+        """OPEN with non-utf8 claim.file_delegate_prev
+
+        Covered invalid equivalence classes: 152
+	Valid equivalence classes: 10, 20, 30, 40, 50, 60, 103
+        """
+        self.info_message("(TEST NOT IMPLEMENTED)")
+
+    #
+    # Extra tests.
+    #
+    def testValid(self):
+        """OPEN with CREATE, EXCLUSIVE, and CLAIM_DELEGATE_CUR
+
+        Covered valid equivalence classes: 10, 20, 30, 40, 50, 61, 72, 90, 102, 130, 140
+        """
+        self.info_message("(TEST NOT IMPLEMENTED)")
+    
 
 class OpenattrSuite(NFSSuite):
     """Test operation 19: OPENATTR
