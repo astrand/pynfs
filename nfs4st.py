@@ -1851,27 +1851,21 @@ class LookupSuite(NFSSuite):
         res = self.do_compound(operations)
         self.assert_status(res, [NFS4ERR_NOENT])
 
-    def _assert_lookup_response(self, pathcomps):
-        lookupops = self.ncl.lookup_path(pathcomps)
-        operations = [self.putrootfhop] + lookupops
-        res = self.do_compound(operations)
-        self.assert_status(res, [NFS4ERR_NOENT, NFS4ERR_INVAL])
-
     def testDots(self):
-        """LOOKUP on . and .. should return NFS4ERR_NOENT or NFS4ERR_INVAL
+        """LOOKUP on (nonexistent) . and .. should return NFS4ERR_NOENT 
 
         Extra test
 
-        Servers supporting . and .. in file names should return NFS4ERR_NOENT.
-        Others should return NFS4ERR_INVAL. NFS4ERR_EXIST should not be returned.
+        Comments: Even if the server does not allow creation of files
+        called . and .., LOOKUP should return NFS4ERR_NOENT. 
         """
         testname = "."
         if not self.make_sure_nonexistent(testname): return
-        self._assert_lookup_response([testname])
+        self._assert_noent([testname])
         
         testname = ".."
         if not self.make_sure_nonexistent(testname): return
-        self._assert_lookup_response([testname])
+        self._assert_noent([testname])
 
         # Try lookup on ["doc", ".", "README"]
         # First, make sure there is no object named "."
@@ -1879,7 +1873,7 @@ class LookupSuite(NFSSuite):
         if not self.make_sure_nonexistent(".", ["doc"]): return
         # Of course it wasn't. Try LOOKUP with this strange path.
         # Note: The file doc/./README actually exists on a UNIX server. 
-        self._assert_lookup_response(["doc", ".", "README"])
+        self._assert_noent(["doc", ".", "README"])
         
         # Same goes for ".."
         # Note: The file doc/porting/../README actually exists on a
