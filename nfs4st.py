@@ -176,21 +176,77 @@ class CommitTestCase(NFSTestCase):
     Note: We do not examine the writeverifier in any way. It's hard
     since it can change at any time.
     """
-    
+
     def setUp(self):
         self.connect()
         self.putrootfhop = self.ncl.putrootfh_op()
 
+        # Filenames
+        self.linkfile = "/dev/floppy"
+        self.blockfile = "/dev/fd0"
+        self.charfile = "/dev/ttyS0"
+        self.socketfile = "/dev/log"
+        self.fifofile = "/dev/initctl"
+        self.dirfile = "/doc"
+        self.normfile = "/doc/README"
+
+    def testOnLink(self):
+        """COMMIT should fail with NFS4ERR_INVAL on Links"""
+
+        path = nfs4lib.str2pathname(self.linkfile)
+        lookupop = self.ncl.lookup_op(path)
+        commitop = self.ncl.commit_op(0, 0)
+        res = self.ncl.compound([self.putrootfhop, lookupop, commitop])
+        self.failUnlessEqual(res.status, NFS4ERR_INVAL)
+
+    def testOnBlock(self):
+        """COMMIT should fail with NFS4ERR_INVAL on block device"""
+
+        path = nfs4lib.str2pathname(self.blockfile)
+        lookupop = self.ncl.lookup_op(path)
+        commitop = self.ncl.commit_op(0, 0)
+        res = self.ncl.compound([self.putrootfhop, lookupop, commitop])
+        self.failUnlessEqual(res.status, NFS4ERR_INVAL)
+
+    def testOnBlock(self):
+        """COMMIT should fail with NFS4ERR_INVAL on character device"""
+
+        path = nfs4lib.str2pathname(self.charfile)
+        lookupop = self.ncl.lookup_op(path)
+        commitop = self.ncl.commit_op(0, 0)
+        res = self.ncl.compound([self.putrootfhop, lookupop, commitop])
+        self.failUnlessEqual(res.status, NFS4ERR_INVAL)
+
+    def testOnSocket(self):
+        """COMMIT should fail with NFS4ERR_INVAL on socket"""
+        
+        path = nfs4lib.str2pathname(self.socketfile)
+        lookupop = self.ncl.lookup_op(path)
+        commitop = self.ncl.commit_op(0, 0)
+        res = self.ncl.compound([self.putrootfhop, lookupop, commitop])
+        self.failUnlessEqual(res.status, NFS4ERR_INVAL)
+
+    def testOnFifo(self):
+        """COMMIT should fail with NFS4ERR_INVAL on FIFOs"""
+
+        path = nfs4lib.str2pathname(self.fifofile)
+        lookupop = self.ncl.lookup_op(path)
+        commitop = self.ncl.commit_op(0, 0)
+        res = self.ncl.compound([self.putrootfhop, lookupop, commitop])
+        self.failUnlessEqual(res.status, NFS4ERR_INVAL)
+        
     def testOnDir(self):
         """COMMIT should fail with NFS4ERR_ISDIR on directories
 
         COMMIT should fail with NFS4ERR_ISDIR if called with an filehandle
         that corresponds to a directory. 
         """
-        commitop = self.ncl.commit_op(0, 0)
-        res = self.ncl.compound([self.putrootfhop, commitop])
-        self.failUnlessEqual(res.status, NFS4ERR_ISDIR)
 
+        path = nfs4lib.str2pathname(self.dirfile)
+        lookupop = self.ncl.lookup_op(path)
+        commitop = self.ncl.commit_op(0, 0)
+        res = self.ncl.compound([self.putrootfhop, lookupop, commitop])
+        self.failUnlessEqual(res.status, NFS4ERR_ISDIR)
 
     def testOffsets(self):
         """Simple COMMIT on file with offset 0, 1 and 2**64 - 1
@@ -198,7 +254,7 @@ class CommitTestCase(NFSTestCase):
         This component tests boundary values for the offset parameter in the
         COMMIT operation. All values are legal. 
         """
-        path = nfs4lib.str2pathname("/README")
+        path = nfs4lib.str2pathname(self.normfile)
         lookupop = self.ncl.lookup_op(path)
 
         # offset = 0
@@ -223,7 +279,7 @@ class CommitTestCase(NFSTestCase):
         This component tests boundary values for the count parameter in the
         COMMIT operation. All values are legal. 
         """
-        path = nfs4lib.str2pathname("/README")
+        path = nfs4lib.str2pathname(self.normfile)
         lookupop = self.ncl.lookup_op(path)
         
         # count = 0
@@ -240,6 +296,20 @@ class CommitTestCase(NFSTestCase):
         commitop = self.ncl.commit_op(0, -1)
         res = self.ncl.compound([self.putrootfhop, lookupop, commitop])
         self.assert_OK(res)
+
+    def testOverflow(self):
+        """COMMIT on file with  offset+count >= 2**64
+
+        If the COMMIT operation is called with an offset plus count
+        that is larger than 2**64, the server should return NFS4ERR_INVAL
+        """
+        
+        path = nfs4lib.str2pathname(self.normfile)
+        lookupop = self.ncl.lookup_op(path)
+        
+        commitop = self.ncl.commit_op(-1, -1)
+        res = self.ncl.compound([self.putrootfhop, lookupop, commitop])
+        self.failUnlessEqual(res.status, NFS4ERR_INVAL)
 
 
 class CreateTestCase(NFSTestCase):
