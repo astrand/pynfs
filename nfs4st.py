@@ -52,7 +52,7 @@ port = None
 transport = "udp"
 
 
-class NFSTestSuite(unittest.TestCase):
+class NFSSuite(unittest.TestCase):
     def __init__(self, methodName='runTest'):
         unittest.TestCase.__init__(self, methodName)
     
@@ -155,7 +155,7 @@ class NFSTestSuite(unittest.TestCase):
         """Return a (guessed) invalid verifier"""
         return nfs4lib.long2opaque(123456780, NFS4_VERIFIER_SIZE/8)
 
-class CompoundTestSuite(NFSTestSuite):
+class CompoundSuite(NFSSuite):
     """Test COMPOUND procedure
 
     Equivalence partitioning:
@@ -250,7 +250,7 @@ class CompoundTestSuite(NFSTestSuite):
         self.assert_status(res, [NFS4ERR_NOTSUPP])
 
 
-class AccessTestSuite(NFSTestSuite):
+class AccessSuite(NFSSuite):
     """Test operation 3: ACCESS
 
     Note: We do not examine if the "access" result actually corresponds to
@@ -285,7 +285,7 @@ class AccessTestSuite(NFSTestSuite):
 
     def valid_access_ops(self):
         result = []
-        for i in range(AccessTestSuite.maxval + 1):
+        for i in range(AccessSuite.maxval + 1):
             result.append(self.ncl.access_op(i))
         return result
 
@@ -407,14 +407,14 @@ class AccessTestSuite(NFSTestSuite):
                         "server returned ACCESS4_EXECUTE for root dir (access=%d)" % access)
 
 
-class CloseTestSuite(NFSTestSuite):
+class CloseSuite(NFSSuite):
     """Test operation 4: CLOSE
     """
     # FIXME
     pass
     
 
-class CommitTestSuite(NFSTestSuite):
+class CommitSuite(NFSSuite):
     """Test operation 5: COMMIT
 
     FIXME: Add attribute directory and named attribute testing. 
@@ -586,7 +586,7 @@ class CommitTestSuite(NFSTestSuite):
         self.assert_status(res, [NFS4ERR_INVAL])
 
 
-class CreateTestSuite(NFSTestSuite):
+class CreateSuite(NFSSuite):
     """Test operation 6: CREATE
 
     FIXME: Add attribute directory and named attribute testing. 
@@ -617,7 +617,7 @@ class CreateTestSuite(NFSTestSuite):
     """
     
     def setUp(self):
-        NFSTestSuite.setUp(self)
+        NFSSuite.setUp(self)
         self.obj_name = "object1"
 
         self.lookup_dir_op = self.ncl.lookup_op(self.tmp_dir)
@@ -803,21 +803,21 @@ class CreateTestSuite(NFSTestSuite):
         self.assert_status(res, [NFS4ERR_INVAL])
 
 
-class DelegpurgeTestSuite(NFSTestSuite):
+class DelegpurgeSuite(NFSSuite):
     """Test operation 7: DELEGPURGE
     """
     # FIXME
     pass
 
 
-class DelegreturnTestSuite(NFSTestSuite):
+class DelegreturnSuite(NFSSuite):
     """Test operation 8: DELEGRETURN
     """
     # FIXME
     pass
 
 
-class GetattrTestSuite(NFSTestSuite):
+class GetattrSuite(NFSSuite):
     """Test operation 9: GETATTR
 
     FIXME: Add attribute directory and named attribute testing. 
@@ -989,7 +989,7 @@ class GetattrTestSuite(NFSTestSuite):
         sys.stdout.flush()
 
 
-class GetFhTestSuite(NFSTestSuite):
+class GetFhSuite(NFSSuite):
     """Test operation 10: GETFH
 
     FIXME: Add attribute directory and named attribute testing. 
@@ -1036,7 +1036,7 @@ class GetFhTestSuite(NFSTestSuite):
         self.assert_status(res, [NFS4ERR_NOFILEHANDLE])
 
 
-class LinkTestSuite(NFSTestSuite):
+class LinkSuite(NFSSuite):
     """Test operation 11: LINK
 
     FIXME: Add attribute directory and named attribute testing.
@@ -1072,7 +1072,7 @@ class LinkTestSuite(NFSTestSuite):
     """
 
     def setUp(self):
-        NFSTestSuite.setUp(self)
+        NFSSuite.setUp(self)
         self.obj_name = "link1"
 
         self.lookup_dir_op = self.ncl.lookup_op(self.tmp_dir)
@@ -1268,27 +1268,27 @@ class LinkTestSuite(NFSTestSuite):
         self.assert_OK(res)
 
 
-class LockTestSuite(NFSTestSuite):
+class LockSuite(NFSSuite):
     """Test operation 12: LOCK
     """
     # FIXME
     pass
 
 
-class LocktTestSuite(NFSTestSuite):
+class LocktSuite(NFSSuite):
     """Test operation 13: LOCKT
     """
     # FIXME
     pass
 
 
-class LockuTestSuite(NFSTestSuite):
+class LockuSuite(NFSSuite):
     """Test operation 14: LOCKU
     """
     # FIXME
     pass
 
-class LookupTestSuite(NFSTestSuite):
+class LookupSuite(NFSSuite):
     """Test operation 15: LOOKUP
 
     Equivalence partitioning:
@@ -1438,7 +1438,7 @@ class LookupTestSuite(NFSTestSuite):
         self.assert_status(res, [NFS4ERR_NOENT])
 
 
-class LookuppTestSuite(NFSTestSuite):
+class LookuppSuite(NFSSuite):
     """Test operation 16: LOOKUPP
 
     Equivalence partitioning:
@@ -1508,7 +1508,7 @@ class LookuppTestSuite(NFSTestSuite):
         self.assert_status(res, [NFS4ERR_NOTDIR])
 
 
-class NverifyTestSuite(NFSTestSuite):
+class NverifySuite(NFSSuite):
     """Test operation 17: NVERIFY
 
     FIXME: Add attribute directory and named attribute testing. 
@@ -1621,7 +1621,7 @@ class NverifyTestSuite(NFSTestSuite):
 
         Covered invalid equivalence classes: 10
 
-        Comments: See GetattrTestSuite.testWriteOnlyAttributes. 
+        Comments: See GetattrSuite.testWriteOnlyAttributes. 
         """
         lookupop = self.ncl.lookup_op(self.regfile)
 
@@ -1636,13 +1636,13 @@ class NverifyTestSuite(NFSTestSuite):
         self.assert_status(res, [NFS4ERR_INVAL])
 
 
-class OpenTestSuite(NFSTestSuite):
+class OpenSuite(NFSSuite):
     """Test operation 18: OPEN
     """
     # FIXME
     pass
 
-class OpenattrTestSuite(NFSTestSuite):
+class OpenattrSuite(NFSSuite):
     """Test operation 19: OPENATTR
 
     FIXME: Verify that these tests works, as soon as I have access to a server
@@ -1723,19 +1723,19 @@ class OpenattrTestSuite(NFSTestSuite):
         self.info_message("(TEST NOT IMPLEMENTED)")
 
 
-class OpenconfirmTestSuite(NFSTestSuite):
+class OpenconfirmSuite(NFSSuite):
     """Test operation 20: OPEN_CONFIRM
     """
     # FIXME
     pass
 
-class OpendowngradeTestSuite(NFSTestSuite):
+class OpendowngradeSuite(NFSSuite):
     """Test operation 21: OPEN_DOWNGRADE
     """
     # FIXME
     pass
 
-class PutfhTestSuite(NFSTestSuite):
+class PutfhSuite(NFSSuite):
     """Test operation 22: PUTFH
 
     FIXME: Add attribute directory and named attribute testing. 
@@ -1799,7 +1799,7 @@ class PutfhTestSuite(NFSTestSuite):
         self.assert_status(res, [NFS4ERR_STALE])
 
 
-class PutpubfhTestSuite(NFSTestSuite):
+class PutpubfhSuite(NFSSuite):
     """Test operation 23: PUTPUBFH
 
     Equivalence partitioning:
@@ -1817,7 +1817,7 @@ class PutpubfhTestSuite(NFSTestSuite):
         self.assert_OK(res)
 
 
-class PutrootfhTestSuite(NFSTestSuite):
+class PutrootfhSuite(NFSSuite):
     """Test operation 24: PUTROOTFH
 
     Equivalence partitioning:
@@ -1834,7 +1834,7 @@ class PutrootfhTestSuite(NFSTestSuite):
         self.assert_OK(res)
 
 
-class ReadTestSuite(NFSTestSuite):
+class ReadSuite(NFSSuite):
     """Test operation 25: READ
 
     FIXME: Add attribute directory and named attribute testing.
@@ -1980,7 +1980,7 @@ class ReadTestSuite(NFSTestSuite):
 
         
 
-class ReaddirTestSuite(NFSTestSuite):
+class ReaddirSuite(NFSSuite):
     """Test operation 26: READDIR
 
     FIXME: More testing of dircount/maxcount combinations.
@@ -2115,7 +2115,7 @@ class ReaddirTestSuite(NFSTestSuite):
 
         Covered invalid equivalence classes: 61
 
-        Comments: See GetattrTestSuite.testWriteOnlyAttributes. 
+        Comments: See GetattrSuite.testWriteOnlyAttributes. 
         """
         attrmask = nfs4lib.list2attrmask([FATTR4_TIME_ACCESS_SET])
         readdirop = self.ncl.readdir_op(cookie=0, cookieverf="\x00",
@@ -2128,7 +2128,7 @@ class ReaddirTestSuite(NFSTestSuite):
 
     # FIXME: Misc. test: testa fattr4_rdattr_error kontra globalt fel. 
 
-class ReadlinkTestSuite(NFSTestSuite):
+class ReadlinkSuite(NFSSuite):
     """Test operation 27: READLINK
 
     Equivalence partitioning:
@@ -2202,7 +2202,7 @@ class ReadlinkTestSuite(NFSTestSuite):
         
     
 
-class RemoveTestSuite(NFSTestSuite):
+class RemoveSuite(NFSSuite):
     """Test operation 28: REMOVE
 
     # FIXME: Test (OPEN, REMOVE, WRITE) etc. Wait for final decision. 
@@ -2224,7 +2224,7 @@ class RemoveTestSuite(NFSTestSuite):
             non-existing name(23)
     """
     def setUp(self):
-        NFSTestSuite.setUp(self)
+        NFSSuite.setUp(self)
         self.obj_name = "object1"
 
         self.lookup_dir_op = self.ncl.lookup_op(self.tmp_dir)
@@ -2308,7 +2308,7 @@ class RemoveTestSuite(NFSTestSuite):
         self.assert_status(res, [NFS4ERR_NOENT])
         
 
-class RenameTestSuite(NFSTestSuite):
+class RenameSuite(NFSSuite):
     """Test operation 29: RENAME
 
     FIXME: Test renaming of a named attribute
@@ -2348,7 +2348,7 @@ class RenameTestSuite(NFSTestSuite):
     gives a current filehandle as well. 
     """
     def setUp(self):
-        NFSTestSuite.setUp(self)
+        NFSSuite.setUp(self)
         self.oldname = "object1"
         self.newname = "object2"
 
@@ -2504,13 +2504,13 @@ class RenameTestSuite(NFSTestSuite):
     
     # FIXME: Cover eq. class 42.     
 
-class RenewTestSuite(NFSTestSuite):
+class RenewSuite(NFSSuite):
     """Test operation 30: RENEW
     """
     # FIXME
     pass
 
-class RestorefhTestSuite(NFSTestSuite):
+class RestorefhSuite(NFSSuite):
     """Test operation 31: RESTOREFH
 
     Equivalence partitioning:
@@ -2573,7 +2573,7 @@ class RestorefhTestSuite(NFSTestSuite):
         self.assert_status(res, [NFS4ERR_NOFILEHANDLE])
         
 
-class SavefhTestSuite(NFSTestSuite):
+class SavefhSuite(NFSSuite):
     """Test operation 32: SAVEFH
 
     Equivalence partitioning:
@@ -2585,7 +2585,7 @@ class SavefhTestSuite(NFSTestSuite):
             no filehandle(11)
 
     Comments: Equivalence class 10 is covered by
-    RestorefhTestSuite.testValid.
+    RestorefhSuite.testValid.
     """
     #
     # Testcases covering invalid equivalence classes.
@@ -2599,7 +2599,7 @@ class SavefhTestSuite(NFSTestSuite):
         self.assert_status(res, [NFS4ERR_NOFILEHANDLE])
     
 
-class SecinfoTestSuite(NFSTestSuite):
+class SecinfoSuite(NFSSuite):
     """Test operation 33: SECINFO
 
     Equivalence partitioning:
@@ -2687,14 +2687,14 @@ class SecinfoTestSuite(NFSTestSuite):
         self.info_message("(TEST NOT IMPLEMENTED)")
 
         
-class SetattrTestSuite(NFSTestSuite):
+class SetattrSuite(NFSSuite):
     """Test operation 34: SETATTR
     """
     # FIXME
     pass
 
 
-class SetclientidTestSuite(NFSTestSuite):
+class SetclientidSuite(NFSSuite):
     """Test operation 35: SETCLIENTID
 
     FIXME: Test cases that trigger NFS4ERR_CLID_INUSE. 
@@ -2755,7 +2755,7 @@ class SetclientidTestSuite(NFSTestSuite):
         res = self.do_compound([setclientidop])
 
     
-class SetclientidconfirmTestSuite(NFSTestSuite):
+class SetclientidconfirmSuite(NFSSuite):
     """Test operation 36: SETCLIENTID_CONFIRM
 
     Equivalence partitioning:
@@ -2805,7 +2805,7 @@ class SetclientidconfirmTestSuite(NFSTestSuite):
         self.assert_status(res, [NFS4ERR_STALE_CLIENTID])
 
 
-class VerifyTestSuite(NFSTestSuite):
+class VerifySuite(NFSSuite):
     """Test operation 37: VERIFY
 
     Equivalence partitioning:
@@ -2913,7 +2913,7 @@ class VerifyTestSuite(NFSTestSuite):
 
         Covered invalid equivalence classes: 10
 
-        Comments: See GetattrTestSuite.testWriteOnlyAttributes. 
+        Comments: See GetattrSuite.testWriteOnlyAttributes. 
         """
         lookupop = self.ncl.lookup_op(self.regfile)
 
@@ -2928,7 +2928,7 @@ class VerifyTestSuite(NFSTestSuite):
         self.assert_status(res, [NFS4ERR_INVAL])
 
 
-class WriteTestSuite(NFSTestSuite):
+class WriteSuite(NFSSuite):
     """Test operation 38: WRITE
 
     FIXME: Write to named attribute. 
