@@ -1458,9 +1458,11 @@ class LinkSuite(NFSSuite):
         should return NFS4ERR_INVAL. NFS4ERR_EXIST should not be returned.
         """
         # newname = .
+        self._remove_object(".")
         self._do_link(".")
         
         # newname = ..
+        self._remove_object("..")
         self._do_link("..")
 
 
