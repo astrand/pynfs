@@ -108,7 +108,7 @@ if __name__ == "__main__":
             usage()
         host = match.group("host")
         port = match.group("port")
-        dir = match.group("dir")
+        dire = match.group("dir")
     
     if transport == "tcp":
         ncl = nfs4lib.TCPNFS4Client(host)
@@ -119,14 +119,23 @@ if __name__ == "__main__":
 
     
     # PUTROOT & GETFH
-    putrootfhoperation = nfs_argop4(ncl, argop=OP_PUTROOTFH)
-    getfhoperation = nfs_argop4(ncl, argop=OP_GETFH)
-    
+    putrootfhoperation = ncl.putrootfh()
+    getfhoperation = ncl.getfh()
     res =  ncl.compound([putrootfhoperation, getfhoperation])
-
     fh = res.resarray[1].opgetfh.resok4.object
     print "fh is", repr(fh)
 
 
+
+    # SETCLIENTID4
+    #op = ncl.Setclientid(verifier="4711", id="peterfoo", r_netid="foo", r_addr="foo", cb_program=4711)
+    op = ncl.setclientid()
+    res =  ncl.compound([op])
+
+    clientid = res.resarray[0].arm.resok4.clientid
+    setclientid_confirm = res.resarray[0].arm.resok4.setclientid_confirm
+
+    print "got clientid", clientid
+    print "got setclientid_confirm", setclientid_confirm
 
 
