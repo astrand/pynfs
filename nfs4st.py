@@ -2188,9 +2188,110 @@ class ReadlinkTestCase(NFSTestCase):
     
 
 class RemoveTestCase(NFSTestCase):
-    # FIXME
-    # Test (OPEN, REMOVE, WRITE) etc. Wait for final decision. 
-    pass
+    """Test REMOVE operation
+
+    # FIXME: Test (OPEN, REMOVE, WRITE) etc. Wait for final decision. 
+
+    Equivalence partitioning:
+
+    Input Condition: current filehandle
+        Valid equivalence classes:
+            dir(10)
+        Invalid equivalence classes:
+            not dir(11)
+            no filehandle(12)
+    Input Condition: filename
+        Valid equivalence classes:
+            valid, existing name(20)
+        Invalid equivalence classes:
+            zerolength(21)
+            non-utf8(22)
+            non-existing name(23)
+    """
+    def setUp(self):
+        NFSTestCase.setUp(self)
+        self.obj_name = "object1"
+
+        self.lookup_dir_op = self.ncl.lookup_op(self.tmp_dir)
+
+    def _create_object(self):
+        # Make sure we have something to remove. We create a directory, because
+        # it's simple.
+        objtype = createtype4(self.ncl, type=NF4DIR)
+        createop = self.ncl.create_op(self.obj_name, objtype)
+        res = self.do_compound([self.putrootfhop, self.lookup_dir_op, createop])
+
+        self.assert_status(res, [NFS4_OK, NFS4ERR_EXIST])
+
+    #
+    # Testcases covering valid equivalence classes.
+    #
+    def testValid(self):
+        """Valid REMOVE on existing object
+
+        Covered valid equivalence classes: 10, 20
+        """
+        self._create_object()
+        removeop = self.ncl.remove_op(self.obj_name)
+        res = self.do_compound([self.putrootfhop, self.lookup_dir_op, removeop])
+
+        self.assert_OK(res)
+
+    #
+    # Testcases covering invalid equivalence classes.
+    #
+    def testFhNotDir(self):
+        """REMOVE with non-dir (cfh) should give NFS4ERR_NOTDIR
+
+        Covered invalid equivalence classes: 11
+        """
+        lookupop = self.ncl.lookup_op(self.normfile)
+        removeop = self.ncl.remove_op(self.obj_name)
+        res = self.do_compound([self.putrootfhop, lookupop, removeop])
+
+        self.assert_status(res, [NFS4ERR_NOTDIR])
+
+    def testNoFh(self):
+        """REMOVE without (cfh) should return NFS4ERR_NOFILEHANDLE
+
+        Covered invalid equivalence classes: 12
+        """
+        removeop = self.ncl.remove_op(self.obj_name)
+        res = self.do_compound([removeop])
+        self.assert_status(res, [NFS4ERR_NOFILEHANDLE])
+
+    def testZeroLengthTarget(self):
+        """REMOVE with zero length target should return NFS4ERR_INVAL
+
+        Covered invalid equivalence classes: 21
+        """
+        self._create_object()
+
+        removeop = self.ncl.remove_op("")
+        res = self.do_compound([self.putrootfhop, self.lookup_dir_op, removeop])
+
+        self.assert_status(res, [NFS4ERR_INVAL])
+
+    def testNonUTF8(self):
+        """REMOVE with non-UTF8 components should return NFS4ERR_INVAL
+
+        Covered invalid equivalence classes: 22
+
+        Comments: Not yet implemented. 
+        """
+        # FIXME: Implement
+        self.info_message("(TEST NOT IMPLEMENTED)")
+
+    def testNonExistent(self):
+        """REMOVE on non-existing object should return NFS4ERR_NOENT
+
+        Covered invalid equivalence classes: 23
+        """
+        removeop = self.ncl.remove_op("vapor_object")
+        res = self.do_compound([self.putrootfhop, self.lookup_dir_op, removeop])
+
+        self.assert_status(res, [NFS4ERR_NOENT])
+        
 
 class RenameTestCase(NFSTestCase):
     # FIXME
