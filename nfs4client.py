@@ -129,12 +129,6 @@ class ClientApp(cmd.Cmd):
 
         self.baseprompt = "nfs4: %s>"
 
-        # FIXME
-        #self.intro = ""
-        #self.doc_header = ""
-        #self.misc_header
-        #self.undoc_header
-
         self._connect()
         self._set_prompt()
 
