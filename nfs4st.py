@@ -2796,7 +2796,7 @@ class RestorefhSuite(NFSSuite):
     def testValid(self):
         """SAVEFH and RESTOREFH
 
-        Covered equivalence classes: 10
+        Covered valid equivalence classes: 10
 
         Comments: Also tests SAVEFH operation. 
         """
@@ -2896,7 +2896,7 @@ class SecinfoSuite(NFSSuite):
     def testValid(self):
         """SECINFO on existing file
 
-        Covered equivalence classes: 10, 20
+        Covered valid equivalence classes: 10, 20
         """
         lookupops = self.ncl.lookup_path(self.dirfile)
         operations = [self.putrootfhop] + lookupops
@@ -3053,7 +3053,7 @@ class SetattrSuite(NFSSuite):
     def testStateidOnes(self):
         """SETATTR(FATTR4_MODE) on regular file with stateid=ones
         
-        Covered equivalence classes: 10, 21, 30, 40
+        Covered valid equivalence classes: 10, 21, 30, 40
         """
         stateval = nfs4lib.long2opaque(0xffffffffffffffffffffffffL)
         self._valid_setattr(self.regfile, stateval)
@@ -3061,14 +3061,14 @@ class SetattrSuite(NFSSuite):
     def testDir(self):
         """SETATTR(FATTR4_MODE) on directory
 
-        Covered equivalence classes: 11, 20, 30, 40
+        Covered valid equivalence classes: 11, 20, 30, 40
         """
         self._valid_setattr(self.dirfile, "")
 
     def testBlock(self):
         """SETATTR(FATTR4_MODE) on block device
 
-        Covered equivalence classes: 12, 20, 30, 40
+        Covered valid equivalence classes: 12, 20, 30, 40
         """
         self._valid_setattr(self.blockfile, "")
         
@@ -3076,35 +3076,35 @@ class SetattrSuite(NFSSuite):
     def testChar(self):
         """SETATTR(FATTR4_MODE) on char device
 
-        Covered equivalence classes: 13, 20, 30, 40
+        Covered valid equivalence classes: 13, 20, 30, 40
         """
         self._valid_setattr(self.charfile, "")
 
     def testLink(self):
         """SETATTR(FATTR4_MODE) on symbolic link
 
-        Covered equivalence classes: 14, 20, 30, 40
+        Covered valid equivalence classes: 14, 20, 30, 40
         """
         self._valid_setattr(self.linkfile, "")
 
     def testSocket(self):
         """SETATTR(FATTR4_MODE) on socket
 
-        Covered equivalence classes: 15, 20, 30, 40
+        Covered valid equivalence classes: 15, 20, 30, 40
         """
         self._valid_setattr(self.socketfile, "")
         
     def testFIFO(self):
         """SETATTR(FATTR4_MODE) on FIFO
 
-        Covered equivalence classes: 16, 20, 30, 40
+        Covered valid equivalence classes: 16, 20, 30, 40
         """
         self._valid_setattr(self.fifofile, "")
         
     def testNamedattrdir(self):
         """SETATTR(FATTR4_MODE) on named attribute directory
 
-        Covered equivalence classes: 17, 20, 30, 40
+        Covered valid equivalence classes: 17, 20, 30, 40
         """
         # FIXME: Implement.
         self.info_message("(TEST NOT IMPLEMENTED)")
@@ -3112,7 +3112,7 @@ class SetattrSuite(NFSSuite):
     def testNamedattrdir(self):
         """SETATTR(FATTR4_MODE) on named attribute 
 
-        Covered equivalence classes: 18, 20, 30, 40
+        Covered valid equivalence classes: 18, 20, 30, 40
         """
         # FIXME: Implement.
         self.info_message("(TEST NOT IMPLEMENTED)")
@@ -3120,7 +3120,7 @@ class SetattrSuite(NFSSuite):
     def testChangeSize(self):
         """SETATTR(FATTR4_MODE) with changes to file size and valid stateid
 
-        Covered equivalence classes: 10, 22, 31, 40
+        Covered valid equivalence classes: 10, 22, 31, 40
         """
         # FIXME: Implement.
         self.info_message("(TEST NOT IMPLEMENTED)")
@@ -3131,7 +3131,7 @@ class SetattrSuite(NFSSuite):
     def testNoFh(self):
         """SETATTR without (cfh) should return NFS4ERR_NOFILEHANDLE
 
-        Covered equivalence classes: 19
+        Covered invalid equivalence classes: 19
         """
         stateid = stateid4(self.ncl, 0, "")
         operations = [self._setattr_op(stateid)]
@@ -3142,7 +3142,7 @@ class SetattrSuite(NFSSuite):
     def testInvalidStateid(self):
         """SETATTR with invalid stateid should return NFS4ERR_BADHANDLE
 
-        Covered equivalence classes: 23
+        Covered invalid equivalence classes: 23
         """
         # FIXME: Implement.
         self.info_message("(TEST NOT IMPLEMENTED)")
@@ -3153,7 +3153,7 @@ class SetattrSuite(NFSSuite):
     def testNonWriteable(self):
         """SETATTR(FATTR4_LINK_SUPPORT) should return NFS4ERR_INVAL
 
-        Covered equivalence classes: 32
+        Covered invalid equivalence classes: 32
 
         Comments: FATTR4_LINK_SUPPORT is a read-only attribute and cannot be
         changed via SETATTR. 
@@ -3176,7 +3176,7 @@ class SetattrSuite(NFSSuite):
     def testInvalidAttr(self):
         """SETATTR with invalid attribute data should return NFS4ERR_BADXDR
 
-        Covered equivalence classes: 41
+        Covered invalid equivalence classes: 41
 
         Comments: This testcase try to set FATTR4_MODE but does not send any
         mode data. The server should return NFS4ERR_BADXDR. 
@@ -3232,7 +3232,7 @@ class SetclientidSuite(NFSSuite):
     def testValid(self):
         """Simple SETCLIENTID
 
-        Covered equivalence classes: 10, 20, 30, 40
+        Covered valid equivalence classes: 10, 20, 30, 40
         """
         # client
         verifier = self.ncl.gen_random_64()
@@ -3513,21 +3513,21 @@ class WriteSuite(NFSSuite):
     def testSimpleWrite(self):
         """WRITE with stateid=zeros, no data and UNSTABLE4
 
-        Covered equivalence classes: 10, 20, 30, 40, 50
+        Covered valid equivalence classes: 10, 20, 30, 40, 50
         """
         self.info_message("(TEST NOT IMPLEMENTED)")
 
     def testStateidOne(self):
         """WRITE with stateid=ones and DATA_SYNC4
 
-        Covered equivalence classes: 10, 21, 31, 41, 51
+        Covered valid equivalence classes: 10, 21, 31, 41, 51
         """
         self.info_message("(TEST NOT IMPLEMENTED)")
 
     def testWithOpen(self):
         """WRITE with open and FILE_SYNC4
 
-        Covered equivalence classes: 10, 22, 30, 42, 51
+        Covered valid equivalence classes: 10, 22, 30, 42, 51
         """
         self.info_message("(TEST NOT IMPLEMENTED)")
     #
