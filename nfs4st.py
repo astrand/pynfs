@@ -2565,13 +2565,13 @@ class RestorefhSuite(NFSSuite):
 
         # Lookup a file, get and save FH. 
         operations = [self.putrootfhop]
-        operations.append(self.ncl.lookup_op(self.regfile))
+        operations.extend(self.ncl.lookup_path(self.regfile))
         operations.append(self.ncl.getfh_op())
         operations.append(self.ncl.savefh_op())
 
         # Lookup another file.
         operations.append(self.putrootfhop)
-        operations.append(self.ncl.lookup_op(self.hello_c))
+        operations.extend(self.ncl.lookup_path(self.hello_c))
 
         # Restore saved fh and get fh. 
         operations.append(self.ncl.restorefh_op())
@@ -2580,8 +2580,12 @@ class RestorefhSuite(NFSSuite):
         res = self.do_compound(operations)
         self.assert_OK(res)
 
-        fh1 = res.resarray[2].arm.arm.object
-        fh2 = res.resarray[7].arm.arm.object 
+        # putrootfh + #lookups
+        getfh1index = 1 + len(self.regfile) 
+        fh1 = res.resarray[getfh1index].arm.arm.object
+        # getfh1index + savefh + putrootfh + #lookups + restorefh + getfh
+        getfh2index = getfh1index + 2 + len(self.hello_c) + 2
+        fh2 = res.resarray[getfh2index].arm.arm.object 
         self.failIf(fh1 != fh2, "restored FH does not match saved FH")
 
     #
