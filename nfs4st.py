@@ -1358,7 +1358,6 @@ class GetattrSuite(NFSSuite):
         number 1000.  Servers should not fail on unknown attributes.
         """
         lookupops = self.ncl.lookup_path(self.regfile)
-        lookupops = self.ncl.lookup_path(self.regfile)
         operations = [self.putrootfhop] + lookupops
         operations.append(self.ncl.getattr([1000]))
 
@@ -2292,13 +2291,32 @@ class OpenSuite(NFSSuite):
     #
     # Testcases covering valid equivalence classes.
     #
-
-    def testValidNocreate(self):
+    def testValidNoCreate(self):
         """OPEN with NOCREATE, CLAIM_NULL, valid filename
 
         Covered valid equivalence classes: 10, 20, 30, 40, 50, 60, 100, 110
         """
-        self.info_message("(TEST NOT IMPLEMENTED)")
+        self.init_connection()
+        
+        # Look up directory where regfile is located
+        operations = [self.putrootfhop]
+        operations.extend(self.ncl.lookup_path(self.regfile[:-1]))
+
+        active_owner = self.ncl.get_open_owner(self.ncl.default_owner)
+        openhow = openflag4(self.ncl, OPEN4_NOCREATE)
+        claim = open_claim4(self.ncl, CLAIM_NULL, self.regfile[-1])
+        
+        openop = self.ncl.open_op(seqid=active_owner.get_seqid(),
+                                  share_access=OPEN4_SHARE_ACCESS_BOTH,
+                                  share_deny=OPEN4_SHARE_DENY_NONE,
+                                  owner=active_owner.stateowner,
+                                  openhow=openhow,
+                                  claim=claim)
+        
+        operations.append(openop)
+        
+        res = self.do_compound(operations)
+        self.assert_OK(res)
 
     def testValidUnchecked(self):
         """OPEN with CREATE, UNCHECKED, CLAIM_NULL, valid filename
