@@ -243,9 +243,9 @@ class PartialNFS4Client:
         args = LOCK4args(self, locktype, reclaim, offset, length, locker)
         return nfs_argop4(self, argop=OP_LOCK, oplock=args)
 
-    def lockt(self):
-        # FIXME
-        raise NotImplementedError()
+    def lockt_op(self, locktype, offset, length, owner):
+        args = LOCKT4args(self, locktype, offset, length, owner)
+        return nfs_argop4(self, argop=OP_LOCKT, oplockt=args)
 
     def locku(self):
         # FIXME
