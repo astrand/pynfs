@@ -20,7 +20,8 @@
 # TODO: Exceptions.
 # Remove self.rootfh?
 # Implement buffering in NFS4OpenFile.
-# Translation of error- and operation codes to enums. 
+# Translation of error- and operation codes to enums.
+# FIXME: Constitent use of "op", "operation" and "somethinglongoperation". 
 
 NFS_PROGRAM = 100003
 NFS_VERSION = 4
@@ -105,11 +106,9 @@ class PartialNFS4Client:
         # FIXME
         raise NotImplementedError()
 
-    def close(self):
-        # FIXME
-##         args = CLOSE4args(self, seqid=, stateid)
-##         return nfs_argop4(self, argop=OP_CLOSE, opputfh=args)
-        raise NotImplementedError()
+    def close(self, seqid, stateid):
+        args = CLOSE4args(self, seqid=seqid, stateid=stateid)
+        return nfs_argop4(self, argop=OP_CLOSE, opclose=args)
 
     def commit(self):
         # FIXME
@@ -332,9 +331,8 @@ class PartialNFS4Client:
         offset = 0
         data = ""
 
-        # FIXME: Change count. 
         while 1:
-            op = self.read(count=2, offset=offset)
+            op = self.read(count=BUFSIZE, offset=offset)
             res = self.compound([putfhoperation, op])
             check_result(res)
             data += res.resarray[1].arm.arm.data
@@ -342,9 +340,19 @@ class PartialNFS4Client:
             if res.resarray[1].arm.arm.eof:
                 break
 
-            offset += 2
+            offset += BUFSIZE
 
         return data
+
+    def do_close(self, fh, stateid):
+        seqid = self.get_seqid()
+        putfhoperation = self.putfh(fh)
+        closeop = self.close(seqid, stateid)
+        res = self.compound([putfhoperation, closeop])
+        check_result(res)
+
+        return res.resarray[1].arm.arm.stateid
+        
 
 def check_result(compoundres):
     if not compoundres.status:
@@ -402,6 +410,8 @@ class NFS4OpenFile:
         self.pos = 0
         # NFS4 file handle. 
         self.fh = None
+        # NFS4 stateid
+        self.stateid = None
 
     def __setattr__(self, name, val):
         if name in ["closed", "mode", "name"]:
@@ -434,6 +444,7 @@ class NFS4OpenFile:
         self.__set_priv("closed", 0)
         self.__set_priv("mode", mode)
         self.__set_priv("name", os.path.join(os.sep, *pathname))
+        self.stateid = res.resarray[1].arm.arm.stateid
         self.fh = res.resarray[2].arm.arm.object
         
 
