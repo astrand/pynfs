@@ -2050,8 +2050,156 @@ class ReadTestCase(NFSTestCase):
         
 
 class ReaddirTestCase(NFSTestCase):
-    # FIXME
-    pass
+    """Test READDIR operation
+
+    FIXME: More testing of dircount/maxcount combinations. 
+
+    Equivalence partitioning:
+        
+    Input Condition: current filehandle
+        Valid equivalence classes:
+            dir(10)
+        Invalid equivalence classes:
+            not dir(11)
+            no filehandle(12)
+    Input Condition: cookie
+        Valid equivalence classes:
+            zero(20)
+            nonzero valid cookie(21)
+        Invalid equivalence classes:
+            invalid cookie(22)
+    Input Condition: cookieverf
+        Valid equivalence classes:
+            zero(30)
+            nonzero valid verifier(31)
+        Invalid equivalence classes:
+            invalid verifier(32)
+    Input Condition: dircount
+        Valid equivalence classes:
+            zero(40)
+            nonzero(41)
+        Invalid equivalence classes:
+            -
+    Input Condition: maxcount
+        Valid equivalence classes:
+            nonzero(50)
+        Invalid equivalence classes:
+            zero(51)
+    Input Condition: attrbits
+        Valid equivalence classes:
+            all requests without FATTR4_*_SET (60)
+        Invalid equivalence classes:
+            requests with FATTR4_*_SET (61)
+            
+    """
+
+    def setUp(self):
+        self.connect()
+        self.putrootfhop = self.ncl.putrootfh_op()
+
+    #
+    # Testcases covering valid equivalence classes.
+    #
+    def testFirst(self):
+        """READDIR with cookie=0, maxcount=4096
+
+        Covered invalid equivalence classes: 10, 20, 30, 40, 50, 60
+        """        
+        readdirop = self.ncl.readdir_op(cookie=0, cookieverf="\x00",
+                                        dircount=0, maxcount=4096,
+                                        attr_request=[])
+        res = self.do_compound([self.putrootfhop, readdirop])
+        self.assert_OK(res)
+        
+        
+    def testSubsequent(self):
+        """READDIR with cookie from previus call
+
+        Covered invalid equivalence classes: 10, 21, 31, 41, 50, 60
+        """
+        # FIXME: Implement rest of testcase, as soon as
+        # CITI supports dircount/maxcount. 
+        self.info_message("(TEST NOT IMPLEMENTED)")
+
+        # Call READDIR with small maxcount, to make sure not all
+        # entries are returned. Save cookie. 
+
+        # Call READDIR a second time with saved cookie.
+
+    #
+    # Testcases covering invalid equivalence classes.
+    #
+    def testFhNotDir(self):
+        """READDIR with non-dir (cfh) should give NFS4ERR_NOTDIR
+
+        Covered invalid equivalence classes: 11
+        """
+        lookupop = self.ncl.lookup_op(["doc", "README"])
+        readdirop = self.ncl.readdir_op(cookie=0, cookieverf="\x00",
+                                        dircount=0, maxcount=4096,
+                                        attr_request=[])
+        res = self.do_compound([self.putrootfhop, lookupop, readdirop])
+        self.assert_status(res, [NFS4ERR_NOTDIR])
+
+    def testNoFh(self):
+        """READDIR without (cfh) should return NFS4ERR_NOFILEHANDLE
+
+        Covered invalid equivalence classes: 12
+        """
+        readdirop = self.ncl.readdir_op(cookie=0, cookieverf="\x00",
+                                        dircount=0, maxcount=4096,
+                                        attr_request=[])
+        res = self.do_compound([readdirop])
+        self.assert_status(res, [NFS4ERR_NOFILEHANDLE])
+
+    def testInvalidCookie(self):
+        """READDIR with invalid cookie should return NFS4ERR_BAD_COOKIE
+
+        Covered invalid equivalence classes: 22
+        """
+        readdirop = self.ncl.readdir_op(cookie=1234567890, cookieverf="\x00",
+                                        dircount=0, maxcount=4096,
+                                        attr_request=[])
+        res = self.do_compound([self.putrootfhop, readdirop])
+        self.assert_status(res, [NFS4ERR_BAD_COOKIE])
+
+    def testInvalidCookieverf(self):
+        """READDIR with invalid cookieverf should return NFS4ERR_BAD_COOKIE
+
+        Covered invalid equivalence classes: 32
+        """
+        # FIXME: Implement rest of testcase, as soon as
+        # CITI supports dircount/maxcount. 
+        self.info_message("(TEST NOT IMPLEMENTED)")
+
+    def testMaxcountZero(self):
+        """READDIR with maxcount=0 should return NFS4ERR_READDIR_NOSPC
+        
+        Covered invalid equivalence classes: 51
+        """
+        readdirop = self.ncl.readdir_op(cookie=0, cookieverf="\x00",
+                                        dircount=0, maxcount=0,
+                                        attr_request=[])
+        res = self.do_compound([self.putrootfhop, readdirop])
+        self.assert_status(res, [NFS4ERR_READDIR_NOSPC])
+
+    def testWriteOnlyAttributes(self):
+        """READDIR with attrs=FATTR4_*_SET should return NFS4ERR_INVAL
+
+        Covered invalid equivalence classes: 61
+
+        Comments: See GetattrTestCase.testWriteOnlyAttributes. 
+        """
+        attrmask = nfs4lib.list2attrmask([FATTR4_TIME_ACCESS_SET])
+        readdirop = self.ncl.readdir_op(cookie=0, cookieverf="\x00",
+                                        dircount=0, maxcount=4096,
+                                        attr_request=attrmask)
+        res = self.do_compound([self.putrootfhop, readdirop])
+        self.assert_OK(res)
+        self.assert_status(res, [NFS4ERR_INVAL])
+        
+
+    # Misc. test: testa fattr4_rdattr_error kontra globalt fel. 
 
 class ReadlinkTestCase(NFSTestCase):
     # FIXME
