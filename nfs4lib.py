@@ -68,7 +68,8 @@ class BadCompoundRes(NFSException):
         self.errcode = errcode
 
     def __str__(self):
-        return "operation %d gave result %d" % (self.operation, self.errcode)
+        return "operation %s returned result %s" % (nfs_opnum4_id[self.operation],
+                                                    nfsstat4_id[self.errcode])
 
 class DummyNcl:
     def __init__(self, packer=None, unpacker=None):
