@@ -4111,7 +4111,7 @@ class SetclientidSuite(NFSSuite):
         cb_location = clientaddr4(self.ncl, r_netid, r_addr)
         callback = cb_client4(self.ncl, cb_program, cb_location)
         
-        setclientidop = self.ncl.setclientid_op(client, callback)
+        setclientidop = self.ncl.setclientid_op(client, callback, 0)
         res = self.do_compound([setclientidop])
         self.assert_OK(res)
 

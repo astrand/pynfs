@@ -434,11 +434,12 @@ class PartialNFS4Client:
         args = SETATTR4args(self, stateid, obj_attributes)
         return nfs_argop4(self, argop=OP_SETATTR, opsetattr=args)
 
-    def setclientid_op(self, client, callback):
-	args = SETCLIENTID4args(self, client, callback)
+    def setclientid_op(self, client, callback, callback_ident):
+	args = SETCLIENTID4args(self, client, callback, callback_ident)
         return nfs_argop4(self, argop=OP_SETCLIENTID, opsetclientid=args)
 
-    def setclientid(self, verifier=None, id=None, cb_program=None, r_netid=None, r_addr=None):
+    def setclientid(self, verifier=None, id=None, cb_program=None, r_netid=None, r_addr=None,
+                    callback_ident=None):
         if not verifier:
             self.verifier = self.gen_random_64()
         else:
@@ -458,12 +459,15 @@ class PartialNFS4Client:
         if not r_addr:
             # FIXME
             r_addr = socket.gethostname()
+
+        if not callback_ident:
+            callback_ident = 0
         
         client_id = nfs_client_id4(self, verifier=self.verifier, id=id)
         cb_location = clientaddr4(self, r_netid=r_netid, r_addr=r_addr)
         callback = cb_client4(self, cb_program=cb_program, cb_location=cb_location)
 
-	return self.setclientid_op(client_id, callback)
+	return self.setclientid_op(client_id, callback, callback_ident)
 
     def setclientid_confirm_op(self, clientid):
 	args = SETCLIENTID_CONFIRM4args(self, clientid)
