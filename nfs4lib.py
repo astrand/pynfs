@@ -438,7 +438,38 @@ class PartialNFS4Client:
         res =  self.compound([setclientid_confirmop])
 
         check_result(res)
-        
+
+    # def do_access
+
+    def do_close(self, fh, stateid):
+        seqid = self.get_seqid()
+        putfhop = self.putfh_op(fh)
+        closeop = self.close_op(seqid, stateid)
+        res = self.compound([putfhop, closeop])
+        check_result(res)
+
+        return res.resarray[1].arm.open_stateid
+
+    # def do_commit
+    # def do_create
+    # def do_delegpurge
+    # def do_delegreturn
+    # def do_getattr
+    # def do_getfh
+    # def do_link
+    # def do_lock
+    # def do_lockt
+    # def do_locku
+    # def do_lookup
+    # def do_lookupp
+    # def do_nverify
+    # def do_open
+    # def do_openattr
+    # def do_open_confirm
+    # def do_open_downgrade
+    # def do_putfh 
+    # def do_putpubfh
+    # def do_putrootfh
 
     def do_read(self, stateid, fh, offset=0, size=None):
         putfhop = self.putfh_op(fh)
@@ -549,22 +580,7 @@ class PartialNFS4Client:
             return data[:size]
         else:
             return data
-        
 
-    def do_write(self, fh, data, stateid, offset=0, stable=FILE_SYNC4):
-        putfhop = self.putfh_op(fh)
-	writeop = self.write(data, stateid, offset=offset, stable=stable)
-	res = self.compound([putfhop, writeop])
-	check_result(res)
-
-    def do_close(self, fh, stateid):
-        seqid = self.get_seqid()
-        putfhop = self.putfh_op(fh)
-        closeop = self.close_op(seqid, stateid)
-        res = self.compound([putfhop, closeop])
-        check_result(res)
-
-        return res.resarray[1].arm.open_stateid
 
     def do_readdir(self, fh, attr_request=[]):
 	# Since we may not get whole directory listing in one readdir request,
@@ -599,6 +615,34 @@ class PartialNFS4Client:
 	    cookieverf = res.resarray[1].arm.arm.cookieverf
 
 	return entries
+
+    # def do_readlink
+    
+    def do_remove(self, pathcomps):
+        # Lookup all but last component
+        lookupops = self.lookup_path(pathcomps[:-1])
+        operations = [self.putrootfh_op()] + lookupops
+        operations.append(self.remove_op(pathcomps[-1]))
+        res = self.compound(operations)
+        check_result(res)
+    
+    # def do_rename
+    # def do_renew
+    # def do_restorefh
+    # def do_savefh
+    # def do_secinfo
+    # def do_setattr
+    # def do_setclientid
+    # def do_setclientid_confirm
+    # def do_verify
+
+    def do_write(self, fh, data, stateid, offset=0, stable=FILE_SYNC4):
+        putfhop = self.putfh_op(fh)
+	writeop = self.write(data, stateid, offset=offset, stable=stable)
+	res = self.compound([putfhop, writeop])
+	check_result(res)
+
+
 	
         
 #
