@@ -110,10 +110,16 @@ class NFSSuite(unittest.TestCase):
 
         if res.resarray:
             lastop = res.resarray[-1]
-            e = nfs4lib.BadCompoundRes(lastop.resop, lastop.arm.status)
-            self.fail(e)
+            # res.status should be equal to lastop.arm.status
+            if res.status != lastop.arm.status:
+                e = nfs4lib.InvalidCompoundRes()
+                self.fail(e)
+            else:
+                e = nfs4lib.BadCompoundRes(lastop.resop, res.status)
+                self.fail(e)
         else:
-            self.fail(nfs4lib.EmptyCompoundRes())
+            e = nfs4lib.EmptyBadCompoundRes(res.status)
+            self.fail(e)
 
     def info_message(self, msg):
         print >> sys.stderr, "\n  " + msg + ", ",
@@ -274,6 +280,39 @@ class CompoundSuite(NFSSuite):
         res = self.do_compound([op])
         self.assert_status(res, [NFS4ERR_NOTSUPP])
 
+    def testUndefinedOp(self):
+        """Test COMPOUND with (undefined) operation 100
+
+        Covered invalid equivalence classes: 5
+        """
+        # nfs4types.nfs_argop4 does not allow packing invalid operations. 
+        class custom_nfs_argop4:
+            def __init__(self, ncl, argop):
+                self.ncl = ncl
+                self.packer = ncl.packer
+                self.unpacker = ncl.unpacker
+                self.argop = argop
+            
+            def pack(self, dummy=None):
+                self.packer.pack_nfs_opnum4(self.argop)
+
+        op = custom_nfs_argop4(self.ncl, argop=100)
+
+        try:
+            res = self.ncl.compound([op])
+        except BadDiscriminant, e:
+            sys.stdout.flush()
+            # FIXME: We should verify that the return code is NFS4ERR_NOTSUPP,
+            # but this is currently not possible since the compound call failed. 
+            self.failIf(e.value < OP_WRITE + 1,
+                        "Return value for operation 100 less than OP_WRITE + 1")
+        except rpc.RPCException, e:
+            self.fail(e)
+        else:
+            # If we got here, no RPCException was raised. This must mean that
+            # nfs_argop.unpack succeeded. Strange. 
+            self.fail("Return value for operation 100 was >= OP_ACCESS and <= OP_WRITE")
+            
 
 class AccessSuite(NFSSuite):
     """Test operation 3: ACCESS
