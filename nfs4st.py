@@ -2969,7 +2969,9 @@ class SecinfoSuite(NFSSuite):
         Extra test
         """
         # FIXME: Since the Linux server always returns NFS4ERR_NOTSUPP right
-        # know, this is untested code. 
+        # know, this is untested code.
+        # FIXME: Also verify that all Kerberos and LIPKEY security triples
+        # listed in section 3.2.1.1 and 3.2.1.2 are supported. 
         lookupops = self.ncl.lookup_path(self.dirfile)
         operations = [self.putrootfhop] + lookupops
         operations.append(self.ncl.secinfo_op("README"))
