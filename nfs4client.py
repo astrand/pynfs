@@ -305,8 +305,17 @@ if __name__ == "__main__":
     if len(sys.argv) < 2:
         usage()
 
+
+    # Reorder arguments, so we can add options at the end 
+    ordered_args = []
+    for arg in sys.argv[1:]:
+        if arg.startswith("-"):
+            ordered_args.insert(0, arg)
+        else:
+            ordered_args.append(arg)
+
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hutdp", ["help", "udp", "tcp", "debuglevel", "pythonmode"])
+        opts, args = getopt.getopt(ordered_args, "hutdp", ["help", "udp", "tcp", "debuglevel", "pythonmode"])
     except getopt.GetoptError:
         print "invalid option"
         usage()
