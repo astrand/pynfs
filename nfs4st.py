@@ -1346,10 +1346,13 @@ class LinkSuite(NFSSuite):
             valid name(12)
         Invalid equivalence classes:
             zerolength(13)
+            non-utf8(14)
 
     Comments: It's not possible to cover eq. class 11, since saving a filehandle
     gives a current filehandle as well. 
     """
+
+    # FIXME: Cover class 14. 
 
     def setUp(self):
         NFSSuite.setUp(self)
@@ -1821,8 +1824,11 @@ class NverifySuite(NFSSuite):
             changed attribute(11)
             same attribute(12)
         Invalid equivalence classes:
-            -
+            attr with invalid utf8(13)
     """
+
+    # FIXME: Cover class 13. Use "owner" attribute with invalid UTF8. 
+    
     #
     # Testcases covering valid equivalence classes.
     #
@@ -1997,7 +2003,7 @@ class NverifySuite(NFSSuite):
 ##         Valid equivalence classes:
 ##             valid filename(110)
 ##         Invalid equivalence classes:
-##             invalid filename(111)
+##             non-utf8 filename(111)
 ##     Input Condition: claim.delegate_type
 ##         Valid equivalence classes:
 ##             valid claim.delegate_type(120)
@@ -3350,7 +3356,9 @@ class SetattrSuite(NFSSuite):
             valid attributes(40)
         Invalid equivalence classes:
             invalid attributes(41)
+            attr with invalid utf8(42)
     """
+
     def setUp(self):
         NFSSuite.setUp(self)
         self.new_mode = 0775
@@ -3545,6 +3553,8 @@ class SetattrSuite(NFSSuite):
         res = self.do_compound(operations)
 
         self.assert_status(res, [NFS4ERR_BADXDR])
+
+    # FIXME: Cover class 42. Try setting mime-type with invalid UTF8. 
 
     #
     # Extra tests. 
@@ -3767,8 +3777,12 @@ class VerifySuite(NFSSuite):
             same attributes(11)
             not same attributes(12)
         Invalid equivalence classes:
-            -
+            attr with invalid utf8(13)
+
     """
+
+    # FIXME: Cover class 13. Use "owner" attribute with invalid UTF8.
+    
     #
     # Testcases covering valid equivalence classes.
     #
