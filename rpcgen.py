@@ -22,7 +22,6 @@
 # Note <something>_list means zero or more of <something>.
 #
 # TODO:
-# Replace MemFile with StringIO. 
 # Code generation for programs and procedures. 
 # __repr__ with discriminants should print symbolic values.
 # Add rpcgen info and date to output files.
@@ -48,6 +47,7 @@
 
 import sys
 import keyword
+import StringIO
 
 #
 # Section: Lexical analysis
@@ -223,17 +223,6 @@ class IndentPrinter:
             self.writer.write(arg)
 
 
-class MemFile:
-    def __init__(self):
-        self.data = ""
-    
-    def write(self, data):
-        self.data += str(data)
-
-    def get_data(self):
-        return self.data
-        
-        
 class RPCType:
     # Note: The name is not part of this object.
     def __init__(self, base_type=None,
@@ -964,9 +953,9 @@ if __name__ == "__main__":
     # Write beginning of types file. 
     types_out.write(typesheader)
 
-    packer_out = MemFile()
+    packer_out = StringIO.StringIO()
     packer_out.write("class NFS4Packer(rpc.Packer):\n")
-    unpacker_out = MemFile()
+    unpacker_out = StringIO.StringIO()
     unpacker_out.write("class NFS4Unpacker(rpc.Unpacker):\n")
 
     # Write beginning of packer file.
@@ -993,8 +982,8 @@ if __name__ == "__main__":
     yacc.parse(data, debug=0)
 
     # Write out packer data. 
-    packer_file_out.write(packer_out.get_data())
-    packer_file_out.write(unpacker_out.get_data())
+    packer_file_out.write(packer_out.getvalue())
+    packer_file_out.write(unpacker_out.getvalue())
 
     const_out.close()
     types_out.close()
