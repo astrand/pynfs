@@ -53,6 +53,11 @@ class BadCompondRes(NFSException):
     def __str__(self):
         return "operation %d gave result %d" % (self.operation, self.errcode)
 
+class DummyNcl:
+    def __init__(self, packer=None, unpacker=None):
+	self.packer = packer
+	self.unpacker = unpacker
+
 class PartialNFS4Client:
     def __init__(self):
         # Client state variables
@@ -66,8 +71,9 @@ class PartialNFS4Client:
 
     
     def addpackers(self):
-        self.packer = nfs4packer.NFS4Packer()
-        self.unpacker = nfs4packer.NFS4Unpacker('')
+ 	# Pass a reference to ourself to NFS4Packer and NFS4Unpacker. 
+        self.packer = nfs4packer.NFS4Packer(self)
+        self.unpacker = nfs4packer.NFS4Unpacker(self, '')
 
     #
     # RPC procedures
@@ -435,6 +441,71 @@ def opaque2long(data):
 	result = result | (val << shiftbits)
 
     return result
+
+def get_attrbitpos():
+    # Get dictionary with attribute bit positions
+    import nfs4constants
+    attrbitpos = {}
+    for name in dir(nfs4constants):
+	if name.startswith("FATTR4_"):
+	    attrname = name[7:].lower()
+	    attrbitpos[attrname] = eval("nfs4constants." + name)
+	    
+    return attrbitpos
+
+def get_attrunpackers(unpacker):
+    # Get dictionaries with attribute unpackers
+    import nfs4packer
+    attrunpackers = {}
+    for name in dir(nfs4packer.NFS4Unpacker):
+	if name.startswith("unpack_fattr4"):
+	    attrname = name[14:]
+	    attrunpackers[attrname] = eval("unpacker.unpack_fattr4_" + attrname)
+
+    return attrunpackers
+
+def fattr2dict(obj):
+    # Convert a fattr4 object to a dictionary like
+    # {"size": 4711}
+
+    attrbitpos = get_attrbitpos()
+
+    # Construct a dictionary with the attributes to unpack.
+    # Example: {53: 'time_modify', 4: 'size', 8: 'fsid'}
+    unpack_these = {}
+    for intpos in range(len(obj.attrmask)):
+	integer = obj.attrmask[intpos]
+	
+	for attr in attrbitpos.keys():
+	    bitnum = attrbitpos[attr]
+
+	    if bitnum in range(intpos * 32, (intpos+1) * 32):
+		bitpos = bitnum % 32
+		bitvalue = 1L << bitpos
+
+		if integer & bitvalue:
+		    unpack_these[bitnum] = attr
+
+    # Construct a dummy Client. 
+    ncl = DummyNcl()
+    # Construct a Unpackar with our object data. 
+    unpacker = nfs4packer.NFS4Unpacker(ncl, obj.attr_vals)
+    ncl.unpacker = unpacker
+
+    
+    result = []
+
+    attrunpackers = get_attrunpackers(unpacker)
+    bitnums_to_unpack = unpack_these.keys()
+    # The data on the wire is ordered according to attribute bit number. 
+    bitnums_to_unpack.sort()
+    for bitnum in bitnums_to_unpack:
+	attrname = unpack_these[bitnum]
+	unpack_method = attrunpackers[attrname]
+	result.append(unpack_method())
+
+    return result
+
 
 class UDPNFS4Client(PartialNFS4Client, rpc.RawUDPClient):
     def __init__(self, host, port=NFS_PORT):
