@@ -79,9 +79,15 @@ class EmptyBadCompoundRes(NFSException):
 
 class InvalidCompoundRes(NFSException):
     """The COMPOUND procedure returned is invalid"""
-    def __str__(self):
-        return "invalid COMPOUND result"
+    def __init__(self, msg=""):
+        self.msg = msg
     
+    def __str__(self):
+        if self.msg:
+            return "invalid COMPOUND result: %s" % self.msg
+        else:
+            return "invalid COMPOUND result"
+
     
 class EmptyCompoundRes(NFSException):
     def __str__(self):
@@ -147,9 +153,24 @@ class PartialNFS4Client:
 
         compoundargs = COMPOUND4args(self, argarray=argarray, tag=tag, minorversion=minorversion)
         res = COMPOUND4res(self)
-        
+
+        # Save sent operations for later checks
+        sent_operations = [op.argop for op in argarray]
         self.make_call(NFSPROC4_COMPOUND, None, compoundargs.pack, res.unpack)
+        recv_operations = [op.resop for op in res.resarray]
+
+        # The same numbers & the same operations should be returned,
+        # In case of an error, the reply is possible shorter than
+        # the request.
+        # FIXME: Should verify that an error indeed has occured if the response
+        # is shorter
+        if sent_operations[:len(recv_operations)] != recv_operations:
+            raise InvalidCompoundRes("sent=%s, got=%s" \
+                                     % (str(sent_operations),
+                                        str(recv_operations)))
+        # Check response sanity
         verify_compound_result(res)
+
         
         return res
 
@@ -708,7 +729,9 @@ class PartialNFS4Client:
 # Misc. helper functions. 
 #
 def check_result(compoundres):
-    """Verify that a COMPOUND call was successful"""
+    """Verify that a COMPOUND call was successful,
+    raise BadCompoundRes otherwise
+    """
     if not compoundres.status:
         return
 
@@ -719,6 +742,8 @@ def check_result(compoundres):
 def verify_compound_result(res):
     """Check that COMPOUND result is sane, in every way
 
+    Raises InvalidCompoundRes on error
+
     There is usually no need to use this function explicitly, since compound()
     method always does that automatically. 
     """
@@ -727,19 +752,20 @@ def verify_compound_result(res):
         # Note: A zero-length res.resarray is possible
         for resop in res.resarray:
             if resop.arm.status != NFS4_OK:
-                raise InvalidCompoundRes()
+                raise InvalidCompoundRes("res.status was OK, but some operations"
+                                         "returned errors")
     else:
         # Note: A zero-length res.resarray is possible
         if res.resarray:
             # All operations up to the last operation returned should be NFS4_OK
             for resop in res.resarray[:-1]:
                 if resop.arm.status != NFS4_OK:
-                    raise InvalidCompoundRes()
+                    raise InvalidCompoundRes("non-last operations returned error")
 
             # The last operation result must be equal to res.status
             lastop = res.resarray[-1]
             if lastop.arm.status != res.status:
-                raise InvalidCompoundRes()
+                raise InvalidCompoundRes("last op not equal to res.status")
 
 def unixpath2comps(str, pathcomps=None):
     if pathcomps == None:
