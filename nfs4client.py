@@ -372,7 +372,8 @@ if __name__ == "__main__":
         usage()
     else:
         # Parse host/port/directory part. 
-        match = re.search(r'(?P<host>\w*)(?::(?P<port>\d*))?(?P<dir>[\w/]*)', args[0])
+        match = re.search(r'^(?P<host>([\w\.]*|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}))'
+                          r'(?::(?P<port>\d*))?(?P<dir>/[\w/]*)?$', args[0])
         if not match:
             usage()
         host = match.group("host")
