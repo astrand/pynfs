@@ -112,7 +112,7 @@ class NFSTestSuite(unittest.TestCase):
         return self.failIfRaises(rpc.RPCException, self.ncl.compound, *args, **kwargs)
 
     def lookup_all_objects(self):
-        """Generate a list of lookup operations with all types of objects"""
+        """Generate a list of lists with lookup operations with all types of objects"""
         result = []
         # FIXME: Add NF4ATTRDIR and NF4NAMEDATTR types. 
         for pathcomps in [self.normfile,
@@ -122,20 +122,23 @@ class NFSTestSuite(unittest.TestCase):
                           self.linkfile,
                           self.socketfile,
                           self.fifofile]:
-            result.append(self.ncl.lookup_op(pathcomps))
+            result.append(self.ncl.lookup_path(pathcomps))
 
         return result
 
     def lookup_all_objects_and_sizes(self):
-        """Generate a list of lookup operations and object sizes"""
+        """Generate a list of lists of lookup operations and object sizes"""
         obj_sizes = []
-        for lookupop in self.lookup_all_objects():
+        for lookupops in self.lookup_all_objects():
             getattrop = self.ncl.getattr([FATTR4_SIZE])
-            res = self.do_compound([self.putrootfhop, lookupop, getattrop])
+            operations = [self.putrootfhop]
+            operations.extend(lookupops)
+            operations.append(getattrop)
+            res = self.do_compound(operations)
             self.assert_OK(res)
             obj = res.resarray[2].arm.arm.obj_attributes
             d =  nfs4lib.fattr2dict(obj)
-            obj_sizes.append((lookupop, d["size"]))
+            obj_sizes.append((lookupops, d["size"]))
 
         return obj_sizes
 
@@ -305,9 +308,11 @@ class AccessTestSuite(NFSTestSuite):
         Covered valid equivalence classes: 1, 2, 3, 4, 5, 6, 7, 9
         
         """
-        for lookupop in self.lookup_all_objects():
-            accessop = self.ncl.access_op(ACCESS4_READ)
-            res = self.do_compound([self.putrootfhop, lookupop, accessop])
+        for lookupops in self.lookup_all_objects():
+            operations = [self.putrootfhop]
+            operations.extend(lookupops)
+            operations.append(self.ncl.access_op(ACCESS4_READ))
+            res = self.do_compound(operations)
             self.assert_OK(res)
         
     def testDir(self):
@@ -340,13 +345,17 @@ class AccessTestSuite(NFSTestSuite):
 
         Comments: See testDir. 
         """
-        lookupop = self.ncl.lookup_op(self.normfile)
+        lookupops = self.ncl.lookup_path(self.normfile)
+        
         for accessop in self.valid_access_ops():
-            res = self.do_compound([self.putrootfhop, lookupop, accessop])
+            operations = [self.putrootfhop]
+            operations.extend(lookupops)
+            operations.append(accessop)
+            res = self.do_compound(operations)
             self.assert_OK(res)
 
-            supported = res.resarray[2].arm.arm.supported
-            access = res.resarray[2].arm.arm.access
+            supported = res.resarray[-1].arm.arm.supported
+            access = res.resarray[-1].arm.arm.access
 
             # Server should not return an access bit if this bit is not in supported. 
             self.failIf(access > supported, "access is %d, but supported is %d" % (access, supported))
