@@ -1078,7 +1078,7 @@ class LinkSuite(NFSSuite):
         NFSSuite.setUp(self)
         self.obj_name = "link1"
 
-        self.lookup_dir_op = self.ncl.lookup_op(self.tmp_dir)
+        self.lookup_dir_ops = self.ncl.lookup_path(self.tmp_dir)
 
     def _remove_object(self):
         # Make sure the object to create does not exist.
@@ -1086,24 +1086,23 @@ class LinkSuite(NFSSuite):
         # are treated like errors (not failures). 
         # This tests at the same time the REMOVE operation. Not much
         # we can do about it.
-        operations = [self.ncl.putrootfh_op()]
-        operations.append(self.lookup_dir_op)
+        operations = [self.ncl.putrootfh_op()] + self.lookup_dir_ops
         operations.append(self.ncl.remove_op(self.obj_name))
 
         res = self.do_compound(operations)
         self.assert_status(res, [NFS4_OK, NFS4ERR_NOENT])
 
-    def _prepare_operation(self, pathcomps):
+    def _prepare_operation(self, file):
         # Put root FH
         operations = [self.putrootfhop]
 
         # Lookup source and save FH
-        operations.append(self.ncl.lookup_op(pathcomps))
+        operations.extend(self.ncl.lookup_path(file))
         operations.append(self.ncl.savefh_op())
 
         # Lookup target directory
         operations.append(self.putrootfhop)
-        operations.append(self.lookup_dir_op)
+        operations.extend(self.lookup_dir_ops)
 
         return operations
     
@@ -1238,12 +1237,12 @@ class LinkSuite(NFSSuite):
         operations = [self.putrootfhop]
 
         # Lookup source and save FH
-        operations.append(self.ncl.lookup_op(self.regfile))
+        operations.extend(self.ncl.lookup_path(self.regfile))
         operations.append(self.ncl.savefh_op())
 
         # Lookup target directory (a file, this time)
         operations.append(self.putrootfhop)
-        operations.append(self.ncl.lookup_op(self.regfile))
+        operations.extend(self.ncl.lookup_path(self.regfile))
 
         # Link operation
         linkop = self.ncl.link_op(self.obj_name)
