@@ -82,8 +82,8 @@ class PartialNFS4Client:
 
     def close(self):
         # FIXME
-        args = CLOSE4args(self, seqid=, stateid)
-        return nfs_argop4(self, argop=OP_CLOSE, opputfh=args)
+##         args = CLOSE4args(self, seqid=, stateid)
+##         return nfs_argop4(self, argop=OP_CLOSE, opputfh=args)
         raise NotImplementedError()
 
     def commit(self):
@@ -298,11 +298,26 @@ class PartialNFS4Client:
             raise "failed with status", res.status
 
         self.rootfh = res.resarray[1].arm.arm.object
+
+
+def str2pathname(str, pathname=[]):
+    pathname = pathname[:]
+    for component in str.split(os.sep):
+        if (component == "") or (component == "."):
+            pass
+        elif component == "..":
+            # Remove last component
+            # FIXME: Sanity checkings. 
+            pathname = pathname[:-1]
+        else:
+            pathname.append(component)
+    return pathname
     
 
 class UDPNFS4Client(PartialNFS4Client, rpc.RawUDPClient):
     def __init__(self, host):
         rpc.RawUDPClient.__init__(self, host, NFS_PROGRAM, NFS_VERSION, NFS_PORT)
+        PartialNFS4Client.__init__(self)
 
     def mkcred(self):
 	if self.cred == None:
@@ -320,8 +335,6 @@ class TCPNFS4Client(PartialNFS4Client, rpc.RawTCPClient):
     def __init__(self, host):
         rpc.RawTCPClient.__init__(self, host, NFS_PROGRAM, NFS_VERSION, NFS_PORT)
         PartialNFS4Client.__init__(self)
-
-
 
         
 
@@ -350,24 +363,29 @@ class NFS4OpenFile:
 
         # FIXME: bufsize from system default. 
     def open(self, filename, mode="r", bufsize=1024):
-        if filename[0] != os.sep:
-            # Only absolute file names now. 
-            raise NotImplementedError()
-        else:
-            # Remove slash.
+        if filename[0] == os.sep:
+            # Absolute path
+            # Remove slash, begin from root. 
             filename = filename[1:]
+            pathname = []
+        else:
+            # Relative path. Begin with cwd.
+            pathname = str2pathname(self.ncl.cwd)
 
-        components = filename.split(os.sep)
+        pathname = str2pathname(filename, pathname)
 
         putrootfhoperation = self.ncl.putrootfh()
-        op = self.ncl.open(file=components)
+        op = self.ncl.open(file=pathname)
         getfhoperation = self.ncl.getfh()
         res =  self.ncl.compound([putrootfhoperation, op, getfhoperation])
         # FIXME: Intelligent error handling: In this app: Print error message.
         # In nfs4lib: Raise exception. 
         if res.status:
             raise " failed with status", res.status
-            
+
+        self.__set_priv("closed", 0)
+        self.__set_priv("mode", mode)
+        self.__set_priv("name", os.path.join(os.sep, *pathname))
         self.fh = res.resarray[2].arm.arm.object
         
 
@@ -480,6 +498,5 @@ if __name__ == "__main__":
 
     fh = res.resarray[1].opgetfh.resok4.object
     print "fh is", repr(fh)
-
 
 
