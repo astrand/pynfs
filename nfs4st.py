@@ -186,6 +186,10 @@ class NFSSuite(unittest.TestCase):
         """Return a (guessed) invalid clientid"""
         return 0x1234567890L
 
+    def get_invalid_utf8string(self):
+        """Return an invalid UTF-8 string"""
+        return "\xc0\xc1"
+
 class CompoundSuite(NFSSuite):
     """Test COMPOUND procedure
 
@@ -1477,14 +1481,17 @@ class LookupSuite(NFSSuite):
         self.assert_status(res, [NFS4ERR_ACCES])
 
     def testNonUTF8(self):
-        """LOOKUP with non-UTF8 components should return NFS4ERR_INVAL
+        """LOOKUP with non-UTF8 name should return NFS4ERR_INVAL
 
         Covered invalid equivalence classes: 22
 
-        Comments: Not yet implemented. 
         """
-        # FIXME: Implement
-        self.info_message("(TEST NOT IMPLEMENTED)")
+        operations = [self.putrootfhop]
+        name = self.get_invalid_utf8string()
+        operations.append(self.ncl.lookup_op(name))
+        res = self.do_compound(operations)
+        self.assert_status(res, [NFS4ERR_INVAL])
+
 
     #
     # Misc. tests.
