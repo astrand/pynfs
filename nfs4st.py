@@ -80,8 +80,6 @@ class NFSTestCase(unittest.TestCase):
             self.ncl = nfs4lib.UDPNFS4Client(host, port)
         else:
             raise RuntimeError, "Invalid protocol"
-
-        self.ncl.init_connection()
     
     def failIfRaises(self, excClass, callableObj, *args, **kwargs):
         """Fail if exception of excClass is raised"""
@@ -130,6 +128,7 @@ class NFSTestCase(unittest.TestCase):
 
     def setUp(self):
         self.connect()
+        self.ncl.init_connection()
         self.putrootfhop = self.ncl.putrootfh_op()
 
     def get_invalid_fh(self):
@@ -2682,8 +2681,66 @@ class SetattrTestCase(NFSTestCase):
     pass
 
 class SetclientidTestCase(NFSTestCase):
-    # FIXME
-    pass
+    """Test SETCLIENTID operation
+
+    FIXME: Test cases that trigger NFS4ERR_CLID_INUSE. 
+
+    Equivalence partitioning:
+
+    Input Condition: client.verifier
+        Valid equivalence classes:
+            all input(10)
+        Invalid equivalence classes:
+            -
+    Input Condition: client.id
+        Valid equivalence classes:
+            all input(20)
+        Invalid equivalence classes:
+            -
+    Input Condition: callback.cb_program
+            all input(30)
+        Invalid equivalence classes:
+            -
+    Input Condition: callback.cb_location
+            all input(40)
+        Invalid equivalence classes:
+            -
+
+    Comments: If client has never connected to the server, every
+    client.verifier and client.id is valid. All callback data is also
+    allowed as input, but failing to provide the correct addres means
+    callbacks will not be used. 
+    """
+    # Override setUp. Just connect, don't do SETCLIENTID etc. 
+    def setUp(self):
+        self.connect()
+    
+    #
+    # Testcases covering valid equivalence classes.
+    #
+    def testValid(self):
+        """Simple SETCLIENTID
+
+        Covered equivalence classes: 10, 20, 30, 40
+        """
+        # client
+        verifier = self.ncl.gen_random_64()
+        id = self.ncl.gen_uniq_id()
+        client = nfs_client_id4(self.ncl, verifier, id)
+
+        # callback
+        cb_program = 0
+        r_netid = "udp"
+        # FIXME
+        # Internet, Port number, IP, RFU
+        r_addr = "0002" + "0000" + "00112233" + "00" 
+        cb_location = clientaddr4(self.ncl, r_netid, r_addr)
+        callback = cb_client4(self.ncl, cb_program, cb_location)
+        
+        setclientidop = self.ncl.setclientid_op(client, callback)
+        res = self.do_compound([setclientidop])
+
+    
 
 class SetclientidconfirmTestCase(NFSTestCase):
     # FIXME
