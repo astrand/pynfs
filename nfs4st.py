@@ -80,9 +80,9 @@ class NFSTestCase(unittest.TestCase):
     def info_message(self, msg):
         print >> sys.stderr, msg + ", ",
 
-    def do_compound(self, arg):
+    def do_compound(self, *args, **kwargs):
         """Call ncl.compound. Handle all rpc.RPCExceptions as failures."""
-        return self.failIfRaises(rpc.RPCException, self.ncl.compound, arg)
+        return self.failIfRaises(rpc.RPCException, self.ncl.compound, *args, **kwargs)
 
 
 class CompoundTestCase(NFSTestCase):
@@ -96,8 +96,8 @@ class CompoundTestCase(NFSTestCase):
     def testInvalidMinor(self):
         """Test COMPOUND with invalid minor version
         """
-        
-        res = self.ncl.compound([self.putrootfhop], minorversion=0xFFFF)
+
+        res = self.do_compound([self.putrootfhop], minorversion=0xFFFF)
         self.failIf(res.status != NFS4ERR_MINOR_VERS_MISMATCH,
                     "expected NFS4ERR_MINOR_VERS_MISMATCH")
                     
