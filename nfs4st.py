@@ -67,7 +67,8 @@ class NFSTestCase(unittest.TestCase):
         self.socketfile = nfs4lib.unixpath2comps("/dev/log") # NF4SOCK
         self.fifofile = nfs4lib.unixpath2comps("/dev/initctl") # NF4FIFO
 
-        # FIXME: Add sample named attribute. 
+        # FIXME: Add sample named attribute.
+        self.tmp_dir = nfs4lib.unixpath2comps("/tmp")
     
     def connect(self):
         if transport == "tcp":
@@ -600,10 +601,9 @@ class CreateTestCase(NFSTestCase):
     
     def setUp(self):
         NFSTestCase.setUp(self)
-        self.obj_dir = nfs4lib.unixpath2comps("/tmp")
         self.obj_name = "object1"
 
-        self.lookup_dir_op = self.ncl.lookup_op(self.obj_dir)
+        self.lookup_dir_op = self.ncl.lookup_op(self.tmp_dir)
 
     def _remove_object(self):
         # Make sure the object to create does not exist.
@@ -1050,10 +1050,9 @@ class LinkTestCase(NFSTestCase):
 
     def setUp(self):
         NFSTestCase.setUp(self)
-        self.obj_dir = nfs4lib.unixpath2comps("/tmp")
         self.obj_name = "link1"
 
-        self.lookup_dir_op = self.ncl.lookup_op(self.obj_dir)
+        self.lookup_dir_op = self.ncl.lookup_op(self.tmp_dir)
 
     def _remove_object(self):
         # Make sure the object to create does not exist.
