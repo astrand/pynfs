@@ -125,7 +125,7 @@ int main()
 def set_owners(treeroot):
     os.path.walk(treeroot, set_owner, 0)
 
-def set_owner(arg, dirname, names):
+def set_owner(unused, dirname, names):
     for name in names:
         abs_name = dirname + os.sep + name
         

@@ -35,6 +35,8 @@
 
 # XXX There is no provision for call timeout on TCP connections
 
+__pychecker__ = 'no-callinit'
+
 import xdrlib
 import socket
 import os
@@ -280,10 +282,9 @@ def make_auth_unix(seed, host, uid, gid, groups):
 
 def make_auth_unix_default():
     try:
-	from os import getuid, getgid
-	uid = getuid()
-	gid = getgid()
-    except ImportError:
+	uid = os.getuid()
+	gid = os.getgid()
+    except AttributeError:
 	uid = gid = 0
     return make_auth_unix(int(time.time()-unix_epoch()), \
 	      socket.gethostname(), uid, gid, [])
@@ -325,6 +326,7 @@ class Client:
 	self.prog = prog
 	self.vers = vers
 	self.port = port
+        self.sock = None
 	self.makesocket() # Assigns to self.sock
 	self.bindsocket()
 	self.connsocket()
@@ -571,7 +573,7 @@ class RawBroadcastUDPClient(RawUDPClient):
 	    reply = unpack_func()
             try:
                 self.unpacker.done()
-            except xdrlib.Error, e:
+            except xdrlib.Error:
                 raise RPCUnextractedData()
 	    replies.append((reply, fromaddr))
 	    if self.reply_handler:
@@ -645,7 +647,7 @@ class PortMapperUnpacker(Unpacker):
 
 
 class PartialPortMapperClient:
-
+    __pychecker__ = 'no-classattr'
     def addpackers(self):
 	self.packer = PortMapperPacker()
 	self.unpacker = PortMapperUnpacker('')
@@ -747,7 +749,7 @@ class BroadcastUDPClient(Client):
 	result = self.unpack_func()
         try:
             self.unpacker.done()
-        except xdrlib.Error, e:
+        except xdrlib.Error:
             raise RPCUnextractedData()
 	self.replies.append((result, fromaddr))
 	if self.user_reply_handler is not None:
@@ -781,6 +783,8 @@ class Server:
 	self.prog = prog
 	self.vers = vers
 	self.port = port # Should normally be 0 for random port
+        self.sock = None
+        self.prot = None
 	self.makesocket() # Assigns to self.sock and self.prot
 	self.bindsocket()
 	self.host, self.port = self.sock.getsockname()
@@ -835,8 +839,8 @@ class Server:
 	except AttributeError:
 	    self.packer.pack_uint(PROC_UNAVAIL)
 	    return self.packer.get_buf()
-	cred = self.unpacker.unpack_auth()
-	verf = self.unpacker.unpack_auth()
+	unused_cred = self.unpacker.unpack_auth()
+	unused_verf = self.unpacker.unpack_auth()
 	try:
 	    meth() # Unpack args, call turn_around(), pack reply
 	except (EOFError, RPCGarbageArgs):
@@ -852,7 +856,7 @@ class Server:
     def turn_around(self):
         try:
             self.unpacker.done()
-        except xdrlib.Error, e:
+        except xdrlib.Error:
             raise RPCUnextractedData()
         
 	self.packer.pack_uint(SUCCESS)
@@ -972,7 +976,7 @@ def testbcast():
     pmap = BroadcastUDPPortMapperClient(bcastaddr)
     pmap.set_reply_handler(rh)
     pmap.set_timeout(5)
-    replies = pmap.Getport((100002, 1, IPPROTO_UDP, 0))
+    unused_replies = pmap.Getport((100002, 1, IPPROTO_UDP, 0))
 
 
 # Test program for server, with corresponding client

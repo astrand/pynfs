@@ -32,6 +32,8 @@
 # Nomenclature: Each test class is referred to as a "test suite". Each
 # test* method is a "test case".
 
+__pychecker__ = 'no-shadow'
+
 import unittest
 import time
 import sys
@@ -49,6 +51,8 @@ transport = "udp"
 
 
 class PartialTestClient:
+    __pychecker__ = 'no-classattr'      # this class is a mix-in
+    
     def lookup_all_objects(self):
         """Generate a list of lists with lookup operations for all types of objects"""
         return self.lookup_objects(self.nfssuite.all_objects)
@@ -111,6 +115,7 @@ class TCPTestClient(PartialTestClient, nfs4lib.TCPNFS4Client):
 class NFSSuite(unittest.TestCase):
     def __init__(self, methodName='runTest'):
         unittest.TestCase.__init__(self, methodName)
+        self.obj_name = None
     
         # Filename constants. Same order as in nfs_ftype4 enum. 
         self.regfile = nfs4lib.unixpath2comps("/doc/README") # NF4REG
@@ -420,7 +425,7 @@ class CompoundSuite(NFSSuite):
         op = custom_nfs_argop4(self.ncl, argop=100)
 
         try:
-            res = self.ncl.compound([op])
+            self.ncl.compound([op])
         except BadDiscriminant, e:
             sys.stdout.flush()
             # FIXME: We should verify that the return code is NFS4ERR_NOTSUPP,
@@ -746,6 +751,7 @@ class CommitSuite(NFSSuite):
 
 
 class CreateSuite(NFSSuite):
+    __pychecker__ = 'no-classattr'
     """Test operation 6: CREATE
 
     FIXME: Add attribute directory and named attribute testing.
@@ -3715,6 +3721,7 @@ class SetclientidSuite(NFSSuite):
         
         setclientidop = self.ncl.setclientid_op(client, callback)
         res = self.do_compound([setclientidop])
+        self.assert_OK(res)
 
     #
     # Extra tests.
@@ -4140,7 +4147,7 @@ Examples:
 
         # Reorder arguments, so we can add options at the end 
         ordered_args = []
-        for arg in sys.argv[1:]:
+        for arg in argv[1:]:
             if arg.startswith("-"):
                 ordered_args.insert(0, arg)
             else:
