@@ -28,6 +28,7 @@ import cmd
 import sys
 import getopt
 import re
+import os
 
 SYNTAX = """\
 Syntax:
@@ -40,6 +41,8 @@ nfs4client host[:[port]]<directory> [-u|-t] [-d debuglevel]
 """
 
 VERSION = "0.0"
+
+BUFSIZE = 4096
 
 class CLI(cmd.Cmd):
     def __init__(self, ncl):
@@ -98,38 +101,32 @@ class CLI(cmd.Cmd):
     do_quit = do_EOF
 
     def do_get(self, line):
-        # OPEN
-        putrootfhoperation = self.ncl.putrootfh()
-        op = self.ncl.open(file=["foo"])
-        getfhoperation = self.ncl.getfh()
-        res =  self.ncl.compound([putrootfhoperation, op, getfhoperation])
-        # FIXME: Intelligent error handling: In this app: Print error message.
-        # In nfs4lib: Raise exception. 
-        if res.status:
-            raise " failed with status", res.status
-            
-        fh = res.resarray[2].arm.arm.object
+        filenames = line.split()
 
-        # READ
-        putfhoperation = self.ncl.putfh(fh)
-        offset = 0
-        data = ""
+        if not filenames:
+            print "get <filename>..."
+            return
         
-        while 1:
-            op = self.ncl.read(count=2, offset=offset)
-            res = self.ncl.compound([putfhoperation, op])
-            # FIXME: Error handling.
+        for file in filenames:
+            basename = os.path.basename(file)
+            remote = nfs4lib.NFS4OpenFile(ncl)
+            try:
+                remote.open(file)
+                local = open(basename, "w")
+                while 1:
+                    data = remote.read(BUFSIZE)
+                    if not data:
+                        break
+                    
+                    local.write(data)
+                
+                remote.close()
+                local.close()
+            except nfs4lib.BadCompondRes, r:
+                print "Error fetching file: operation %d returned %d" % (r.operation, r.errcode)
+        print
 
-            data += res.resarray[1].arm.arm.data
-            
-            if res.resarray[1].arm.arm.eof:
-                break
-
-            offset += 2
         
-            
-        print "Fick filinnehållet:", data
-
 
     def do_put(self, line):
         # FIXME
