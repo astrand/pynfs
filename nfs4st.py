@@ -3168,7 +3168,7 @@ class SetattrSuite(NFSSuite):
         self.assert_status(res, [NFS4ERR_NOFILEHANDLE])
 
     def testInvalidStateid(self):
-        """SETATTR with invalid stateid should return NFS4ERR_BADHANDLE
+        """SETATTR with invalid stateid should return NFS4ERR_BAD_STATEID
 
         Covered invalid equivalence classes: 23
         """
