@@ -131,9 +131,6 @@ class PartialNFS4Client:
         self.packer = nfs4packer.NFS4Packer(self)
         self.unpacker = nfs4packer.NFS4Unpacker(self, '')
 
-    def make_call(self, proc, args, pack_func, unpack_func):
-        raise NotImplementedError
-
     #
     # RPC procedures
     #
