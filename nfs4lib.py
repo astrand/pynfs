@@ -550,7 +550,6 @@ class PartialNFS4Client:
 
     def do_read(self, stateid, fh, offset=0, size=None):
         putfhop = self.putfh_op(fh)
-        stateid.seqid += 1
 
         data = ""
         while 1:
@@ -1084,16 +1083,21 @@ class NFS4OpenFile:
         self.__set_priv("name", os.path.join(os.sep, *pathcomps))
         # Get stateid from OPEN
         self.stateid = res.resarray[-2].arm.arm.stateid
-
+        # Get flags
+        rflags = res.resarray[-2].arm.arm.rflags
+        
         # Get filehandle from GETFH
         self.fh = res.resarray[-1].arm.arm.object
 
-        # Confirm open
-        putfhop = self.ncl.putfh_op(self.fh)
-        seqid = self.ncl.get_seqid()
-        opconfirm = self.ncl.open_confirm_op(self.stateid, seqid)
-        res = self.ncl.compound([putfhop, opconfirm])
-        check_result(res)
+        if rflags & OPEN4_RESULT_CONFIRM:
+            # Confirm open
+            putfhop = self.ncl.putfh_op(self.fh)
+            seqid = self.ncl.get_seqid()
+            opconfirm = self.ncl.open_confirm_op(self.stateid, seqid)
+            res = self.ncl.compound([putfhop, opconfirm])
+            check_result(res)
+            # Save new stateid
+            self.stateid = res.resarray[-1].arm.arm.open_stateid
 
     def close(self):
         if not self.closed:
