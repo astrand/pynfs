@@ -152,7 +152,7 @@ class PartialNFS4Client:
     # Eg., if the <operation> method doesn't do anything, it should not exist. 
     #
     # The _op method should be defined first. Look at read_op and read for an
-    # example. Ther
+    # example.
     #
     # 
     def access_op(self, access):
