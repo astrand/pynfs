@@ -405,8 +405,8 @@ def opaque2long(data):
     return result
 
 class UDPNFS4Client(PartialNFS4Client, rpc.RawUDPClient):
-    def __init__(self, host):
-        rpc.RawUDPClient.__init__(self, host, NFS_PROGRAM, NFS_VERSION, NFS_PORT)
+    def __init__(self, host, port=NFS_PORT):
+        rpc.RawUDPClient.__init__(self, host, NFS_PROGRAM, NFS_VERSION, port)
         PartialNFS4Client.__init__(self)
 
     def mkcred(self):
@@ -425,8 +425,8 @@ class UDPNFS4Client(PartialNFS4Client, rpc.RawUDPClient):
 
 
 class TCPNFS4Client(PartialNFS4Client, rpc.RawTCPClient):
-    def __init__(self, host):
-        rpc.RawTCPClient.__init__(self, host, NFS_PROGRAM, NFS_VERSION, NFS_PORT)
+    def __init__(self, host, port=NFS_PORT):
+        rpc.RawTCPClient.__init__(self, host, NFS_PROGRAM, NFS_VERSION, port)
         PartialNFS4Client.__init__(self)
 
         
