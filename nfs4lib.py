@@ -63,18 +63,152 @@ class PartialNFS4Client:
     #
     # Operations
     #
+    def access(self):
+        # FIXME
+        raise NotImplementedError()
+
+    def close(self):
+        # FIXME
+        raise NotImplementedError()
+
+    def commit(self):
+        # FIXME
+        raise NotImplementedError()
+
+    def create(self):
+        # FIXME
+        raise NotImplementedError()
+
+    def delegpurge(self):
+        # FIXME
+        raise NotImplementedError()
+
+    def delegreturn(self):
+        # FIXME
+        raise NotImplementedError()
+
+    def getattr(self):
+        # FIXME
+        raise NotImplementedError()
 
     def getfh(self):
         return nfs_argop4(self, argop=OP_GETFH)
 
-    def putrootfh(self):
-        return nfs_argop4(self, argop=OP_PUTROOTFH)
+    def link(self):
+        # FIXME
+        raise NotImplementedError()
+
+    def lock(self):
+        # FIXME
+        raise NotImplementedError()
+
+    def lockt(self):
+        # FIXME
+        raise NotImplementedError()
+
+    def locku(self):
+        # FIXME
+        raise NotImplementedError()
+
+    def lookup(self):
+        # FIXME
+        raise NotImplementedError()
+
+    def lookupp(self):
+        # FIXME
+        raise NotImplementedError()
+
+    def nverify(self):
+        # FIXME
+        raise NotImplementedError()
+
+    def open(self, claim=None, openhow=None, owner=None, seqid=None, share_access=None, share_deny=None, clientid=None, file=None):
+        # FIXME: Clean up
+        if not claim:
+            claim = open_claim4(self, claim=CLAIM_NULL, file=file)
+
+        if not openhow:
+            openhow = UNCHECKED4
+
+        # FIXME
+        seqid = 0
+        #
+        share_access = OPEN4_SHARE_ACCESS_READ
+        share_deny = OPEN4_SHARE_DENY_NONE
+
+        #file = pathname4(ncl, path=["foo"])
+
+        openhow = openflag4(self, opentype=OPEN4_NOCREATE, how=UNCHECKED4)
+        owner = nfs_lockowner4(self, clientid=clientid, owner="peter")
+
+        args = OPEN4args(self, claim, openhow, owner, seqid, share_access, share_deny)
+        return nfs_argop4(self, argop=OP_OPEN, opopen=args)
+
+    def openattr(self):
+        # FIXME
+        raise NotImplementedError()
+
+    def open_confirm(self):
+        # FIXME
+        raise NotImplementedError()
+
+    def open_downgrade(self):
+        # FIXME
+        raise NotImplementedError()
 
     def putfh(self, fh):
         args = PUTFH4args(self, object=fh)
         return nfs_argop4(self, argop=OP_PUTFH, opputfh=args)
 
+    def putpubfh(self, fh):
+        # FIXME
+        raise NotImplementedError()
+
+    def putrootfh(self):
+        return nfs_argop4(self, argop=OP_PUTROOTFH)
+
+    def read(self, stateid=0, offset=0, count=0):
+        args = READ4args(self, stateid=stateid, offset=offset, count=count)
+        return nfs_argop4(self, argop=OP_READ, opread=args)
+
+    def readdir(self):
+        # FIXME
+        raise NotImplementedError()
+
+    def readlink(self):
+        # FIXME
+        raise NotImplementedError()
+
+    def remove(self):
+        # FIXME
+        raise NotImplementedError()
+
+    def rename(self):
+        # FIXME
+        raise NotImplementedError()
+
+    def renew(self):
+        # FIXME
+        raise NotImplementedError()
+
+    def restorefh(self):
+        # FIXME
+        raise NotImplementedError()
+
+    def savefh(self):
+        # FIXME
+        raise NotImplementedError()
+
+    def secinfo(self):
+        # FIXME
+        raise NotImplementedError()
+
+    def setattr(self):
+        # FIXME
+        raise NotImplementedError()
+
     def setclientid(self, verifier=None, id=None, cb_program=None, r_netid=None, r_addr=None, ):
+        # FIXME: clean up. 
         if not verifier:
             self.verifier = self.gen_random_64()
         else:
@@ -103,36 +237,26 @@ class PartialNFS4Client:
         return nfs_argop4(self, argop=OP_SETCLIENTID, opsetclientid=args)
 
     def setclientid_confirm(self, setclientid_confirm):
+        # FIXME: Clean up. 
         args = SETCLIENTID_CONFIRM4args(self, setclientid_confirm=setclientid_confirm)
         return nfs_argop4(self, argop=OP_SETCLIENTID_CONFIRM, opsetclientid_confirm=args)
 
-
-    def open(self, claim=None, openhow=None, owner=None, seqid=None, share_access=None, share_deny=None, clientid=None, file=None):
-        if not claim:
-            claim = open_claim4(self, claim=CLAIM_NULL, file=file)
-
-        if not openhow:
-            openhow = UNCHECKED4
-
+    def verify(self):
         # FIXME
-        seqid = 0
-        #
-        share_access = OPEN4_SHARE_ACCESS_READ
-        share_deny = OPEN4_SHARE_DENY_NONE
+        raise NotImplementedError()
 
-        #file = pathname4(ncl, path=["foo"])
+    def write(self):
+        # FIXME
+        raise NotImplementedError()
+    
 
-        openhow = openflag4(self, opentype=OPEN4_NOCREATE, how=UNCHECKED4)
-        owner = nfs_lockowner4(self, clientid=clientid, owner="peter")
+    def cb_getattr(self):
+        # FIXME
+        raise NotImplementedError()
 
-        args = OPEN4args(self, claim, openhow, owner, seqid, share_access, share_deny)
-        return nfs_argop4(self, argop=OP_OPEN, opopen=args)
-
-
-
-    def read(self, stateid=0, offset=0, count=0):
-        args = READ4args(self, stateid=stateid, offset=offset, count=count)
-        return nfs_argop4(self, argop=OP_READ, opread=args)
+    def cb_recall(self):
+        # FIXME
+        raise NotImplementedError()
 
     
 
