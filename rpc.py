@@ -143,6 +143,11 @@ class RPCGarbageArgs(RPCException):
     def __str__(self):
 	return "RPCGarbageArgs"
 
+class RPCUnextractedData(RPCException):
+    # xdrlib raised exception because unextracted data remained
+    def __str__(self):
+        return "RPCUnextractedData"
+
 class RPCBadAcceptStats(RPCException):
     # Unknown accept_stat
     def __init__(self, stat):
@@ -361,7 +366,11 @@ class Client:
 	    result = unpack_func()
 	else:
 	    result = None
-	self.unpacker.done()
+        try:
+            self.unpacker.done()
+        except xdrlib.Error, e:
+            raise RPCUnextractedData()
+            
 	return result
 
     def start_call(self, proc):
@@ -562,7 +571,10 @@ class RawBroadcastUDPClient(RawUDPClient):
 ##				print 'BAD xid'
 		continue
 	    reply = unpack_func()
-	    self.unpacker.done()
+            try:
+                self.unpacker.done()
+            except xdrlib.Error, e:
+                raise RPCUnextractedData()
 	    replies.append((reply, fromaddr))
 	    if self.reply_handler:
 		self.reply_handler(reply, fromaddr)
@@ -735,7 +747,10 @@ class BroadcastUDPClient(Client):
 	port, res = reply
 	self.unpacker.reset(res)
 	result = self.unpack_func()
-	self.unpacker.done()
+        try:
+            self.unpacker.done()
+        except xdrlib.Error, e:
+            raise RPCUnextractedData()
 	self.replies.append((result, fromaddr))
 	if self.user_reply_handler is not None:
 	    self.user_reply_handler(result, fromaddr)
@@ -837,10 +852,11 @@ class Server:
 	return self.packer.get_buf()
 
     def turn_around(self):
-	try:
-	    self.unpacker.done()
-	except RuntimeError:
-	    raise RPCGarbageArgs()
+        try:
+            self.unpacker.done()
+        except xdrlib.Error, e:
+            raise RPCUnextractedData()
+        
 	self.packer.pack_uint(SUCCESS)
 
     def handle_0(self): # Handle NULL message
