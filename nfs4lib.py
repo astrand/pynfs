@@ -313,9 +313,9 @@ class PartialNFS4Client:
         args = OPEN_CONFIRM4args(self, open_stateid, seqid)
         return nfs_argop4(self, argop=OP_OPEN_CONFIRM, opopen_confirm=args)
 
-    def open_downgrade(self):
-        # FIXME
-        raise NotImplementedError()
+    def open_downgrade_op(self, open_stateid, seqid, share_access, share_deny):
+        args = OPEN_DOWNGRADE4args(self, open_stateid, seqid, share_access, share_deny)
+        return nfs_argop4(self, argop=OP_OPEN_DOWNGRADE, opopen_downgrade=args)
 
     def putfh_op(self, object):
         args = PUTFH4args(self, object)
