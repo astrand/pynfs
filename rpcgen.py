@@ -285,8 +285,8 @@ class RPCcase_declaration:
         self.declaration = declaration # declaration or None.
 
 # Initialize known_types. 
-for t in known_basics.keys():
-    known_types[t] = RPCType()
+for typename in known_basics.keys():
+    known_types[typename] = RPCType()
 
 
 #
@@ -403,8 +403,6 @@ def gen_packers(id, typeobj):
 def gen_switch_code(ip, union_body, packer, assertions=0):
     # Shortcuts
     switch_var_declaration = union_body.declaration
-    switch_var_id = switch_var_declaration[0]
-    switch_var_type = switch_var_declaration[1]
     switch_body = union_body.switch_body
     # RPCcase_declaration
     first_case_declaration = switch_body.first_declaration
@@ -638,7 +636,6 @@ def p_type_def_4(t):
 
     # Generate class code
     ip = IndentPrinter(types_out)
-    struct_body = t[3]
 
     # class line
     check_not_reserved(classname)
@@ -1019,7 +1016,6 @@ def p_error(t):
 # Section: main
 #
 if __name__ == "__main__":
-    import sys
     if len(sys.argv) < 2:
         print "Usage: %s <filename>" % sys.argv[0]
         sys.exit(1)
