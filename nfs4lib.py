@@ -19,7 +19,6 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 # TODO: Exceptions.
-# Remove self.rootfh?
 # Implement buffering in NFS4OpenFile.
 # Translation of error- and operation codes to enums.
 # FIXME: Error when transferring large files?
