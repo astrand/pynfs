@@ -2372,14 +2372,15 @@ class RenameSuite(NFSSuite):
         self.oldname = "object1"
         self.newname = "object2"
 
-        self.lookup_dir_op = self.ncl.lookup_op(self.tmp_dir)
+        self.lookup_dir_ops = self.ncl.lookup_path(self.tmp_dir)
 
     def _create_object(self):
         # Make sure we have something to rename. We create a directory, because
         # it's simple.
+        operations = [self.putrootfhop] + self.lookup_dir_ops
         objtype = createtype4(self.ncl, type=NF4DIR)
-        createop = self.ncl.create_op(self.oldname, objtype)
-        res = self.do_compound([self.putrootfhop, self.lookup_dir_op, createop])
+        operations.append(self.ncl.create(objtype, self.oldname))
+        res = self.do_compound(operations)
 
         self.assert_status(res, [NFS4_OK, NFS4ERR_EXIST])
 
@@ -2387,12 +2388,12 @@ class RenameSuite(NFSSuite):
         operations = [self.putrootfhop]
         
         # Lookup source and save FH
-        operations.append(self.lookup_dir_op)
+        operations.extend(self.lookup_dir_ops)
         operations.append(self.ncl.savefh_op())
 
         # Lookup target directory
         operations.append(self.putrootfhop)
-        operations.append(self.lookup_dir_op)
+        operations.extend(self.lookup_dir_ops)
 
         return operations
 
@@ -2425,12 +2426,12 @@ class RenameSuite(NFSSuite):
         operations = [self.putrootfhop]
         
         # Lookup source and save FH
-        operations.append(self.ncl.lookup_op(self.regfile))
+        operations.extend(self.ncl.lookup_path(self.regfile))
         operations.append(self.ncl.savefh_op())
 
         # Lookup target directory
         operations.append(self.putrootfhop)
-        operations.append(self.lookup_dir_op)
+        operations.extend(self.lookup_dir_ops)
 
         # Rename
         renameop = self.ncl.rename_op(self.oldname, self.newname)
@@ -2445,7 +2446,7 @@ class RenameSuite(NFSSuite):
         """
         # Lookup target directory
         operations = [self.putrootfhop]
-        operations.append(self.lookup_dir_op)
+        operations.extend(self.lookup_dir_ops)
         
         # Rename
         renameop = self.ncl.rename_op(self.oldname, self.newname)
@@ -2493,12 +2494,12 @@ class RenameSuite(NFSSuite):
         operations = [self.putrootfhop]
         
         # Lookup source and save FH
-        operations.append(self.lookup_dir_op)
+        operations.extend(self.lookup_dir_ops)
         operations.append(self.ncl.savefh_op())
 
         # Lookup target directory
         operations.append(self.putrootfhop)
-        operations.append(self.ncl.lookup_op(self.regfile))
+        operations.extend(self.ncl.lookup_path(self.regfile))
 
         # Rename
         renameop = self.ncl.rename_op(self.oldname, self.newname)
@@ -2524,11 +2525,13 @@ class RenameSuite(NFSSuite):
     
     # FIXME: Cover eq. class 42.     
 
+
 class RenewSuite(NFSSuite):
     """Test operation 30: RENEW
     """
     # FIXME
     pass
+
 
 class RestorefhSuite(NFSSuite):
     """Test operation 31: RESTOREFH
