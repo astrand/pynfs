@@ -1,10 +1,13 @@
 #!/usr/bin/env python2
 
+# http://xml.openoffice.org/
+
 import nfs4st
+import StringIO
+import os
+import time
 
 def parse_method(meth):
-    print "parsing method", meth.__name__
-
     # One row per method
     outfile.write('<table:table-row>\n')
     outfile.write('<table:table-cell table:style-name="Table2.A2" table:value-type="string">\n')
@@ -98,11 +101,11 @@ def handle_ic(lines):
          
          del lines[0]
          if line.find("Valid equivalence classes:") != -1:
-             print "Handling valid equivalence classes"
+             #print "Handling valid equivalence classes"
              handle_valid_ec(lines)
 
          if line.find("Invalid equivalence classes:") != -1:
-             print "Handling invalid equivalence classes"
+             #print "Handling invalid equivalence classes"
              handle_invalid_ec(lines)
          
 
@@ -113,7 +116,7 @@ def handle_ep(lines):
         del lines[0]
         if line.find("Input Condition:") != -1:
             ic_name = line[line.find(":") + 2:]
-            print "Handling Input Condition:", ic_name
+            #print "Handling Input Condition:", ic_name
             outfile.write("<table:table-row>\n")
 
             outfile.write('<table:table-cell table:style-name="Table1.A2" table:value-type="string">\n')
@@ -159,7 +162,7 @@ def parse_testcase(klass):
 
 def main():
     global outfile
-    outfile = open("testcases.xml", "w")
+    outfile = StringIO.StringIO()
     outfile.write(TESTCASES_HEAD)
     for attr in dir(nfs4st):
         if attr.endswith("TestCase"):
@@ -172,7 +175,19 @@ def main():
 </office:document-content>
 """
     outfile.write(ending)
+
+    create_zip("epinfo.sxw", outfile.getvalue())
     outfile.close()
+
+def create_zip(filename, content):
+    import zipfile
+    z = zipfile.ZipFile(filename, "w")
+    date_time = time.localtime()[0:6]
+    
+    zinfo = zipfile.ZipInfo("content.xml", date_time)
+    z.writestr(zinfo, content)
+
+    z.close()
 
 #
 # XML clips
@@ -312,7 +327,6 @@ TESTCASES_HEAD = """\
   <text:p text:style-name="Standard"/>
 """
 
-    
 
 if __name__ == '__main__':
     main()
