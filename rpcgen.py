@@ -47,6 +47,7 @@ import sys
 import keyword
 import StringIO
 import time
+import os
 
 #
 # Section: Lexical analysis
@@ -1024,7 +1025,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     infile = sys.argv[1]
-    name_base = infile[:infile.rfind(".")]
+    name_base = os.path.basename(infile[:infile.rfind(".")])
     # File names without .py
     constants_file = name_base + "constants"
     types_file = name_base + "types"
