@@ -24,6 +24,7 @@
 # TODO:
 #
 
+
 import sys
 import keyword
 
@@ -206,20 +207,32 @@ class RPCType:
         self.fixarray = fixarray
         # Array length. Arrays with infinite (=2**32-1) length have None. 
         self.arraylen = arraylen
+        # Void?
         self.void = void
 
-        if not self.packer:
-            self._add_type()
+        if packer:
+            # Constructing manually. Do not inherit anything.
+            pass
+        else:
+            # Inherit packer. 
+            self._inherit_packer()
+            
+            array = (vararray or fixarray)
+            if not array:
+                self._inherit_arrayinfo()
 
-    def _add_type(self):
+    def _inherit_packer(self):
         # If this is a known_type, inherit packer. 
         base = known_types.get(self.base_type, None)
         if base:
-            self.packer = base.packer
-        else:
-            # FIXME: Maybe we should check that the base_type(s) actually exists.
-            # The problem is structs, which has several base_types. 
-            pass
+            self.packer = base.packer    
+
+    def _inherit_arrayinfo(self):
+        base = known_types.get(self.base_type, None)
+        if base:
+            self.fixarray = base.fixarray
+            self.vararray = base.vararray
+            self.arraylen = base.arraylen
 
     def array_string(self):
         if self.arraylen:
@@ -233,6 +246,9 @@ class RPCType:
             return "[%s]" % lenstring
         else:
             return ""
+
+    def isarray(self):
+        return (self.fixarray or self.vararray)
 
 
 class RPCunion_body:
@@ -263,16 +279,31 @@ for t in known_basics.keys():
 #
 
 def gen_pack_code(ip, id, rpctype):
-    array = (rpctype.vararray or rpctype.fixarray)
-    if not array:
+    if not rpctype.isarray():
+        # Not any kind of array.
         if rpctype.packer:
             check_not_reserved(rpctype.packer, id)
             ip.pr("self.packer.%s(self.%s)" % (rpctype.packer, id))
         else:
             check_not_reserved(id)
             ip.pr("self.%s.pack()" % id)
+
+    # Some kind of array
+    elif rpctype.packer == "pack_string":
+        # There is only variable length strings.
+        check_not_reserved(id)
+        ip.pr("self.packer.pack_string(self.%s)" % id)
+    elif rpctype.packer == "pack_opaque":
+        check_not_reserved(id)
+        if rpctype.fixarray:
+            # Fixed length opaque data
+            check_not_reserved(id)
+            ip.pr("self.packer.pack_fopaque(%s, self.%s)" % (rpctype.arraylen, id))
+        else:
+            # Variable length opaque data
+            ip.pr("self.packer.pack_opaque(self.%s)" % id)
     else:
-        # Array
+        # Some other kind of array. 
         if rpctype.packer:
             check_not_reserved(rpctype.packer, id)
             ip.pr("self.packer.pack_array(self.%s, self.packer.%s)" % (id, rpctype.packer))
@@ -283,8 +314,8 @@ def gen_pack_code(ip, id, rpctype):
 
 
 def gen_unpack_code(ip, id, rpctype):
-    array = (rpctype.vararray or rpctype.fixarray)
-    if not array:
+    if not rpctype.isarray():
+        # Not any kind of array.
         if rpctype.packer:
             check_not_reserved(id) # No reserved word beginning with "un"
             ip.pr("self.%s = self.unpacker.%s()" % (id, "un" + rpctype.packer))
@@ -292,8 +323,18 @@ def gen_unpack_code(ip, id, rpctype):
             check_not_reserved(id)
             ip.pr("self.%s = %s(self.ncl)" % (id, rpctype.base_type))
             ip.pr("self.%s.unpack()" % id)
+
+    # Some kind of array
+    elif rpctype.packer == "pack_string":
+        # There is only variable length strings.
+        check_not_reserved(id)
+        ip.pr("self.%s = self.unpacker.unpack_string()" % id)
+    elif rpctype.packer == "pack_opaque":
+        check_not_reserved(id)
+        # Both for fixed- and variable length data. 
+        ip.pr("self.%s = self.unpacker.unpack_opaque()" % id)
     else:
-        # Array
+        # Some other kind of array. 
         if rpctype.packer:
             check_not_reserved(id) # No reserved word beginning with "un"
             ip.pr("self.%s = self.unpacker.unpack_array(%s)" % (id, "un" + rpctype.packer))
@@ -301,6 +342,7 @@ def gen_unpack_code(ip, id, rpctype):
             # Unpack array of objects.
             check_not_reserved(id, rpctype.base_type)
             ip.pr("self.%s = unpack_objarray(self.ncl, %s)" % (id, rpctype.base_type))
+
 
 
 def gen_switch_code(ip, union_body, packer, assertions=0):
