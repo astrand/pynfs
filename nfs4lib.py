@@ -351,7 +351,7 @@ class PartialNFS4Client:
         res = self.compound([putfhoperation, closeop])
         check_result(res)
 
-        return res.resarray[1].arm.arm.stateid
+        return res.resarray[1].arm.stateid
         
 
 def check_result(compoundres):
@@ -454,8 +454,7 @@ class NFS4OpenFile:
     def close(self):
         if not self.closed:
             self.__set_priv("closed", 1)
-            # FIXME: NFS close. 
-            raise NotImplementedError()
+            self.ncl.do_close(self.fh, self.stateid)
 
     def flush(self):
         if self.closed:
@@ -467,6 +466,7 @@ class NFS4OpenFile:
     # fileno() should not be implemented.
 
     def read(self, size=None):
+        # FIXME: update pos. 
         if self.closed:
             raise ValueError("I/O operation on closed file")
         data = self.ncl.do_read(self.fh)
