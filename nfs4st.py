@@ -1419,12 +1419,11 @@ class LookuppSuite(NFSSuite):
         
     Input Condition: current filehandle
         Valid equivalence classes:
-            symlink(10)
+            directory(10)
+            named attribute dir(11)
         Invalid equivalence classes:
-            not symlink(2)
-            invalid filehandle(3)
-            symlink(12)
-
+            not directory(12)
+            invalid filehandle(13)
 
     """
     #
@@ -1433,18 +1432,21 @@ class LookuppSuite(NFSSuite):
     def testDir(self):
         """LOOKUPP with directory (cfh)
 
-        Covered valid equivalence classes: 1
+        Covered valid equivalence classes: 10
         """
-        lookupop1 = self.ncl.lookup_op(["doc", "porting"])
-        lookuppop = self.ncl.lookupp_op()
-        lookupop2 = self.ncl.lookup_op(["README"])
-        res = self.do_compound([self.putrootfhop, lookupop1, lookuppop, lookupop2])
+        lookupops1 = self.ncl.lookup_path(["doc", "porting"])
+
+        operations = [self.putrootfhop] + lookupops1
+        operations.append(self.ncl.lookupp_op())
+        operations.append(self.ncl.lookup_op("README"))
+        
+        res = self.do_compound(operations)
         self.assert_OK(res)
 
     def testNamedAttrDir(self):
         """LOOKUPP with named attribute directory (cfh)
 
-        Covered valid equivalence classes: 2
+        Covered valid equivalence classes: 11
 
         Comments: Not yet implemented. 
         """
@@ -1457,11 +1459,12 @@ class LookuppSuite(NFSSuite):
     def testInvalidFh(self):
         """LOOKUPP with non-dir (cfh)
 
-        Covered invalid equivalence classes: 3
+        Covered invalid equivalence classes: 12
         """
-        lookupop = self.ncl.lookup_op(["doc", "README"])
-        lookuppop = self.ncl.lookupp_op()
-        res = self.do_compound([self.putrootfhop, lookupop, lookuppop])
+        lookupops = self.ncl.lookup_path(self.regfile)
+        operations = [self.putrootfhop] + lookupops 
+        operations.append(self.ncl.lookupp_op())
+        res = self.do_compound(operations)
         self.assert_status(res, [NFS4ERR_NOTDIR])
 
     #
@@ -1470,16 +1473,11 @@ class LookuppSuite(NFSSuite):
     def testAtRoot(self):
         """LOOKUPP with (cfh) at root should return NFS4ERR_NOENT
 
-        Covered valid equivalence classes: 1
+        Covered valid equivalence classes: 13
         """
-        # CITI crashes on this one. 
-        # FIXME: remove return
-        self.info_message("(DISABLED)")
-        return
-    
         lookuppop = self.ncl.lookupp_op()
         res = self.do_compound([self.putrootfhop, lookuppop])
-        self.assert_status(res, [NFS4ERR_NOTDIR])
+        self.assert_status(res, [NFS4ERR_NOENT])
 
 
 class NverifySuite(NFSSuite):
