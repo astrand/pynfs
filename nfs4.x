@@ -1,4 +1,13 @@
 /*
+ * Added definition of RPCSEC_GSS from RFC2203. /astrand
+ */
+enum auth_flavor {
+    RPCSEC_GSS = 6      /* RPCSEC_GSS security flavor */
+};
+
+
+
+/*
  *  Copyright (C) The Internet Society (1998,1999,2000,2001).
  *  All Rights Reserved.
  */
