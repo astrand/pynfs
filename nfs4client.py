@@ -19,7 +19,8 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 # TODO:
-# completion: should not complete commands as arguments. 
+# completion: should not complete commands as arguments.
+# Handle errors such as NFS4ERR_RESOURCE and NFS4ERR_DELAY. 
 
 from nfs4constants import *
 from nfs4types import *
