@@ -2469,7 +2469,7 @@ class ReadlinkSuite(NFSSuite):
 class RemoveSuite(NFSSuite):
     """Test operation 28: REMOVE
 
-    # FIXME: Test (OPEN, REMOVE, WRITE) etc. Wait for final decision. 
+    # FIXME: Test (OPEN, REMOVE, WRITE) sequence. 
 
     Equivalence partitioning:
 
@@ -2490,7 +2490,6 @@ class RemoveSuite(NFSSuite):
     def setUp(self):
         NFSSuite.setUp(self)
         self.obj_name = "object1"
-
         self.lookup_dir_ops = self.ncl.lookup_path(self.tmp_dir)
 
     def _create_object(self):
@@ -2499,9 +2498,7 @@ class RemoveSuite(NFSSuite):
         operations = [self.putrootfhop] + self.lookup_dir_ops
         objtype = createtype4(self.ncl, type=NF4DIR)
         operations.append(self.ncl.create(objtype, self.obj_name))
-
         res = self.do_compound(operations)
-
         self.assert_status(res, [NFS4_OK, NFS4ERR_EXIST])
 
     #
@@ -2516,7 +2513,6 @@ class RemoveSuite(NFSSuite):
         operations = [self.putrootfhop] + self.lookup_dir_ops
         operations.append(self.ncl.remove_op(self.obj_name))
         res = self.do_compound(operations)
-
         self.assert_OK(res)
 
     #
@@ -2530,9 +2526,7 @@ class RemoveSuite(NFSSuite):
         lookupops = self.ncl.lookup_path(self.regfile)
         operations = [self.putrootfhop] + lookupops
         operations.append(self.ncl.remove_op(self.obj_name))
-        
         res = self.do_compound(operations)
-
         self.assert_status(res, [NFS4ERR_NOTDIR])
 
     def testNoFh(self):
@@ -2551,10 +2545,8 @@ class RemoveSuite(NFSSuite):
         """
         self._create_object()
         operations = [self.putrootfhop] + self.lookup_dir_ops
-
         operations.append(self.ncl.remove_op(""))
         res = self.do_compound(operations)
-
         self.assert_status(res, [NFS4ERR_INVAL])
 
     def testNonUTF8(self):
@@ -2575,7 +2567,6 @@ class RemoveSuite(NFSSuite):
         operations = [self.putrootfhop] + self.lookup_dir_ops
         operations.append(self.ncl.remove_op(self.vaporfilename))
         res = self.do_compound(operations)
-
         self.assert_status(res, [NFS4ERR_NOENT])
         
 
