@@ -480,12 +480,12 @@ class AccessSuite(NFSSuite):
             res = self.do_compound([self.putrootfhop, accessop])
             self.assert_status(res, [NFS4ERR_INVAL])
     #
-    # Misc. tests.
+    # Extra tests
     #
     def testNoExecOnDir(self):
         """ACCESS4_EXECUTE should never be returned for directory
 
-        Covered valid equivalence classes: 6, 9
+        Extra test
 
         Comments: ACCESS4_EXECUTE has no meaning for directories and
         should not be returned in "access" or "supported".
@@ -538,7 +538,6 @@ class CommitSuite(NFSSuite):
             nonzero(12)
         Invalid equivalence classes:
             -
-            
     Note: We do not examine the writeverifier in any way. It's hard
     since it can change at any time.
     """
@@ -642,12 +641,12 @@ class CommitSuite(NFSSuite):
         self.assert_status(res, [NFS4ERR_NOFILEHANDLE])
 
     #
-    # Misc. tests.
+    # Extra tests
     #
     def testOverflow(self):
         """COMMIT on file with offset+count >= 2**64 should fail
 
-        Covered valid equivalence classes: 1, 10, 12
+        Extra test
 
         Comments: If the COMMIT operation is called with an offset
         plus count that is larger than 2**64, the server should return
@@ -1017,12 +1016,12 @@ class GetattrSuite(NFSSuite):
         self.assert_status(res, [NFS4ERR_INVAL])
 
     #
-    # Misc. tests.
+    # Extra tests. 
     #
     def testAllMandatory(self):
         """Assure GETATTR can return all mandatory attributes
 
-        Covered valid equivalence classes: 1, 9
+        Extra test
 
         Comments: A server should be able to return all mandatory
         attributes.
@@ -1525,12 +1524,12 @@ class LookupSuite(NFSSuite):
 
 
     #
-    # Misc. tests.
+    # Extra tests.
     #
     def testDots(self):
         """LOOKUP should not treat "." or ".." special
 
-        Covered valid equivalence classes: 1, 5
+        Extra test
         """
         lookupops = self.ncl.lookup_path(["doc", ".", "README"])
         operations = [self.putrootfhop] + lookupops
@@ -1599,12 +1598,12 @@ class LookuppSuite(NFSSuite):
         self.assert_status(res, [NFS4ERR_NOTDIR])
 
     #
-    # Misc. tests.
+    # Extra tests.
     #
     def testAtRoot(self):
         """LOOKUPP with (cfh) at root should return NFS4ERR_NOENT
 
-        Covered valid equivalence classes: 13
+        Extra test
         """
         lookuppop = self.ncl.lookupp_op()
         res = self.do_compound([self.putrootfhop, lookuppop])
@@ -2365,12 +2364,12 @@ class ReaddirSuite(NFSSuite):
         
 
     #
-    # Misc. tests.
+    # Extra tests.
     #
     def testUnaccessibleDirWithGetattr(self):
         """READDIR with (cfh) in unaccessible directory
 
-        Covered valid equivalence classes: 10, 20, 30, 41, 50, 60
+        Extra test
         
         Comments: This test crashes/crashed the Linux server
         """
@@ -3254,7 +3253,7 @@ class SetclientidSuite(NFSSuite):
         res = self.do_compound([setclientidop])
 
     #
-    # Misc. tests.
+    # Extra tests.
     #
     def _set(self, ncl, id):
         setclientidop = ncl.setclientid(id=id)
@@ -3268,6 +3267,8 @@ class SetclientidSuite(NFSSuite):
     
     def testInUse(self):
         """SETCLIENTID with same nfs_client_id.id should return NFS4ERR_CLID_INUSE
+
+        Extra test
         """
         id = self.ncl.gen_uniq_id()
 
@@ -3535,8 +3536,8 @@ class WriteSuite(NFSSuite):
     #
     # Testcases covering invalid equivalence classes.
     #
-    def testInvalid(self):
-        pass
+##     def testInvalid(self):
+##         pass
 
 
 class MyTextTestResult(unittest._TextTestResult):
