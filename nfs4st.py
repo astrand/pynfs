@@ -3818,6 +3818,17 @@ class SetattrSuite(NFSSuite):
         self.assert_status(res, [NFS4_OK, NFS4ERR_ATTRNOTSUPP])
         self._getattr_check(lookupops)
 
+    def _invalid_setattr(self, file, stateval):
+        lookupops = self.ncl.lookup_path(file)
+        operations = [self.putrootfhop] + lookupops
+
+        stateid = stateid4(self.ncl, 0, stateval)
+        operations.append(self._setattr_op(stateid))
+
+        res = self.do_compound(operations)
+        if self._check_notsupp(res): return
+        self.assert_status(res, [NFS4_OK, NFS4ERR_INVAL])
+
     #
     # Testcases covering valid equivalence classes.
     #
@@ -3856,7 +3867,8 @@ class SetattrSuite(NFSSuite):
 
         Covered valid equivalence classes: 14, 20, 30, 40
         """
-        self._valid_setattr(self.linkfile, "")
+        # FIXME: Maybe NFS4ERR_PERM should be accepted. 
+        self._invalid_setattr(self.linkfile, "")
 
     def testSocket(self):
         """SETATTR(FATTR4_MODE) on socket
