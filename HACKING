@@ -1,0 +1,8 @@
+Different path data types and variable names
+============================================
+pathname: An XDR array; pathname4. 
+component: A string with a single object name. Example: "doc". 
+unixpath: Example: "/dev/fd0"
+pathcomps: A list of components. Example: ["doc", "README"]
+
+The function nfs4lib.unixpath2comps translates a unixpath to pathcomps. 
