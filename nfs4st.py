@@ -96,6 +96,16 @@ class NFSTestCase(unittest.TestCase):
         """Call ncl.compound. Handle all rpc.RPCExceptions as failures."""
         return self.failIfRaises(rpc.RPCException, self.ncl.compound, *args, **kwargs)
 
+    def lookup_all_objects(self):
+        """Generate a list of lookup operations with all types of objects"""
+        result = []
+        for name in [self.linkfile, self.blockfile, self.charfile, self.socketfile,
+                     self.fifofile, self.dirfile, self.normfile]:
+            path = nfs4lib.str2pathname(name)
+            result.append(self.ncl.lookup_op(path))
+
+        return result
+
 
 class CompoundTestCase(NFSTestCase):
     """Test COMPOUND procedure"""
@@ -173,14 +183,14 @@ class AccessTestCase(NFSTestCase):
             socket(4)
             FIFO(5)
             dir(6)
-            file(10)
+            file(7)
         Invalid equivalence classes:
-            invalid filehandle(7)
+            invalid filehandle(8)
     Input Condition: accessreq
         Valid equivalence classes:
-            valid accessreq(8)
+            valid accessreq(9)
         Invalid equivalence classes:
-            invalid accessreq(9)
+            invalid accessreq(10)
     """
             
     
@@ -206,73 +216,27 @@ class AccessTestCase(NFSTestCase):
     #
     # Tests for valid equivalence classes.
     #
+    def testAllObjects(self):
+        """ACCESS on all type of objects
 
-    def testLink(self):
-        """ACCESS on link
+        Covered valid equivalence classes: 1, 2, 3, 4, 5, 6, 7, 9
         
-        Covered valid equivalence classes: 1, 8
         """
-
-        path = nfs4lib.str2pathname(self.linkfile)
-        lookupop = self.ncl.lookup_op(path)
-        accessop = self.ncl.access_op(ACCESS4_READ)
-        res = self.do_compound([self.putrootfhop, lookupop, accessop])
-        self.assert_OK(res)
-
-    def testBlock(self):
-        """ACCESS on block device
-
-        Covered valid equivalence classes: 2, 8
-        """
-        path = nfs4lib.str2pathname(self.blockfile)
-        lookupop = self.ncl.lookup_op(path)
-        accessop = self.ncl.access_op(ACCESS4_READ)
-        res = self.do_compound([self.putrootfhop, lookupop, accessop])
-        self.assert_OK(res)
-
-    def testChar(self):
-        """ACCESS on char device
-
-        Covered valid equivalence classes: 3, 8
-        """
-        path = nfs4lib.str2pathname(self.charfile)
-        lookupop = self.ncl.lookup_op(path)
-        accessop = self.ncl.access_op(ACCESS4_READ)
-        res = self.do_compound([self.putrootfhop, lookupop, accessop])
-        self.assert_OK(res)
-
-    def testSocket(self):
-        """ACCESS on socket device
-
-        Covered valid equivalence classes: 4, 8
-        """
-        path = nfs4lib.str2pathname(self.socketfile)
-        lookupop = self.ncl.lookup_op(path)
-        accessop = self.ncl.access_op(ACCESS4_READ)
-        res = self.do_compound([self.putrootfhop, lookupop, accessop])
-        self.assert_OK(res)
-
-    def testFIFO(self):
-        """ACCESS on FIFO device
-
-        Covered valid equivalence classes: 5, 8
-        """
-        path = nfs4lib.str2pathname(self.fifofile)
-        lookupop = self.ncl.lookup_op(path)
-        accessop = self.ncl.access_op(ACCESS4_READ)
-        res = self.do_compound([self.putrootfhop, lookupop, accessop])
-        self.assert_OK(res)
-
+        for lookupop in self.lookup_all_objects():
+            accessop = self.ncl.access_op(ACCESS4_READ)
+            res = self.do_compound([self.putrootfhop, lookupop, accessop])
+            self.assert_OK(res)
+        
     def testDir(self):
         """All valid combinations of ACCESS arguments on directory
 
-        Covered valid equivalence classes: 6, 8
+        Covered valid equivalence classes: 6, 9
 
         Comments: The ACCESS operation takes an uint32_t as an
         argument, which is bitwised-or'd with zero or more of all
         ACCESS4* constants. This component tests all valid
         combinations of these constants. It also verifies that the
-        server does not respond with an right in "access" but not in
+        server does not respond with a right in "access" but not in
         "supported".
         """
         
@@ -286,11 +250,10 @@ class AccessTestCase(NFSTestCase):
             # Server should not return an access bit if this bit is not in supported. 
             self.failIf(access > supported, "access is %d, but supported is %d" % (access, supported))
 
-
     def testFile(self):
         """All valid combinations of ACCESS arguments on file
 
-        Covered valid equivalence classes: 8, 10
+        Covered valid equivalence classes: 7, 9
 
         Comments: See testDir. 
         """
@@ -312,7 +275,7 @@ class AccessTestCase(NFSTestCase):
     def testWithoutFh(self):
         """ACCESS should return NFS4ERR_NOFILEHANDLE if called without filehandle.
 
-        Covered invalid equivalence classes: 7
+        Covered invalid equivalence classes: 8
         
         """
         accessop = self.ncl.access_op(ACCESS4_READ)
@@ -323,7 +286,7 @@ class AccessTestCase(NFSTestCase):
     def testInvalids(self):
         """ACCESS should fail on invalid arguments
 
-        Covered invalid equivalence classes: 9
+        Covered invalid equivalence classes: 10
 
         Comments: ACCESS should return with NFS4ERR_INVAL if called
         with an illegal access request (eg. an integer with bits set
