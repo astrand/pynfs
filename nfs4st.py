@@ -111,8 +111,8 @@ class CompoundTestCase(NFSTestCase):
         res = self.do_compound([])
         self.assert_OK(res)
 
-    def testOperation1(self):
-        """Test COMPOUND with (undefined) operation 1
+    def testOperation1_2(self):
+        """Test COMPOUND with (undefined) operation 1 and 2
         """
 
         # nfs4types.nfs_argop4 does not allow packing invalid operations. 
@@ -125,8 +125,12 @@ class CompoundTestCase(NFSTestCase):
             
             def pack(self, dummy=None):
                 self.packer.pack_nfs_opnum4(self.argop)
-                
+
         op = custom_nfs_argop4(self.ncl, argop=1)
+        res = self.do_compound([op])
+        self.assert_status(res, [NFS4ERR_NOTSUPP])
+
+        op = custom_nfs_argop4(self.ncl, argop=2)
         res = self.do_compound([op])
         self.assert_status(res, [NFS4ERR_NOTSUPP])
 
