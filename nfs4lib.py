@@ -27,7 +27,9 @@ NFS_PROGRAM = 100003
 NFS_VERSION = 4
 NFS_PORT = 2049
 
-BUFSIZE = 4096
+# FIXME
+#BUFSIZE = 4096
+BUFSIZE = 2
 
 
 import rpc
@@ -326,9 +328,8 @@ class PartialNFS4Client:
         
         self.rootfh = res.resarray[1].arm.arm.object
 
-    def do_read(self, fh):
+    def do_read(self, fh, offset=0, size=None):
         putfhoperation = self.putfh(fh)
-        offset = 0
         data = ""
 
         while 1:
@@ -340,9 +341,16 @@ class PartialNFS4Client:
             if res.resarray[1].arm.arm.eof:
                 break
 
+            # Have we got as much as we were asking for?
+            if size and (len(data) >= size):
+                break
+
             offset += BUFSIZE
 
-        return data
+        if size:
+            return data[:size]
+        else:
+            return data
 
     def do_close(self, fh, stateid):
         seqid = self.get_seqid()
@@ -468,7 +476,7 @@ class NFS4OpenFile:
     def read(self, size=None):
         if self.closed:
             raise ValueError("I/O operation on closed file")
-        data = self.ncl.do_read(self.fh)
+        data = self.ncl.do_read(self.fh, self.pos, size)
         self.pos += len(data)
         return data
 
