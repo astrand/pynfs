@@ -99,6 +99,12 @@ class CompoundTestCase(NFSTestCase):
         self.failIf(res.resarray, "expected empty result array after"\
                     "NFS4ERR_MINOR_VERS_MISMATCH")
 
+    def testZeroOps(self):
+        """Test COMPOUND without operations"""
+
+        res = self.ncl.compound([])
+        self.assert_OK(res)
+
 
 class AccessTestCase(NFSTestCase):
     """Test ACCESS operation.
