@@ -2788,7 +2788,6 @@ class SetclientidconfirmTestCase(NFSTestCase):
         self.assert_status(res, [NFS4ERR_STALE_CLIENTID])
 
 
-
 class VerifyTestCase(NFSTestCase):
     """Test VERIFY operation
 
@@ -2876,10 +2875,42 @@ class VerifyTestCase(NFSTestCase):
 
             self.assert_status(res, [NFS4ERR_NOT_SAME])
 
-
     #
     # Testcases covering invalid equivalence classes.
     #
+    def testNoFh(self):
+        """VERIFY without (cfh) should return NFS4ERR_NOFILEHANDLE
+
+        Covered invalid equivalence classes: 8
+        """
+        attrmask = nfs4lib.list2attrmask([FATTR4_SIZE])
+        # Size attribute is 8 bytes. 
+        attr_vals = nfs4lib.long2opaque(17, 8)
+        obj_attributes = nfs4lib.fattr4(self.ncl, attrmask, attr_vals)
+        verifyop = self.ncl.verify_op(obj_attributes)
+        res = self.do_compound([verifyop])
+        self.assert_status(res, [NFS4ERR_NOFILEHANDLE])
+
+    def testWriteOnlyAttributes(self):
+        """VERIFY with FATTR4_*_SET should return NFS4ERR_INVAL
+
+        Covered invalid equivalence classes: 10
+
+        Comments: See GetattrTestCase.testWriteOnlyAttributes. 
+        """
+        lookupop = self.ncl.lookup_op(self.normfile)
+
+        # Verify
+        attrmask = nfs4lib.list2attrmask([FATTR4_TIME_ACCESS_SET])
+        # Size attribute is 8 bytes. 
+        attr_vals = nfs4lib.long2opaque(17, 8)
+        obj_attributes = nfs4lib.fattr4(self.ncl, attrmask, attr_vals)
+        verifyop = self.ncl.verify_op(obj_attributes)
+        
+        res = self.do_compound([self.putrootfhop, lookupop, verifyop])
+        self.assert_status(res, [NFS4ERR_INVAL])
+
+
 
 class WriteTestCase(NFSTestCase):
     # FIXME
