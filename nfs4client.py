@@ -67,7 +67,8 @@ else:
         commands = [
             "help", "cd", "rm", "dir", "ls", "exit", "quit", "get",
             "put", "mkdir", "md", "rmdir", "rd", "cat", "page",
-            "debug", "ping", "version", "pythonmode", "shell", "access"]
+            "debug", "ping", "version", "pythonmode", "shell", "access",
+            "create"]
 
         def complete(self, text, state):
             """Return the next possible completion for 'text'.
@@ -171,9 +172,10 @@ class ClientApp(cmd.Cmd):
             res = self.ncl.compound(operations)
             try:
                 nfs4lib.check_result(res)
-            except:
+            except nfs4lib.BadCompoundRes, r:
                 # FIXME: More detailed error handling. 
-                print "Cannot change directory to", line
+                print "Cannot change directory to %s: operation %d returned %d" \
+                      % (line, r.operation, r.errcode)
                 return
 
             self.ncl.cwd = candidate_cwd
@@ -198,7 +200,13 @@ class ClientApp(cmd.Cmd):
         operations.append(getfhop)
 
         res = self.ncl.compound(operations)
-        nfs4lib.check_result(res)
+        try:
+            nfs4lib.check_result(res)
+        except nfs4lib.BadCompoundRes, r:
+            print "Cannot list directory: operation %d returned %d" \
+                  % (r.operation, r.errcode)
+            return
+            
         getfhresult = res.resarray[-1].arm
         fh = getfhresult.arm.object
         
@@ -257,7 +265,12 @@ class ClientApp(cmd.Cmd):
         # ACCESS
         operations.append(self.ncl.access_op(allrights))
         res = self.ncl.compound(operations)
-        nfs4lib.check_result(res)
+        try:
+            nfs4lib.check_result(res)
+        except nfs4lib.BadCompoundRes, r:
+            print "access failed: operation %d returned %d" \
+                  % (r.operation, r.errcode)
+            return
 
         access = res.resarray[-1].arm.arm.access
 
@@ -274,6 +287,48 @@ class ClientApp(cmd.Cmd):
         print "ACCESS4_DELETE is", is_allowed(access, ACCESS4_DELETE)
         print "ACCESS4_EXECUTE is", is_allowed(access, ACCESS4_EXECUTE)
 
+    def do_create(self, line):
+        # FIXME: Should be able to create objects in other dirs than cwd. 
+        if len(line.split()) < 2:
+            print "create <type> <name> <arguments>"
+            return
+
+        (type, objname) = line.split(None, 3)[:2]
+        if type == "link":
+            pass
+        elif type == "block":
+            pass
+        elif type == "char":
+            pass
+        elif type == "socket":
+            pass
+        elif type == "fifo":
+            pass
+        elif type == "dir":
+            objtype = createtype4(self.ncl, type=NF4DIR)
+        else:
+            print "unknown type"
+            return
+
+        # PUTROOT
+        operations = [self.ncl.putrootfh_op()]
+
+        # LOOKUP
+        pathname = nfs4lib.str2pathname(self.ncl.cwd)
+        if pathname:
+            operations.append(self.ncl.lookup_op(pathname))
+
+        # CREATE
+        createop = self.ncl.create_op(objname, objtype)
+        operations.append(createop)
+
+        try:
+            res = self.ncl.compound(operations)
+            nfs4lib.check_result(res)
+        except nfs4lib.BadCompoundRes, r:
+            print "create failed: operation %d returned %d" \
+                  % (r.operation, r.errcode)
+            return
 
     def do_put(self, line):
         # FIXME: Not tested. 
