@@ -329,6 +329,8 @@ def gen_unpack_code(ip, id, typedecl):
             else:
                 # Variable length opaque data
                 ip.pr("self.%s = self.unpacker.unpack_opaque()" % id)
+        elif typedecl.isarray:
+            ip.pr("self.%s = self.unpacker.unpack_array(self.unpacker.unpack_%s)" %  (id, typedecl.base_type))
         else:
             ip.pr("self.%s = self.unpacker.unpack_%s()" % (id, typedecl.base_type))
 
