@@ -309,6 +309,7 @@ def gen_pack_code(ip, id, typedecl):
         else:
             ip.pr("self.%s.pack()" % id)
     else:
+        # Simple data types, like strings, ints and floats
         if typedecl.base_type == "opaque":
             if typedecl.fixarray:
                 # Fixed length opaque data
@@ -316,6 +317,10 @@ def gen_pack_code(ip, id, typedecl):
             else:
                 # Variable length opaque data
                 ip.pr("self.packer.pack_opaque(self.%s)" % id)
+        elif typedecl.base_type == "string":
+            ip.pr("self.packer.pack_string(self.%s)" % id)
+        elif typedecl.isarray:
+            ip.pr("self.packer.pack_array(self.pack_%s, self.%s)" % (typedecl.base_type, id))
         else:
             ip.pr("self.packer.pack_%s(self.%s)" % (typedecl.base_type, id))
 
@@ -329,6 +334,7 @@ def gen_unpack_code(ip, id, typedecl):
             ip.pr("self.%s = %s(self)" % (id, typedecl.base_type))
             ip.pr("self.%s.unpack()" % id)
     else:
+        # Simple data types, like strings, ints and floats
         if typedecl.base_type == "opaque":
             if typedecl.fixarray:
                 # Fixed length opaque data
@@ -336,6 +342,8 @@ def gen_unpack_code(ip, id, typedecl):
             else:
                 # Variable length opaque data
                 ip.pr("self.%s = self.unpacker.unpack_opaque()" % id)
+        elif typedecl.base_type == "string":
+            ip.pr("self.%s = self.unpacker.unpack_string()" % id)
         elif typedecl.isarray:
             ip.pr("self.%s = self.unpacker.unpack_array(self.unpacker.unpack_%s)" %  (id, typedecl.base_type))
         else:
