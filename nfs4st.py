@@ -1017,7 +1017,8 @@ class GetFhTestCase(NFSTestCase):
 class LinkTestCase(NFSTestCase):
     """Test LINK operation
 
-    FIXME: Add attribute directory and named attribute testing. 
+    FIXME: Add attribute directory and named attribute testing.
+    FIXME: More combintations of invalid filehandle types. 
 
     Equivalence partitioning:
 
@@ -1044,7 +1045,7 @@ class LinkTestCase(NFSTestCase):
         Invalid equivalence classes:
             zerolength(13)
 
-    Comments: It's not possible to cover eq. class 12, since saving a filehandle
+    Comments: It's not possible to cover eq. class 11, since saving a filehandle
     gives a current filehandle as well. 
     """
 
@@ -2188,10 +2189,13 @@ class ReadlinkTestCase(NFSTestCase):
 
 class RemoveTestCase(NFSTestCase):
     # FIXME
+    # Test (OPEN, REMOVE, WRITE) etc. Wait for final decision. 
     pass
 
 class RenameTestCase(NFSTestCase):
     # FIXME
+    # Note: Test renaming of a named attribute
+    # to be a regular file and vice versa.
     pass
 
 class RenewTestCase(NFSTestCase):
