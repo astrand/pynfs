@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) The Internet Society (1998,1999,2000).
+ *  Copyright (C) The Internet Society (1998,1999,2000,2001).
  *  All Rights Reserved.
  */
 
@@ -8,7 +8,7 @@
  *
  */
 
-%#pragma ident	"%W%	%D%"
+%#pragma ident	"@(#)nfs4_prot.x	1.103	01/10/22"
 
 /*
  * Basic typedefs for RFC 1832 data type definitions
@@ -92,7 +92,13 @@ enum nfsstat4 {
 	NFS4ERR_LOCK_RANGE	= 10028,
 	NFS4ERR_SYMLINK		= 10029,
 	NFS4ERR_READDIR_NOSPC	= 10030,
-	NFS4ERR_LEASE_MOVED	= 10031
+	NFS4ERR_LEASE_MOVED	= 10031,
+	NFS4ERR_ATTRNOTSUPP	= 10032,
+	NFS4ERR_NO_GRACE	= 10033,
+	NFS4ERR_RECLAIM_BAD	= 10034,
+	NFS4ERR_RECLAIM_CONFLICT = 10035,
+	NFS4ERR_BADXDR		= 10036,
+	NFS4ERR_LOCKS_HELD	= 10037
 };
 
 /*
@@ -103,7 +109,6 @@ typedef uint64_t	offset4;
 typedef uint32_t	count4;
 typedef	uint64_t	length4;
 typedef uint64_t	clientid4;
-typedef uint64_t	stateid4;
 typedef uint32_t	seqid4;
 typedef opaque		utf8string<>;
 typedef utf8string	component4;
@@ -401,8 +406,8 @@ const FATTR4_NO_TRUNC		= 34;
 const FATTR4_NUMLINKS		= 35;
 const FATTR4_OWNER		= 36;
 const FATTR4_OWNER_GROUP	= 37;
-const FATTR4_QUOTA_HARD		= 38;
-const FATTR4_QUOTA_SOFT		= 39;
+const FATTR4_QUOTA_AVAIL_HARD	= 38;
+const FATTR4_QUOTA_AVAIL_SOFT	= 39;
 const FATTR4_QUOTA_USED		= 40;
 const FATTR4_RAWDEV		= 41;
 const FATTR4_SPACE_AVAIL	= 42;
@@ -449,8 +454,16 @@ struct clientaddr4 {
  * Callback program info as provided by the client
  */
 struct cb_client4 {
-	unsigned int	cb_program;
+	uint32_t	cb_program;
 	clientaddr4	cb_location;
+};
+
+/*
+ * Stateid
+ */
+struct stateid4 {
+	uint32_t	seqid;
+	opaque		other[12];
 };
 
 /*
@@ -461,7 +474,12 @@ struct nfs_client_id4 {
 	opaque 		id<>;
 };
 
-struct nfs_lockowner4 {
+struct open_owner4 {
+	clientid4	clientid;
+	opaque		owner<>;
+};
+
+struct lock_owner4 {
 	clientid4	clientid;
 	opaque		owner<>;
 };
@@ -470,7 +488,8 @@ enum nfs_lock_type4 {
 	READ_LT 	= 1,
 	WRITE_LT 	= 2,
 	READW_LT 	= 3,	/* blocking read */
-	WRITEW_LT 	= 4	/* blocking write */
+	WRITEW_LT 	= 4,	/* blocking write */
+	RELEASE_STATE	= 5	/* release lock_stateid state at server */
 };
 
 /*
@@ -506,12 +525,12 @@ union ACCESS4res switch (nfsstat4 status) {
 struct CLOSE4args {
 	/* CURRENT_FH: object */
 	seqid4		seqid;
-	stateid4	stateid;
+	stateid4	open_stateid;
 };
 
 union CLOSE4res switch (nfsstat4 status) {
  case NFS4_OK:
-	 stateid4	stateid;
+	 stateid4	open_stateid;
  default:
 	 void;
 };
@@ -538,7 +557,7 @@ union COMMIT4res switch (nfsstat4 status) {
 };
 
 /*
- * CREATE: Create a file
+ * CREATE: Create a non-regular file
  */
 union createtype4 switch (nfs_ftype4 type) {
  case NF4LNK:
@@ -554,12 +573,14 @@ union createtype4 switch (nfs_ftype4 type) {
 
 struct CREATE4args {
 	/* CURRENT_FH: directory for creation */
-	component4	objname;
 	createtype4	objtype;
+	component4	objname;
+	fattr4		createattrs;
 };
 
 struct CREATE4resok {
-	change_info4     cinfo;
+	change_info4    cinfo;
+	bitmap4		attrset;	/* attributes set */
 };
 
 union CREATE4res switch (nfsstat4 status) {
@@ -584,7 +605,7 @@ struct DELEGPURGE4res {
  * DELEGRETURN: Return a delegation
  */
 struct DELEGRETURN4args {
-	stateid4	stateid;
+	stateid4	deleg_stateid;
 };
 
 struct DELEGRETURN4res {
@@ -645,27 +666,60 @@ union LINK4res switch (nfsstat4 status) {
 };
 
 /*
+ * For LOCK, transition from open_owner to new lock_owner
+ */
+struct open_to_lock_owner4 {
+	seqid4		open_seqid;
+	stateid4	open_stateid;
+	seqid4		lock_seqid;
+	lock_owner4	lock_owner;
+};
+	
+/*
+ * For LOCK, existing lock_owner continues to request file locks
+ */
+struct exist_lock_owner4 {
+	stateid4	lock_stateid;
+	seqid4		lock_seqid;
+};
+
+union locker4 switch (bool new_lock_owner) {
+ case TRUE:
+	open_to_lock_owner4	open_owner;
+ case FALSE:
+	exist_lock_owner4	lock_owner;
+};
+
+/*
  * LOCK/LOCKT/LOCKU: Record lock management
  */
 struct LOCK4args {
 	/* CURRENT_FH: file */
 	nfs_lock_type4	locktype;
-	seqid4		seqid;
 	bool		reclaim;
-	stateid4	stateid;
 	offset4		offset;
 	length4		length;
+	locker4		locker;
 };
 
 struct LOCK4denied {
-	nfs_lockowner4	owner;
 	offset4		offset;
 	length4		length;
+	nfs_lock_type4	locktype;
+	lock_owner4	owner;
+};
+
+/* Client must confirm lock */
+const LOCK4_RESULT_CONFIRM	= 0x000000001;
+
+struct LOCK4resok {
+	uint32_t	rflags;		/* Result flags */
+	stateid4	lock_stateid;
 };
 
 union LOCK4res switch (nfsstat4 status) {
  case NFS4_OK:
-	 stateid4	stateid;
+	 LOCK4resok	resok4;
  case NFS4ERR_DENIED:
 	 LOCK4denied	denied;
  default:
@@ -675,9 +729,9 @@ union LOCK4res switch (nfsstat4 status) {
 struct LOCKT4args {
 	/* CURRENT_FH: file */
 	nfs_lock_type4	locktype;
-	nfs_lockowner4	owner;
 	offset4		offset;
 	length4		length;
+	lock_owner4	owner;
 };
 
 union LOCKT4res switch (nfsstat4 status) {
@@ -693,14 +747,14 @@ struct LOCKU4args {
 	/* CURRENT_FH: file */
 	nfs_lock_type4	locktype;
 	seqid4		seqid;
-	stateid4	stateid;
+	stateid4	lock_stateid;
 	offset4		offset;
 	length4		length;
 };
 
 union LOCKU4res switch (nfsstat4 status) {
  case	NFS4_OK:
-	 stateid4	stateid;
+	 stateid4	lock_stateid;
  default:
 	 void;
 };
@@ -710,7 +764,7 @@ union LOCKU4res switch (nfsstat4 status) {
  */
 struct LOOKUP4args {
 	/* CURRENT_FH: directory */
-	pathname4 	path;
+	component4 	objname;
 };
 
 struct LOOKUP4res {
@@ -814,8 +868,8 @@ enum open_claim_type4 {
 };
  
 struct open_claim_delegate_cur4 {
-	pathname4	file;
 	stateid4	delegate_stateid;
+	component4	file;
 };
 
 union open_claim4 switch (open_claim_type4 claim) {
@@ -824,7 +878,7 @@ union open_claim4 switch (open_claim_type4 claim) {
   */
  case CLAIM_NULL:
 	/* CURRENT_FH: directory */
-	pathname4	file;
+	component4	file;
 
  /*
   * Right to the file established by an open previous to server
@@ -833,7 +887,7 @@ union open_claim4 switch (open_claim_type4 claim) {
   */
  case CLAIM_PREVIOUS:
 	/* CURRENT_FH: file being reclaimed */
-	uint32_t	delegate_type;
+	open_delegation_type4	delegate_type;
 
  /*
   * Right to file based on a delegation granted by the server.
@@ -848,19 +902,19 @@ union open_claim4 switch (open_claim_type4 claim) {
   */
  case CLAIM_DELEGATE_PREV:
 	 /* CURRENT_FH: directory */
-	pathname4	file_delegate_prev;
+	component4	file_delegate_prev;
 };
 
 /*
  * OPEN: Open a file, potentially receiving an open delegation
  */
 struct OPEN4args {
-	open_claim4	claim;
-	openflag4	openhow;
-	nfs_lockowner4	owner;
 	seqid4		seqid;
 	uint32_t	share_access;
 	uint32_t	share_deny;
+	open_owner4	owner;
+	openflag4	openhow;
+	open_claim4	claim;
 };
 
 struct open_read_delegation4 {
@@ -914,7 +968,7 @@ struct OPEN4resok {
 	stateid4	stateid;	/* Stateid for open */
 	change_info4	cinfo;		/* Directory Change Info */
 	uint32_t	rflags;		/* Result flags */
-	verifier4	open_confirm;	/* OPEN_CONFIRM verifier */
+	bitmap4		attrset;	/* attributes set for create */
 	open_delegation4 delegation;	/* Info on any open
 					   delegation */
 };
@@ -930,8 +984,13 @@ union OPEN4res switch (nfsstat4 status) {
 /*
  * OPENATTR: open named attributes directory
  */
+struct OPENATTR4args {
+	/* CURRENT_FH: object */
+	bool	createdir;
+};
+
 struct OPENATTR4res {
-	/* CURRENT_FH: name attr directory*/
+	/* CURRENT_FH: named attr directory */
 	nfsstat4	status;
 };
 
@@ -940,12 +999,12 @@ struct OPENATTR4res {
  */
 struct OPEN_CONFIRM4args {
 	/* CURRENT_FH: opened file */
+	stateid4	open_stateid;
 	seqid4		seqid;
-	verifier4	open_confirm;	/* OPEN_CONFIRM verifier */
 };
 
 struct OPEN_CONFIRM4resok {
-	stateid4	stateid;
+	stateid4	open_stateid;
 };
 
 union OPEN_CONFIRM4res switch (nfsstat4 status) {
@@ -960,14 +1019,14 @@ union OPEN_CONFIRM4res switch (nfsstat4 status) {
  */
 struct OPEN_DOWNGRADE4args {
 	/* CURRENT_FH: opened file */
-	stateid4	stateid;
+	stateid4	open_stateid;
 	seqid4		seqid;
 	uint32_t	share_access;
 	uint32_t	share_deny;
 };
 
 struct OPEN_DOWNGRADE4resok {
-	   stateid4	   stateid;
+	stateid4	open_stateid;
 };
 
 union OPEN_DOWNGRADE4res switch(nfsstat4 status) {
@@ -1124,7 +1183,7 @@ union RENAME4res switch (nfsstat4 status) {
  * RENEW: Renew a Lease
  */
 struct RENEW4args {
-	stateid4	stateid;
+	clientid4	clientid;
 };
 
 struct RENEW4res {
@@ -1152,7 +1211,7 @@ struct SAVEFH4res {
  * SECINFO: Obtain Available Security Mechanisms
  */
 struct SECINFO4args {
-	/* CURRENT_FH: */
+	/* CURRENT_FH: directory */
 	component4	name;
 };
 
@@ -1171,14 +1230,13 @@ struct rpcsec_gss_info {
 	rpc_gss_svc_t	service;
 };  
  
-struct secinfo4 {
-	uint32_t	flavor;
-	/* null for AUTH_SYS, AUTH_NONE;
-	   contains rpcsec_gss_info for
-	   RPCSEC_GSS. */
-	opaque		flavor_info<>;
+union secinfo4 switch (uint32_t flavor) {
+ case RPCSEC_GSS:
+	 rpcsec_gss_info	flavor_info;
+ default:
+	 void;
 };
- 
+
 typedef secinfo4 SECINFO4resok<>;
 
 union SECINFO4res switch (nfsstat4 status) {
@@ -1212,7 +1270,6 @@ struct SETCLIENTID4args {
 
 struct SETCLIENTID4resok {
 	clientid4	clientid;
-	verifier4	setclientid_confirm;
 };
 
 union SETCLIENTID4res switch (nfsstat4 status) {
@@ -1225,7 +1282,7 @@ union SETCLIENTID4res switch (nfsstat4 status) {
 };
 
 struct SETCLIENTID_CONFIRM4args {
-	verifier4	setclientid_confirm;
+	clientid4	clientid;
 };
 
 struct SETCLIENTID_CONFIRM4res {
@@ -1329,12 +1386,12 @@ union nfs_argop4 switch (nfs_opnum4 argop) {
  case OP_LINK:		LINK4args oplink;
  case OP_LOCK:		LOCK4args oplock;
  case OP_LOCKT:		LOCKT4args oplockt;
- case OP_LOCKU:		LOCK4args oplocku;
+ case OP_LOCKU:		LOCKU4args oplocku;
  case OP_LOOKUP:	LOOKUP4args oplookup;
  case OP_LOOKUPP:	void;
  case OP_NVERIFY:	NVERIFY4args opnverify;
  case OP_OPEN:		OPEN4args opopen;
- case OP_OPENATTR:	void;
+ case OP_OPENATTR:	OPENATTR4args opopenattr;
  case OP_OPEN_CONFIRM:	OPEN_CONFIRM4args opopen_confirm;
  case OP_OPEN_DOWNGRADE:	OPEN_DOWNGRADE4args opopen_downgrade;
  case OP_PUTFH:		PUTFH4args opputfh;
@@ -1504,4 +1561,4 @@ program NFS4_CALLBACK {
 		CB_COMPOUND4res
 			CB_COMPOUND(CB_COMPOUND4args) = 1;
 	} = 1;
-} = 40000000;
+} = 0x40000000;
