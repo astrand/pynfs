@@ -3251,10 +3251,15 @@ class SecinfoSuite(NFSSuite):
 
         Covered invalid equivalence classes: 23
 
-        Comments: Not yet implemented. 
+        Comments: It does'nt matter that the files does not exist; the UTF8
+        check should return NFS4ERR_INVAL anyway. 
         """
-        # FIXME: Implement
-        self.info_message("(TEST NOT IMPLEMENTED)")
+        for name in self.get_invalid_utf8strings():
+            operations = [self.putrootfhop] 
+            operations.append(self.ncl.secinfo_op(name))
+
+            res = self.do_compound(operations)
+            self.assert_status(res, [NFS4ERR_INVAL])
 
     #
     # Extra tests. 
