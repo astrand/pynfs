@@ -115,13 +115,14 @@ class PartialNFS4Client:
         self.verifier = None
         # Current directory. A list of components, like ["doc", "porting"]
         self.cwd = []
-        # FIXME
-        self.owner = 0
         # Set in sub-classes
         self.gid = None
         self.uid = None
         # Send call stack in COMPOUND tag?
         self.debugtags = 0
+        # Owners
+        self.default_owner = os.getlogin()
+        self._active_owners = {}
 
     def mkcred(self):
 	if self.cred == None:
@@ -188,12 +189,26 @@ class PartialNFS4Client:
         # Use FQDN and pid as ID.
         return socket.gethostname() + str(os.getpid())
 
-    # FIXME
-    def get_owner(self):
-        self.owner += 1
-        self.owner = self.owner % 2**32L
-        return self.owner
+    def get_open_owner(self, ownername):
+        """Return ActiveStateOwner object with open_owner"""
+        return self._get_owner(ownername, open_owner4)
 
+    def get_lock_owner(self, ownername):
+        """Return ActiveStateOwner object with lock_owner"""
+        return self._get_owner(ownername, lock_owner4)
+
+    def _get_owner(self, ownername, createfunc):
+        if not self._active_owners.has_key(ownername):
+            # New owner
+            stateowner = createfunc(self, self.clientid, ownername)
+            active_owner = ActiveStateOwner(stateowner)
+            self._active_owners[ownername] = active_owner
+        else:
+            active_owner = self._active_owners[ownername]
+
+        assert(active_owner.stateowner.owner == ownername)
+        return active_owner
+        
     def get_pathcomps_rel(self, filename):
         """Transform a unix-like pathname, relative to self.ncl,
         to a list of components. If filename is not, assume "."
@@ -738,7 +753,6 @@ class ActiveStateOwner:
         self._seqid += 1
         self._seqid = self._seqid % 2**32L
         return self._seqid
-
         
 #
 # Misc. helper functions. 
@@ -1161,8 +1175,7 @@ class NFS4OpenFile:
         operations.extend(self.ncl.lookup_path(pathcomps[:-1]))
         filename = pathcomps[-1]
 
-        self.owner = ActiveStateOwner(open_owner4(self.ncl, self.ncl.clientid,
-                                                  long2opaque(self.ncl.get_owner())))
+        self.owner = self.ncl.get_open_owner(self.ncl.default_owner)
 
 	if mode == "r":
             openop = self.ncl.open(file=filename,
