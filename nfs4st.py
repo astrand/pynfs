@@ -847,9 +847,10 @@ class GetattrSuite(NFSSuite):
 
         Covered valid equivalence classes: 1, 2, 3, 4, 5, 6, 7, 9
         """
-        for lookupop in self.lookup_all_objects():
-            getattrop = self.ncl.getattr_op([FATTR4_SIZE])
-            res = self.do_compound([self.putrootfhop, lookupop, getattrop])
+        for lookupops in self.lookup_all_objects():
+            operations = [self.putrootfhop] + lookupops
+            operations.append(self.ncl.getattr_op([FATTR4_SIZE]))
+            res = self.do_compound(operations)
             self.assert_OK(res)
 
     #
@@ -874,11 +875,12 @@ class GetattrSuite(NFSSuite):
         FATTR4_TIME_ACCESS_SET and FATTR4_TIME_MODIFY_SET). If GETATTR
         is called with any of these, NFS4ERR_INVAL should be returned.
         """
-        lookupop = self.ncl.lookup_op(self.regfile)
-
-        getattrop = self.ncl.getattr([FATTR4_TIME_ACCESS_SET])
-        res = self.do_compound([self.putrootfhop, lookupop, getattrop])
-        self.failUnlessEqual(res.status, NFS4ERR_INVAL)
+        lookupops = self.ncl.lookup_path(self.regfile)
+        operations = [self.putrootfhop] + lookupops
+        operations.append(self.ncl.getattr([FATTR4_TIME_ACCESS_SET]))
+        
+        res = self.do_compound(operations)
+        self.assert_status(res, [NFS4ERR_INVAL])
 
     #
     # Misc. tests.
@@ -910,11 +912,12 @@ class GetattrSuite(NFSSuite):
         
         for attrname in all_mandatory_names:
             all_mandatory.append(attrbitnum_dict[attrname])
+
+        lookupops = self.ncl.lookup_path(self.regfile)
+        operations = [self.putrootfhop] + lookupops
+        operations.append(self.ncl.getattr(all_mandatory))
         
-        lookupop = self.ncl.lookup_op(self.regfile)
-        getattrop = self.ncl.getattr(all_mandatory)
-        
-        res = self.do_compound([self.putrootfhop, lookupop, getattrop])
+        res = self.do_compound(operations)
         self.assert_OK(res)
         obj = res.resarray[-1].arm.arm.obj_attributes
         d = nfs4lib.fattr2dict(obj)
@@ -936,10 +939,12 @@ class GetattrSuite(NFSSuite):
         Comments: This test calls GETATTR with request for attribute
         number 1000.  Servers should not fail on unknown attributes.
         """
-        lookupop = self.ncl.lookup_op(self.regfile)
+        lookupops = self.ncl.lookup_path(self.regfile)
+        lookupops = self.ncl.lookup_path(self.regfile)
+        operations = [self.putrootfhop] + lookupops
+        operations.append(self.ncl.getattr([1000]))
 
-        getattrop = self.ncl.getattr([1000])
-        res = self.do_compound([self.putrootfhop, lookupop, getattrop])
+        res = self.do_compound(operations)
         self.assert_OK(res)
 
     def testEmptyCall(self):
@@ -949,10 +954,11 @@ class GetattrSuite(NFSSuite):
 
         Comments: GETATTR should accept empty request
         """
-        lookupop = self.ncl.lookup_op(self.regfile)
+        lookupops = self.ncl.lookup_path(self.regfile)
+        operations = [self.putrootfhop] + lookupops
+        operations.append(self.ncl.getattr([]))
 
-        getattrop = self.ncl.getattr([])
-        res = self.do_compound([self.putrootfhop, lookupop, getattrop])
+        res = self.do_compound(operations)
         self.assert_OK(res)
 
     def testSupported(self):
@@ -963,10 +969,11 @@ class GetattrSuite(NFSSuite):
         Comments: GETATTR(FATTR4_SUPPORTED_ATTRS) should return at
         least all mandatory attributes
         """
-        lookupop = self.ncl.lookup_op(self.regfile)
+        lookupops = self.ncl.lookup_path(self.regfile)
+        operations = [self.putrootfhop] + lookupops
+        operations.append(self.ncl.getattr([FATTR4_SUPPORTED_ATTRS]))
 
-        getattrop = self.ncl.getattr([FATTR4_SUPPORTED_ATTRS])
-        res = self.do_compound([self.putrootfhop, lookupop, getattrop])
+        res = self.do_compound(operations)
         self.assert_OK(res)
 
         obj = res.resarray[-1].arm.arm.obj_attributes
