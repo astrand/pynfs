@@ -1,7 +1,34 @@
 
-# Original source from Python 2.2a2. 
-
-# Sun RPC version 2 -- RFC1057.
+# rpc.py - RFC1057/RFC1831
+#
+# Copyright (C) 2001  Peter Åstrand <peter@cendio.se>
+# All rights reserved.
+# 
+# Copyright (c) 2001 Python Software Foundation.
+# All rights reserved.
+# 
+# Copyright (c) 2000 BeOpen.com.
+# All rights reserved.
+# 
+# Copyright (c) 1995-2001 Corporation for National Research Initiatives.
+# All rights reserved.
+# 
+# Copyright (c) 1991-1995 Stichting Mathematisch Centrum.
+# All rights reserved.
+# 
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; version 2 of the License. 
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 # XXX The UDP version of the protocol resends requests when it does
 # XXX not receive a timely reply -- use only for idempotent calls!
