@@ -414,7 +414,8 @@ class CommitTestCase(NFSTestCase):
         Covered valid equivalence classes: 1, 9, 10, 11
 
         Comments: This component tests boundary values for the offset
-        parameter in the COMMIT operation. All values are legal.
+        parameter in the COMMIT operation. All values are
+        legal. Tested values are 0, 1 and 2**64 - 1 (selected by BVA)
         """
         path = nfs4lib.str2pathname(self.normfile)
         lookupop = self.ncl.lookup_op(path)
@@ -439,8 +440,9 @@ class CommitTestCase(NFSTestCase):
 
         Covered valid equivalence classes: 1, 9, 11, 12
 
-        This component tests boundary values for the count parameter in the
-        COMMIT operation. All values are legal. 
+        This component tests boundary values for the count parameter
+        in the COMMIT operation. All values are legal. Tested values
+        are 0, 1 and 2**64 - 1 (selected by BVA)
         """
         path = nfs4lib.str2pathname(self.normfile)
         lookupop = self.ncl.lookup_op(path)
