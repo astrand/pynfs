@@ -495,7 +495,16 @@ class NFS4OpenFile:
     def readlines(self, sizehint=None):
         if self.closed:
             raise ValueError("I/O operation on closed file")
-        self.read().split()[0]
+        data = self.ncl.do_read(self.fh, self.pos)
+
+        self.pos += len(data)
+
+        lines = data.split("\n")
+        if lines[len(lines)-1] == "":
+            lines = lines[:-1]
+        
+        # Append \n on all lines.
+        return map(lambda line: line + "\n", lines)
 
     def xreadlines(self):
         if self.closed:
