@@ -206,14 +206,22 @@ class NFSSuite(unittest.TestCase):
     def info_message(self, msg):
         print >> sys.stderr, "\n  " + msg + ", ",
 
+    def do_rpc(self, method, *args, **kwargs):
+        """Call method. Handle all rpc.RPCExceptions as failures"""
+        return self.failIfRaises(rpc.RPCException, method, *args, **kwargs)
+
     def do_compound(self, *args, **kwargs):
-        """Call ncl.compound. Handle all rpc.RPCExceptions as failures"""
+        """Call ncl.compound. Handle all rpc.RPCExceptions as failures
+
+        Uses self.ncl as default client, or other client specified via keyword
+        argument "ncl". 
+        """
         ncl = kwargs.get("ncl")
         if ncl:
             del kwargs["ncl"]
         else:
             ncl = self.ncl
-        return self.failIfRaises(rpc.RPCException, ncl.compound, *args, **kwargs)
+        self.do_rpc(ncl.compound, *args, **kwargs)
 
     def setUp(self):
         # Note: no network communication should be done in this method. 
@@ -316,7 +324,8 @@ class NFSSuite(unittest.TestCase):
         if not directory:
             directory = self.tmp_dir
 
-        fh = self.ncl.do_getfh(directory)
+        fh = self.do_rpc(self.ncl.do_getfh, directory)
+        
         entries = self.ncl.do_readdir(fh)
         names = [entry.name for entry in entries]
         if name in names:
