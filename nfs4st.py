@@ -1451,6 +1451,8 @@ class LookupTestCase(NFSTestCase):
     #
     def testDots(self):
         """LOOKUP should not treat "." or ".." special
+
+        Covered valid equivalence classes: 1, 5
         """
         lookupop = self.ncl.lookup_op(["doc", ".", "README"])
         res = self.do_compound([self.putrootfhop, lookupop])
@@ -1520,6 +1522,8 @@ class LookuppTestCase(NFSTestCase):
     #
     def testAtRoot(self):
         """LOOKUPP with (cfh) at root should return NFS4ERR_NOENT
+
+        Covered valid equivalence classes: 1
         """
         # CITI crashes on this one. 
         # FIXME: remove return
@@ -1771,8 +1775,6 @@ class OpenattrTestCase(NFSTestCase):
 
         # FIXME: Implement rest of testcase.
         self.info_message("(TEST NOT IMPLEMENTED)")
-
-                              
 
 
 class OpenconfirmTestCase(NFSTestCase):
