@@ -374,6 +374,10 @@ class AccessTestCase(NFSTestCase):
             self.failIf(access & ACCESS4_EXECUTE,
                         "server returned ACCESS4_EXECUTE for root dir (access=%d)" % access)
 
+
+class CloseTestCase(NFSTestCase):
+    # FIXME
+    pass
     
 
 class CommitTestCase(NFSTestCase):
@@ -795,6 +799,16 @@ class CreateTestCase(NFSTestCase):
 
         res = self.do_compound(operations)
         self.assert_status(res, [NFS4ERR_INVAL])
+
+
+class DelegpurgeTestCase(NFSTestCase):
+    # FIXME
+    pass
+
+
+class DelegreturnTestCase(NFSTestCase):
+    # FIXME
+    pass
 
 
 class GetattrTestCase(NFSTestCase):
