@@ -35,7 +35,7 @@ import os
 import time
 
 USAGE = """\
-Usage: %s host[:[port]]<directory> [-u|-t] [-d debuglevel]
+Usage: %s [nfs://]host[:[port]]<directory> [-u|-t] [-d debuglevel]
        [-c string] 
 options:
 -h, --help                   display this help and exit
@@ -124,7 +124,6 @@ class ClientApp(cmd.Cmd):
         self.transport = transport
         self.host = host
         self.port = port
-        self.directory = directory
         self.ncl = None
         self.debuglevel = debuglevel
 
@@ -135,6 +134,9 @@ class ClientApp(cmd.Cmd):
 
         self._connect()
         self._set_prompt()
+
+        # Try to CD to specified directory
+        self.do_cd(directory)
 
 
     def _connect(self):
@@ -581,7 +583,7 @@ if __name__ == "__main__":
         usage()
     else:
         # Parse host/port/directory part. 
-        match = re.search(r'^(?P<host>([a-zA-Z][\w\.]*|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}))'
+        match = re.search(r'^(?:nfs://)?(?P<host>([a-zA-Z][\w\.]*|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}))'
                           r'(?::(?P<port>\d*))?(?P<dir>/[\w/]*)?$', args[0])
         if not match:
             usage()
