@@ -3524,10 +3524,37 @@ class WriteSuite(NFSSuite):
         pass
 
 
-class QuietTextTestRunner(unittest.TextTestRunner):
+class MyTextTestResult(unittest._TextTestResult):
+    def __init__(self, print_tracebacks, stream, descriptions, verbosity):
+        unittest._TextTestResult.__init__(self, stream, descriptions, verbosity)
+        if not print_tracebacks:
+            self.printErrors = lambda: 0
+
+    def getID(self, test):
+        id = test.id()
+        if id.startswith("__main__"):
+            return id[9:]
+        else:
+            return id
+    
+    def startTest(self, test):
+        unittest.TestResult.startTest(self, test)
+        if self.showAll:
+            self.stream.write(self.getID(test) + ":\n")
+            self.stream.write(" " + self.getDescription(test))
+            self.stream.write(" ... ")
+
+class MyTextTestRunner(unittest.TextTestRunner):
+    def __init__(self, print_tracebacks, stream=None, descriptions=None, verbosity=None):
+        kwargs = {}
+        if stream: kwargs["stream"] = stream
+        if descriptions: kwargs["descriptions"] = descriptions
+        if verbosity: kwargs["verbosity"] = verbosity
+        unittest.TextTestRunner.__init__(self, **kwargs)
+        self.print_tracebacks = print_tracebacks
+    
     def _makeResult(self):
-        ttr = unittest._TextTestResult(self.stream, self.descriptions, self.verbosity)
-        ttr.printErrors = lambda: 0
+        ttr = MyTextTestResult(self.print_tracebacks, self.stream, self.descriptions, self.verbosity)
         return ttr
     
 
@@ -3555,7 +3582,7 @@ Examples:
         global host, port, transport
 
         self.verbosity = 2
-        self.display_tracebacks = 0
+        self.print_tracebacks = 0
 
         # Reorder arguments, so we can add options at the end 
         ordered_args = []
@@ -3581,7 +3608,7 @@ Examples:
             if opt in ('-q','--quiet'):
                 self.verbosity = 0
             if opt in ('-v','--verbose'):
-                self.display_tracebacks = 1
+                self.print_tracebacks = 1
 
         if len(args) < 1:
             self.usageExit()
@@ -3613,10 +3640,7 @@ Examples:
         self.createTests()
 
     def runTests(self):
-        if self.display_tracebacks:
-            self.testRunner = unittest.TextTestRunner(verbosity=self.verbosity)
-        else:
-            self.testRunner = QuietTextTestRunner(verbosity=self.verbosity)
+        self.testRunner = MyTextTestRunner(self.print_tracebacks, verbosity=self.verbosity)
         result = self.testRunner.run(self.test)
         sys.exit(not result.wasSuccessful())
 
