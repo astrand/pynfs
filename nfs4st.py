@@ -20,6 +20,7 @@
 
 # TODO:
 # Extend unittest with warnings.
+# Handle errors such as NFS4ERR_RESOURCE and NFS4ERR_DELAY. 
 
 # Note on docstrings: Each class inheriting NFSTestCase is referred to as a
 # "test case". Each test* method is a "invocable component", sometimes called
@@ -69,12 +70,34 @@ class NFSTestCase(unittest.TestCase):
         if res.status in errors:
             return
 
-        lastop = res.resarray[-1]
-        e = nfs4lib.BadCompoundRes(lastop.resop, lastop.arm.status)
-        self.fail(e)
+        if res.resarray:
+            lastop = res.resarray[-1]
+            e = nfs4lib.BadCompoundRes(lastop.resop, lastop.arm.status)
+            self.fail(e)
+        else:
+            self.fail(nfs4lib.EmptyCompoundRes())
 
     def info_message(self, msg):
         print >> sys.stderr, msg + ", ",
+
+
+class CompoundTestCase(NFSTestCase):
+    """Test COMPOUND procedure"""
+
+
+    def setUp(self):
+        self.connect()
+        self.putrootfhop = self.ncl.putrootfh_op()
+
+    def testInvalidMinor(self):
+        """Test COMPOUND with invalid minor version"""
+        
+        res = self.ncl.compound([self.putrootfhop], minorversion=0xFFFF)
+        self.failIf(res.status != NFS4ERR_MINOR_VERS_MISMATCH,
+                    "expected NFS4ERR_MINOR_VERS_MISMATCH")
+                    
+        self.failIf(res.resarray, "expected empty result array after"\
+                    "NFS4ERR_MINOR_VERS_MISMATCH")
 
 
 class AccessTestCase(NFSTestCase):
