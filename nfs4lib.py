@@ -679,6 +679,7 @@ class PartialNFS4Client:
 # Misc. helper functions. 
 #
 def check_result(compoundres):
+    """Verify that a COMPOUND call was successful"""
     if not compoundres.status:
         return
 
@@ -687,17 +688,28 @@ def check_result(compoundres):
     raise BadCompoundRes(resop.resop, resop.arm.status)
 
 def verify_compound_result(res):
-    """Check that COMPOUND result is sane"""
+    """Check that COMPOUND result is sane, in every way
+
+    There is usually no need to use this function explicitly, since compound()
+    method always does that automatically. 
+    """
     if res.status == NFS4_OK:
         # All operations status should also be NFS4_OK
+        # Note: A zero-length res.resarray is possible
         for resop in res.resarray:
             if resop.arm.status != NFS4_OK:
                 raise InvalidCompoundRes()
     else:
-        # res.status must be equal to lastop.arm.status
+        # Note: A zero-length res.resarray is possible
         if res.resarray:
+            # All operations up to the last operation returned should be NFS4_OK
+            for resop in res.resarray[:-1]:
+                if resop.arm.status != NFS4_OK:
+                    raise InvalidCompoundRes()
+
+            # The last operation result must be equal to res.status
             lastop = res.resarray[-1]
-            if res.status != lastop.arm.status:
+            if lastop.arm.status != res.status:
                 raise InvalidCompoundRes()
 
 def unixpath2comps(str, pathcomps=[]):
