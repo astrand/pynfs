@@ -1876,8 +1876,24 @@ class PutpubfhTestCase(NFSTestCase):
 
 
 class PutrootfhTestCase(NFSTestCase):
-    # FIXME
-    pass
+    """Test PUTROOTFH operation
+
+    Equivalence partitioning:
+
+    Input Condition: -
+    """
+    def setUp(self):
+        self.connect()
+
+    def testOp(self):
+        """Testing PUTROOTFH
+
+        Covered valid equivalence classes: -
+        """
+        putrootfhop = self.ncl.putrootfh_op()
+        res = self.do_compound([putrootfhop])
+        self.assert_OK(res)
+
 
 class ReadTestCase(NFSTestCase):
     # FIXME
