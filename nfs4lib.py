@@ -366,9 +366,9 @@ class PartialNFS4Client:
 	args = SETCLIENTID_CONFIRM4args(self, setclientid_confirm)
         return nfs_argop4(self, argop=OP_SETCLIENTID_CONFIRM, opsetclientid_confirm=args)
 
-    def verify(self):
-        # FIXME
-        raise NotImplementedError()
+    def verify_op(self, obj_attributes):
+        args = VERIFY4args(self, obj_attributes)
+	return nfs_argop4(self, argop=OP_VERIFY, opverify=args)
 
     def write_op(self, stateid, offset, stable, data):
 	args = WRITE4args(self, stateid, offset, stable, data)
