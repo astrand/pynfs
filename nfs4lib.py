@@ -61,8 +61,6 @@ class PartialNFS4Client:
         self.verifier = None
         # Current directory. A string, like /doc/foo. 
         self.cwd = "/"
-        # Root directory
-        self.rootfh = None
         # Last seqid
         self.seqid = 0
 
@@ -70,6 +68,10 @@ class PartialNFS4Client:
     def addpackers(self):
         self.packer = nfs4packer.NFS4Packer()
         self.unpacker = nfs4packer.NFS4Unpacker('')
+
+    #
+    # RPC procedures
+    #
 
     def null(self):
 	return self.make_call(0, None, None, None)
@@ -277,7 +279,6 @@ class PartialNFS4Client:
 
     def setclientid_confirm(self, setclientid_confirm):
         args = SETCLIENTID_CONFIRM4args(self, setclientid_confirm=setclientid_confirm)
-        
         return nfs_argop4(self, argop=OP_SETCLIENTID_CONFIRM, opsetclientid_confirm=args)
 
     def verify(self):
@@ -297,12 +298,12 @@ class PartialNFS4Client:
         raise NotImplementedError()
     
     #
-    # NFS convenience methods
+    # NFS convenience methods. Calls server. 
     #
     def init_connection(self):
         # SETCLIENTID
-        op = self.setclientid()
-        res =  self.compound([op])
+        setclientidop = self.setclientid()
+        res =  self.compound([setclientidop])
 
         check_result(res)
         
@@ -310,30 +311,19 @@ class PartialNFS4Client:
         setclientid_confirm = res.resarray[0].arm.resok4.setclientid_confirm
 
         # SETCLIENTID_CONFIRM
-        op = self.setclientid_confirm(setclientid_confirm)
-        res =  self.compound([op])
+        setclientid_confirmop = self.setclientid_confirm(setclientid_confirm)
+        res =  self.compound([setclientid_confirmop])
 
         check_result(res)
         
-        # Fetch root filehandle.
-        self.fetch_root()
-
-    def fetch_root(self):
-        putrootfhoperation = self.putrootfh()
-        getfhoperation = self.getfh()
-        res =  self.compound([putrootfhoperation, getfhoperation])
-
-        check_result(res)
-        
-        self.rootfh = res.resarray[1].arm.arm.object
 
     def do_read(self, fh, offset=0, size=None):
-        putfhoperation = self.putfh(fh)
+        putfhop = self.putfh(fh)
         data = ""
 
         while 1:
-            op = self.read(count=BUFSIZE, offset=offset)
-            res = self.compound([putfhoperation, op])
+            readop = self.read(count=BUFSIZE, offset=offset)
+            res = self.compound([putfhop, readop])
             check_result(res)
             data += res.resarray[1].arm.arm.data
             
@@ -353,14 +343,16 @@ class PartialNFS4Client:
 
     def do_close(self, fh, stateid):
         seqid = self.get_seqid()
-        putfhoperation = self.putfh(fh)
+        putfhop = self.putfh(fh)
         closeop = self.close(seqid, stateid)
-        res = self.compound([putfhoperation, closeop])
+        res = self.compound([putfhop, closeop])
         check_result(res)
 
         return res.resarray[1].arm.stateid
         
-
+#
+# Misc. helper functions. 
+#
 def check_result(compoundres):
     if not compoundres.status:
         return
@@ -444,10 +436,10 @@ class NFS4OpenFile:
 
         pathname = str2pathname(filename, pathname)
 
-        putrootfhoperation = self.ncl.putrootfh()
-        op = self.ncl.open(file=pathname)
-        getfhoperation = self.ncl.getfh()
-        res =  self.ncl.compound([putrootfhoperation, op, getfhoperation])
+        putrootfhop = self.ncl.putrootfh()
+        openop = self.ncl.open(file=pathname)
+        getfhop = self.ncl.getfh()
+        res =  self.ncl.compound([putrootfhop, openop, getfhop])
 
         check_result(res)
         
@@ -558,6 +550,7 @@ class NFS4OpenFile:
 
 
 if __name__ == "__main__":
+    # Demo
     import sys
     if len(sys.argv) < 3:
         print "Usage: %s <protocol> <host>" % sys.argv[0]
@@ -575,10 +568,8 @@ if __name__ == "__main__":
     # PUTROOT & GETFH
     putrootfhoperation = nfs_argop4(ncl, argop=OP_PUTROOTFH)
     getfhoperation = nfs_argop4(ncl, argop=OP_GETFH)
-    
     res =  ncl.compound([putrootfhoperation, getfhoperation])
-
     fh = res.resarray[1].opgetfh.resok4.object
-    print "fh is", repr(fh)
+    print "Root filehandles is", repr(fh)
 
 
