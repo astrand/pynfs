@@ -1764,12 +1764,14 @@ class PutfhSuite(NFSSuite):
         # Fetch filehandles of all types
         # List with (objpath, fh)
         filehandles = []
-        for lookupop in self.lookup_all_objects():
-            getfhop = self.ncl.getfh_op()
-            res = self.do_compound([self.putrootfhop, lookupop, getfhop])
+        for lookupops in self.lookup_all_objects():
+            operations = [self.putrootfhop] + lookupops
+            
+            operations.append(self.ncl.getfh_op())
+            res = self.do_compound(operations)
             self.assert_OK(res)
 
-            objpath = str(lookupop.arm.path)
+            objpath = self.lookuplist2comps(lookupops)
             fh = res.resarray[-1].arm.arm.object
             filehandles.append((objpath, fh))
 
@@ -1781,7 +1783,8 @@ class PutfhSuite(NFSSuite):
             self.assert_OK(res)
 
             new_fh = res.resarray[-1].arm.arm.object
-            self.failIf(new_fh != fh, "GETFH after PUTFH returned different fh")
+            self.failIf(new_fh != fh, "GETFH after PUTFH returned different fh "\
+                        "for object %s" % objpath)
 
     #
     # Testcases covering invalid equivalence classes.
