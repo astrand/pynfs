@@ -68,7 +68,7 @@ else:
             "help", "cd", "rm", "dir", "ls", "exit", "quit", "get",
             "put", "mkdir", "md", "rmdir", "rd", "cat", "page",
             "debug", "ping", "version", "pythonmode", "shell", "access",
-            "create"]
+            "create", "remove"]
 
         def complete(self, text, state):
             """Return the next possible completion for 'text'.
@@ -401,6 +401,35 @@ class ClientApp(cmd.Cmd):
         print
         
     do_page = do_cat
+    
+    def do_remove(self, line):
+        # FIXME: Should be able to remove objects in other dirs than cwd.
+        args = line.split()
+        if len(args) != 1:
+            print "remove <name>"
+            return
+
+        objname = args[0]
+
+        # PUTROOT
+        operations = [self.ncl.putrootfh_op()]
+
+        # LOOKUP
+        pathname = nfs4lib.str2pathname(self.ncl.cwd)
+        if pathname:
+            operations.append(self.ncl.lookup_op(pathname))
+
+        # REMOVE
+        removeop = self.ncl.remove_op(objname)
+        operations.append(removeop)
+
+        try:
+            res = self.ncl.compound(operations)
+            nfs4lib.check_result(res)
+        except nfs4lib.BadCompoundRes, r:
+            print "remove failed:", r
+            return
+
 
     def do_debug(self, line):
         # FIXME
