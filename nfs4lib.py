@@ -29,7 +29,7 @@ NFS_PORT = 2049
 
 # FIXME
 #BUFSIZE = 4096
-BUFSIZE = 2
+BUFSIZE = 10
 
 
 import rpc
@@ -483,14 +483,19 @@ class NFS4OpenFile:
     def readline(self, size=None):
         if self.closed:
             raise ValueError("I/O operation on closed file")
-        # FIXME
-        pass
+        data = self.ncl.do_read(self.fh, self.pos, size)
+        
+        if data:
+            line = data.split("\n", 1)[0] + "\n"
+            self.pos += len(line)
+            return line
+        else:
+            return ""
 
     def readlines(self, sizehint=None):
         if self.closed:
             raise ValueError("I/O operation on closed file")
-        # FIXME
-        pass
+        self.read().split()[0]
 
     def xreadlines(self):
         if self.closed:
