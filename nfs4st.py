@@ -525,6 +525,8 @@ class GetattrTestCase(NFSTestCase):
 
     def testOnFile(self):
         """Simple GETATTR on file
+
+        Test a simple GETATTR on a file and ask for the FATTR4_SIZE attribute. 
         """
         path = nfs4lib.str2pathname(self.normfile)
         lookupop = self.ncl.lookup_op(path)
@@ -537,7 +539,9 @@ class GetattrTestCase(NFSTestCase):
         pass
 
     def testAllMandatory(self):
-        """Test GETATTR can return all mandatory attributes 
+        """Test GETATTR can return all mandatory attributes
+
+        A server should be able to return all mandatory attributes. 
         """
 
         attrbitnum_dict = nfs4lib.get_attrbitnum_dict()
@@ -580,6 +584,10 @@ class GetattrTestCase(NFSTestCase):
 
     def testUnknown(self):
         """GETATTR should not fail on unknown attributes
+
+        This test calls GETATTR with request for attribute number 1000.
+        Servers should not fail on unknown attributes. 
+        
         """
         path = nfs4lib.str2pathname(self.normfile)
         lookupop = self.ncl.lookup_op(path)
@@ -588,6 +596,16 @@ class GetattrTestCase(NFSTestCase):
         res = self.do_compound([self.putrootfhop, lookupop, getattrop])
         self.assert_OK(res)
 
+    def testEmptyCall(self):
+        """GETATTR should accept empty request
+        """
+
+        path = nfs4lib.str2pathname(self.normfile)
+        lookupop = self.ncl.lookup_op(path)
+
+        getattrop = self.ncl.getattr([])
+        res = self.do_compound([self.putrootfhop, lookupop, getattrop])
+        self.assert_OK(res)
 
 
 class QuietTextTestRunner(unittest.TextTestRunner):
