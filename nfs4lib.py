@@ -366,7 +366,7 @@ class PartialNFS4Client:
 	args = WRITE4args(self, stateid, offset, stable, data)
 	return nfs_argop4(self, argop=OP_WRITE, opwrite=args)
 
-    def write(self, data, stateid, offset=0, stable=UNSTABLE4):
+    def write(self, data, stateid, offset=0, stable=FILE_SYNC4):
         return self.write_op(stateid, offset, stable, data)
 
     def cb_getattr(self):
@@ -421,7 +421,7 @@ class PartialNFS4Client:
         else:
             return data
 
-    def do_write(self, fh, data, stateid, offset=0, stable=UNSTABLE4):
+    def do_write(self, fh, data, stateid, offset=0, stable=FILE_SYNC4):
         putfhop = self.putfh_op(fh)
 	writeop = self.write(data, stateid, offset=offset, stable=stable)
 	res = self.compound([putfhop, writeop])
