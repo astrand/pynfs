@@ -429,6 +429,91 @@ class PartialNFS4Client:
         else:
             return data
 
+    def do_read_fast(self, fh, offset=0, size=None):
+        """Fast implementation of do_read"""
+
+        def fast_pack(args):
+            (ncl, fh, offset) = args
+            # No compound tag; zerolength opaque. 
+            ncl.packer.pack_uint(0)
+            # Minor version
+            ncl.packer.pack_uint32_t(0)
+
+            # Number of operations
+            ncl.packer.pack_uint(2)
+
+            # PUTFH
+            ncl.packer.pack_nfs_opnum4(OP_PUTFH)
+            ncl.packer.pack_opaque(fh)
+
+            # READ
+            ncl.packer.pack_nfs_opnum4(OP_READ)
+            ncl.packer.pack_stateid4(0)
+            ncl.packer.pack_offset4(offset)
+            ncl.packer.pack_count4(BUFSIZE)
+
+        def fast_unpack(ncl):
+            status = ncl.unpacker.unpack_nfsstat4()
+            if status:
+                raise BadCompoundRes(OP_READ, status)
+                
+            # Tag
+            ncl.unpacker.unpack_opaque()
+
+            # resarray
+            n = ncl.unpacker.unpack_uint()
+
+            # PUTFH result
+            argop = ncl.unpacker.unpack_nfs_opnum4()
+            status = ncl.unpacker.unpack_nfsstat4()
+
+            # READ result
+            argop = ncl.unpacker.unpack_nfs_opnum4()
+            status = ncl.unpacker.unpack_nfsstat4()
+            eof = ncl.unpacker.unpack_bool()
+            data = ncl.unpacker.unpack_opaque()
+            
+            return (eof, data)
+            
+        def custom_make_call(ncl, proc, pack_func, unpack_func,
+                             pack_args=None, unpack_args=None):
+            """customized rpc.make_call with possible argument to unpack_func"""
+            if pack_func is None and pack_args is not None:
+                raise TypeError("non-null pack_args with null pack_func")
+            ncl.start_call(proc)
+            if pack_func:
+                    pack_func(pack_args)
+            ncl.do_call()
+            if unpack_func:
+                    result = unpack_func(unpack_args)
+            else:
+                    result = None
+            ncl.unpacker.done()
+            return result
+
+
+        data = ""
+
+        while 1:
+            (eof, got_data) = custom_make_call(self, 1, fast_pack, fast_unpack,
+                                               (self, fh, offset), self)
+            data += got_data
+            
+            if eof:
+                break
+
+            # Have we got as much as we were asking for?
+            if size and (len(data) >= size):
+                break
+
+            offset += BUFSIZE
+
+        if size:
+            return data[:size]
+        else:
+            return data
+        
+
     def do_write(self, fh, data, stateid, offset=0, stable=FILE_SYNC4):
         putfhop = self.putfh_op(fh)
 	writeop = self.write(data, stateid, offset=offset, stable=stable)
@@ -783,7 +868,10 @@ class NFS4OpenFile:
     def read(self, size=None):
         if self.closed:
             raise ValueError("I/O operation on closed file")
-        data = self.ncl.do_read(self.fh, self.pos, size)
+        #data = self.ncl.do_read(self.fh, self.pos, size)
+        # do_read_fast is about 40% faster. But:
+        # FIXME: Verify that do_read_fast is robust. 
+        data = self.ncl.do_read_fast(self.fh, self.pos, size)
         self.pos += len(data)
         return data
 
