@@ -18,10 +18,8 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-# TODO: Exceptions.
+# TODO: 
 # Implement buffering in NFS4OpenFile.
-# Translation of error- and operation codes to enums.
-# FIXME: Error when transferring large files?
 
 
 NFS_PROGRAM = 100003
