@@ -23,7 +23,6 @@
 #
 # TODO:
 # Code generation for programs and procedures. 
-# __repr__ with discriminants should print symbolic values.
 #
 # BUGS:
 # rpcgen.py does not handle recursive data structures. Example from RFC1832:
@@ -546,7 +545,16 @@ def p_type_def_3(t):
     ip.change(-4)
     ip.pr("def __repr__(self):")
     ip.change(4)
-    ip.pr('return "<%s>"' % classname)
+    attributvalues = ""
+    substvalues = ""
+    for (id, typedecl) in struct_body:
+        attributvalues += " " + id + "=%s"
+        substvalues += "str(self." + id + "), "
+    # Remove last comma and space. 
+    substvalues = substvalues[:-2]
+    ip.pr('s = "%s" %% (%s)' % (attributvalues, substvalues))
+    ip.pr('if len(s) > 70: s = s[:70] + "..."')
+    ip.pr('return "<%s:%%s>" %% s' % classname)
     ip.cont("\n")
 
     # pack method
@@ -667,9 +675,18 @@ def p_type_def_4(t):
     ip.change(-4)
     ip.pr("def __repr__(self):")
     ip.change(4)
-    # Ouch! :)
-    ip.pr('return "<%s: discriminant:%%d>" %% self.%s' % (classname, switch_var_declaration[0]))
+    attributvalues = ""
+    substvalues = ""
+    for (id, typedecl) in all_decl:
+        attributvalues += " " + id + "=%s"
+        substvalues += "str(self." + id + "), "
+    # Remove last comma and space. 
+    substvalues = substvalues[:-2]
+    ip.pr('s = "%s" %% (%s)' % (attributvalues, substvalues))
+    ip.pr('if len(s) > 70: s = s[:70] + "..."')
+    ip.pr('return "<%s:%%s>" %% s' % classname)
     ip.cont("\n")
+
 
     # pack method
     ip.change(-4)
