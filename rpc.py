@@ -217,7 +217,7 @@ class Unpacker(xdrlib.Unpacker):
 	return (flavor, stuff)
 
     def unpack_callheader(self):
-	xid = self.unpack_uint(xid)
+	xid = self.unpack_uint()
 	msg_type = self.unpack_enum()
 	if msg_type <> CALL:
 	    raise BadRPCMsgType(msg_type)
@@ -263,7 +263,7 @@ class Unpacker(xdrlib.Unpacker):
 	if stat == GARBAGE_ARGS:
 	    raise RPCGarbageArgs()
 	if stat <> SUCCESS:
-	    raise RPCBadAcceptStat(stat)
+	    raise RPCBadAcceptStats(stat)
 	return xid, verf
 	# Caller must get procedure-specific part of reply
 
@@ -367,7 +367,7 @@ class Client:
 	    result = None
         try:
             self.unpacker.done()
-        except xdrlib.Error, e:
+        except xdrlib.Error:
             raise RPCUnextractedData()
             
 	return result
