@@ -27,7 +27,9 @@
 # filehandles are split into eq. classes "valid filehandle" and
 # "invalid filehandle". There should probably be a class "no filehandle" as
 # well. Currently, "invalid filehandle" are tested by doing operations without
-# filehandles. 
+# filehandles.
+#
+# Add testing of \ to testSlash methods. 
 
 # Nomenclature: Each test class is referred to as a "test suite". Each
 # test* method is a "test case".
