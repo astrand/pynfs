@@ -157,6 +157,7 @@ class AccessTestCase(NFSTestCase):
     def setUp(self):
         self.connect()
         self.putrootfhop = self.ncl.putrootfh_op()
+        self.normfile = "/doc/README"
 
     def testSanityOnDir(self):
         """All valid combinations of ACCESS arguments on directory
@@ -183,7 +184,7 @@ class AccessTestCase(NFSTestCase):
 
         Se testSanityOnDir.
         """
-        path = nfs4lib.str2pathname("/README")
+        path = nfs4lib.str2pathname(self.normfile)
         lookupop = self.ncl.lookup_op(path)
         for accessop in self.valid_access_ops():
             res = self.do_compound([self.putrootfhop, lookupop, accessop])
